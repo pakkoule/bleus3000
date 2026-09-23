@@ -1,4 +1,4 @@
-/* Bleus 3000 V1.1.19 — compte, profils, rôles, personnalisation, tags, accomplissements */
+/* Bleus 3000 V1.1.22 — compte, profils, rôles, récupération JWT + initialisation Supabase sûre */
 (() => {
   'use strict';
   const cfg=window.BLEUS3000_CONFIG||{};
@@ -69,6 +69,46 @@
   async function loadProfile(){if(!session?.user){profile=null;dispatchState();updateHeader();return;}const {data}=await client.from('profiles').select('*').eq('id',session.user.id).maybeSingle();profile=data||{id:session.user.id,first_name:session.user.user_metadata?.first_name||'',username:session.user.user_metadata?.username||session.user.email?.split('@')[0],email:session.user.email,role:'user',presence_status:'online'};const [l,s]=await Promise.all([client.from('member_role_labels').select('*').eq('user_id',session.user.id).maybeSingle(),client.from('member_postit_styles').select('*').eq('user_id',session.user.id).maybeSingle()]);profile.member_label=l.data||null;profile.postit_style=s.data||null;social()?.setMemberLabel?.(profile.id,profile.member_label);dispatchState();updateHeader();}
   async function setupPresence(){if(!client)return;try{if(presenceChannel)await client.removeChannel(presenceChannel);}catch{}let guest=localStorage.getItem('bleus3000.presence.guest.v1')||crypto.randomUUID?.()||Math.random().toString(36).slice(2);localStorage.setItem('bleus3000.presence.guest.v1',guest);const key=session?.user?.id||`guest:${guest}`;presenceChannel=client.channel('b3k-online',{config:{presence:{key}}});presenceChannel.on('presence',{event:'sync'},()=>{const state=presenceChannel.presenceState();window.C3K_PRESENCE_STATE=state;const entries=Object.values(state||{}).flatMap(v=>Array.isArray(v)?v:[]);$$('[data-c3k-online-count]').forEach(n=>n.textContent=`${entries.length} présent${entries.length>1?'s':''}`);window.dispatchEvent(new CustomEvent('c3k:presence-state',{detail:{state,count:entries.length}}));});presenceChannel.subscribe(async status=>{if(status==='SUBSCRIBED')await presenceChannel.track({user_id:profile?.id||null,pseudo:profile?.username||null,first_name:profile?.first_name||null,role:profile?.role||'guest',status_text:profile?.status_text||null,presence_status:profile?.presence_status||'online',online_at:new Date().toISOString()});});}
   async function handleSession(s){session=s;await loadProfile();await setupPresence();if(!$('#c3kV8AccountBackdrop')?.hidden)renderAccount();}
-  async function init(){buildUi();profile=loadLocalProfile();updateHeader();dispatchState();if(configured()){client=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});window.BLEUS3000_SUPABASE=client;const {data}=await client.auth.getSession();if(data.session)await handleSession(data.session);else{profile=null;updateHeader();dispatchState();await setupPresence();}client.auth.onAuthStateChange((_e,s)=>setTimeout(()=>handleSession(s).catch(()=>{}),0));}else{window.BLEUS3000_SUPABASE=null;}window.C3K_UI?.hydrate?.();}
+  const isJwtTimeError=e=>/jwt\s+(issued\s+at\s+future|expired)|issued\s+at\s+future/i.test(String(e?.message||e||''));
+  function clearStoredAuth(){
+    try{
+      const ref=new URL(cfg.SUPABASE_URL).hostname.split('.')[0];
+      const exact=`sb-${ref}-auth-token`;
+      localStorage.removeItem(exact);
+      for(let i=localStorage.length-1;i>=0;i--){const k=localStorage.key(i);if(k&&k.startsWith(`sb-${ref}-auth-token`))localStorage.removeItem(k);}
+    }catch{}
+  }
+  async function sanitizeInitialSession(){
+    const {data,error}=await client.auth.getSession();
+    if(error&&!isJwtTimeError(error))console.warn('Bleus 3000 · lecture session',error);
+    let s=data?.session||null;
+    if(!s)return null;
+    // getSession lit le cache local sans valider le JWT côté serveur. getUser force cette validation.
+    const check=await client.auth.getUser().catch(e=>({error:e}));
+    if(!check?.error)return s;
+    if(!isJwtTimeError(check.error)){console.warn('Bleus 3000 · validation session',check.error);return s;}
+    console.warn('Bleus 3000 · JWT temporel invalide, tentative de rafraîchissement automatique.');
+    const refreshed=await client.auth.refreshSession().catch(e=>({data:null,error:e}));
+    if(!refreshed?.error&&refreshed?.data?.session)return refreshed.data.session;
+    console.warn('Bleus 3000 · session locale abandonnée après échec du refresh.',refreshed?.error);
+    try{await client.auth.signOut({scope:'local'});}catch{}
+    clearStoredAuth();
+    return null;
+  }
+  async function init(){
+    buildUi();profile=loadLocalProfile();updateHeader();dispatchState();
+    window.BLEUS3000_SUPABASE=null;
+    if(configured()){
+      client=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+      const cleanSession=await sanitizeInitialSession();
+      // N'exposer le client aux autres modules qu'après validation/récupération de la session persistée.
+      window.BLEUS3000_SUPABASE=client;
+      window.dispatchEvent(new CustomEvent('bleus:supabase-ready',{detail:{client,session:cleanSession}}));
+      if(cleanSession)await handleSession(cleanSession);
+      else{session=null;profile=null;updateHeader();dispatchState();await setupPresence();}
+      client.auth.onAuthStateChange((_e,s)=>setTimeout(()=>handleSession(s).catch(err=>console.warn('Bleus 3000 · auth state',err)),0));
+    }else{window.BLEUS3000_SUPABASE=null;}
+    window.C3K_UI?.hydrate?.();
+  }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();

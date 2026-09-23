@@ -1,9 +1,13 @@
-/* Bleus 3000 V1.1.19 — Sélections · accomplissements, postes multiples, tuiles épurées */
+/* Bleus 3000 V1.1.22 — Sélections · récupération JWT + recherche tolérante */
 (() => {
   'use strict';
   const $=(s,p=document)=>p.querySelector(s), $$=(s,p=document)=>[...p.querySelectorAll(s)];
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fmtDate=v=>{if(!v)return '—';const d=new Date(v+'T00:00:00');return Number.isNaN(+d)?v:d.toLocaleDateString('fr-FR');};
+  const S=window.BLEUS3000_SEARCH;
+  if(!S)throw new Error('Moteur de recherche Bleus 3000 indisponible');
+  const norm=S.normalize;
+  const fuzzyMatch=(query,values)=>S.matches(query,values,.48);
   const role=()=>window.C3K_ACCOUNT_STATE?.profile?.role||'guest';
   const canEdit=()=>['contributor','admin','superadmin'].includes(role());
   const cfg=window.BLEUS3000_CONFIG||{};
@@ -104,8 +108,7 @@
       if(jerseyFilter&&!(r._jerseyNumbers||[]).includes(Number(jerseyFilter)))return false;
       if(tagFilter&&!(r._tagIds||[]).includes(tagFilter))return false;
       if(!q)return true;
-      const p=publicPlayer(r);const hay=[p.display_name,p.last_name,p.primary_position,r.international_number,r.selections,r.goals,r.appearance_status==='called_only'?'convocation':'international',...(r._jerseyNumbers||[])].join(' ').toLocaleLowerCase('fr');
-      return hay.includes(q);
+      const p=publicPlayer(r);return fuzzyMatch(q,[p.display_name,p.last_name,p.primary_position,...(p.secondary_positions||[]),r.international_number,r.selections,r.goals,r.appearance_status==='called_only'?'convocation':'international',...(r._jerseyNumbers||[])]);
     });
     return out.sort(compareRows);
   }
@@ -261,7 +264,20 @@
   async function saveBorder(e){e.preventDefault();const f=e.currentTarget,fd=new FormData(f),teamId=f.dataset.borderTeam,payload={selection_id:teamId,appearance:fd.get('appearance'),color_start:fd.get('color_start'),color_end:fd.get('color_end'),border_width:Number(fd.get('border_width')),border_radius:Number(fd.get('border_radius')),gradient_angle:Number(fd.get('gradient_angle')),updated_by:window.C3K_ACCOUNT_STATE?.profile?.id||null};const {data,error}=await client.from('selection_photo_borders').upsert(payload).select().single();if(error)return alert(error.message);borders.set(data.selection_id,data);await openBorderEditor();if(selectedTeam()?.id===data.selection_id)render(query);}
 
   async function openNewPlayer(){return openEditor(null);}
-  async function init(){await waitClient();if(!client)return;try{await loadTeams();selectedCode=teams.some(t=>t.code==='FRA-A-M')?'FRA-A-M':teams[0]?.code;await loadRows(selectedCode);}catch(e){console.error('Selections init',e);}}
+  const isJwtFuture=e=>/jwt\s+issued\s+at\s+future|issued\s+at\s+future/i.test(String(e?.message||e||''));
+  async function init(retry=true){
+    await waitClient();if(!client)return;
+    try{
+      await loadTeams();selectedCode=teams.some(t=>t.code==='FRA-A-M')?'FRA-A-M':teams[0]?.code;await loadRows(selectedCode);
+    }catch(e){
+      if(retry&&isJwtFuture(e)){
+        console.warn('Sélections · JWT temporel invalide, refresh + nouvelle tentative.');
+        const rr=await client.auth.refreshSession().catch(err=>({error:err}));
+        if(!rr?.error){await new Promise(r=>setTimeout(r,1400));teams=[];rows=[];return init(false);}
+      }
+      console.error('Selections init',e);
+    }
+  }
   window.addEventListener('c3k:account-state',()=>{if(!client)waitClient().then(c=>{if(c)init();});});
   window.BLEUS3000_SELECTIONS={render,selectCategory,openNewPlayer,openEditor,openBorderEditor,get teams(){return teams;},get rows(){return rows;},get selectedCode(){return selectedCode;}};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();

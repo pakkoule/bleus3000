@@ -1,4 +1,13 @@
+# Bleus 3000 V1.1.22
+
+Correctif de démarrage Supabase : validation de la session persistée avant exposition du client aux modules, refresh automatique des JWT temporellement invalides, et retour en mode public si une session locale est irrécupérable.
+
 # Bleus 3000 — V1.1.5
+
+
+## V1.1.21 — recherche et base joueurs
+
+La base globale de l’accueil dispose désormais d’un filtre par numéro porté, d’un accès direct à la tuile joueur par UUID, d’un surlignage des noms trouvés et d’une recherche plus tolérante aux fautes de frappe. La recherche universelle ne mélange plus les anciens joueurs de démonstration avec le registre Supabase : un joueur réel n’est proposé qu’une seule fois. Les derniers restes beige/marron/doré de Cotation 3000 ont également été remplacés par la palette Bleus 3000.
 
 Fork UI/UX de Cotation 3000 V9 adapté à Bleus 3000.
 
@@ -87,3 +96,11 @@ La base joueurs affiche désormais une colonne **Numéros portés**. Les numéro
 - 51 associations de numéros de maillot observés pour 44 joueuses.
 - 4 capitanats vérifiés dans l’échantillon fourni, enregistrés comme minimum vérifié non exhaustif.
 - Les 12 écarts entre le compteur de sélections V1 et la source V/N/D sont conservés et tracés via `vnd_source_selections` / `vnd_coherence`, sans écraser la valeur V1.
+
+
+## V1.1.24 — Recherche par nom
+Correction du surlignage des correspondances et ajout de variantes de recherche par mots/suffixes du nom (ex. `Platini` → Michel Platini).
+
+
+## V1.1.24 — moteur de recherche unifié
+Le moteur de recherche a été réécrit côté frontend uniquement. Aucun changement de schéma ou de données Supabase. Les recherches par prénom, nom, nom complet, préfixes et fautes légères utilisent désormais la même logique dans la base d’accueil, Sélections et la recherche universelle.

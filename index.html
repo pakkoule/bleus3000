@@ -8,11 +8,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="Bleus_3000_V111_app.css?v=1.1.19">
-  <link rel="stylesheet" href="Bleus_3000_V8_account.css">
+  <link rel="stylesheet" href="Bleus_3000_V111_app.css?v=1.1.21">
+  <link rel="stylesheet" href="Bleus_3000_V8_account.css?v=1.1.21">
   <link rel="stylesheet" href="Bleus_3000_V8_social_profiles.css">
   <link rel="stylesheet" href="Bleus_3000_V8_member_wall.css">
-  <link rel="stylesheet" href="Bleus_3000_V8_profile_shortcuts.css">
+  <link rel="stylesheet" href="Bleus_3000_V8_profile_shortcuts.css?v=1.1.21">
   <link rel="stylesheet" href="Bleus_3000_V8_tags.css">
   <link rel="stylesheet" href="Bleus_3000_V8_achievements.css?v=1.1.19">
   <link rel="stylesheet" href="Bleus_3000_V8_ui_system.css">
@@ -99,12 +99,12 @@
                   <th>
                     <div class="players-db-search-line">
                       <button type="button" id="playersDbReset" class="players-db-reset" title="Réinitialiser les filtres" aria-label="Réinitialiser les filtres">↻</button>
-                      <input id="playersDbSearch" type="search" placeholder="Rechercher un joueur ou une joueuse…" autocomplete="off">
+                      <input id="playersDbSearch" type="search" placeholder="Rechercher par prénom ou nom…" autocomplete="off">
                     </div>
                   </th>
                   <th><select id="playersDbPositionFilter"><option value="">Tous les postes</option></select></th>
                   <th><select id="playersDbTeamFilter"><option value="">Toutes les sélections</option></select></th>
-                  <th class="players-db-jersey-filter-placeholder"></th>
+                  <th><select id="playersDbJerseyFilter"><option value="">Tous les numéros</option></select></th>
                   <th></th>
                 </tr>
               </thead>
@@ -194,13 +194,14 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="bleus_config.js"></script>
   <script src="Bleus_3000_V111_data.js"></script>
-  <script src="Bleus_3000_V111_app.js"></script>
+  <script src="Bleus_3000_V124_search_engine.js?v=1.1.24"></script>
+  <script src="Bleus_3000_V111_app.js?v=1.1.24"></script>
   <script src="Bleus_3000_V8_ui_system.js"></script>
   <script src="Bleus_3000_V8_social_profiles.js"></script>
-  <script src="Bleus_3000_V8_account.js?v=1.1.19"></script>
-  <script src="Bleus_3000_V119_selections.js?v=1.1.19"></script>
-  <script src="Bleus_3000_V114_players_table.js?v=1.1.19"></script>
-  <script src="Bleus_3000_V8_profile_shortcuts.js"></script>
+  <script src="Bleus_3000_V8_account.js?v=1.1.22"></script>
+  <script src="Bleus_3000_V119_selections.js?v=1.1.24"></script>
+  <script src="Bleus_3000_V114_players_table.js?v=1.1.24"></script>
+  <script src="Bleus_3000_V8_profile_shortcuts.js?v=1.1.21"></script>
   <script src="Bleus_3000_V8_tags.js?v=1.1.16"></script>
   <script src="Bleus_3000_V8_achievements.js?v=1.1.19"></script>
   <script src="Bleus_3000_V8_member_wall.js"></script>

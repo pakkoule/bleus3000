@@ -1,5 +1,10 @@
-# Bleus 3000 — V1.1.20
+# Bleus 3000 — V1.1.24
 
-France A Féminine : ajout des bilans Victoires / Nuls / Défaites pour 339 joueuses, des numéros de maillot observés et des capitanats vérifiés disponibles dans le référentiel V2.
+Correctif intégral du moteur de recherche, sans modification de la base Supabase.
 
-Les numéros et capitanats restent marqués comme reconstruction partielle vérifiée / non exhaustive conformément à la source fournie.
+- moteur de recherche partagé accueil / Sélections / recherche universelle ;
+- recherche progressive stable : `Kyli`, `Kylian`, `Kylian Mba`, `Kylian Mbappé` ;
+- recherche par nom seul : `Platini` → Michel Platini ;
+- tolérance accents et fautes de frappe contrôlée ;
+- suppression des faux positifs causés par les tokens très courts (`A`, `M`, etc.) ;
+- la recherche textuelle du tableau d'accueil porte sur le nom du joueur ; poste, tag équipe et numéro gardent leurs filtres dédiés.
