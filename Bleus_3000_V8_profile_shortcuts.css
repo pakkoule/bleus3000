@@ -35,3 +35,39 @@
 
 /* V9.0.1.2.11.1 — les favoris appartiennent exclusivement à la colonne droite */
 .c3k-profile-shortcuts{z-index:159!important}
+
+/* V1.1.4 — favoris sous la barre d'outils, côté droit */
+.top-header>.card-ghost-controls .c3k-profile-shortcuts{
+  position:absolute!important;
+  top:50px!important;
+  right:0!important;
+  left:auto!important;
+  width:260px!important;
+  margin:0!important;
+  z-index:1600!important;
+  display:block;
+  padding:7px;
+}
+.top-header>.card-ghost-controls .c3k-profile-shortcuts-title{
+  display:block;
+  margin:0 0 6px;
+  color:#405a78;
+  font-size:8.5px;
+  font-weight:900;
+}
+.top-header>.card-ghost-controls .c3k-profile-shortcuts-grid{
+  display:grid;
+  grid-template-columns:repeat(var(--c3k-shortcut-count,3),minmax(0,1fr));
+  gap:5px;
+}
+.top-header>.card-ghost-controls .c3k-profile-shortcut{
+  width:100%;
+  height:56px;
+}
+@media(max-width:720px){
+  .top-header>.card-ghost-controls .c3k-profile-shortcuts{
+    width:min(260px,calc(100vw - 20px))!important;
+    right:0!important;
+    top:48px!important;
+  }
+}

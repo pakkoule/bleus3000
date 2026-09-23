@@ -1,0 +1,3 @@
+-- Déjà appliqué au projet Supabase bleus3000.
+-- Correctif RLS du bucket player-photos : SELECT/INSERT/UPDATE/DELETE
+-- autorisés aux CONTRIBUTOR / ADMIN / SUPERADMIN via can_edit_selections().

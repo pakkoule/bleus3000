@@ -37,7 +37,7 @@ window.BLEUS3000_DATA = {
     {id:'c3',title:'Équipe de France Espoirs',date:'Octobre 2026',competition:'Euro Espoirs',gender:'M',category:'Espoirs',count:23,sourceCount:2,contributors:['Data Team']}
   ],
   references: [
-    {key:'internationaux',title:'Internationaux',icon:'user',tags:['Masculin','Féminin','A','Jeunes'],count:'2 180+',description:'Joueurs et joueuses passés par les sélections françaises.'},
+    {key:'selections',title:'Sélections',icon:'user',tags:['Masculin','Féminin','A','Jeunes'],count:'14 catégories',description:'Joueurs et joueuses reliés aux différentes sélections françaises.'},
     {key:'convocations',title:'Convocations',icon:'list',tags:['A','Espoirs','U20…','M/F'],count:'Archives',description:'Toutes les listes, forfaits, remplaçants et premières convocations.'},
     {key:'matchs',title:'Matchs',icon:'ball',tags:['Officiel','Amical','M/F'],count:'Historique',description:'Rencontres des sélections françaises et feuilles de match.'},
     {key:'competitions',title:'Compétitions',icon:'trophy',tags:['Mondial','Euro','Ligue des Nations'],count:'Éditions',description:'Compétitions, éditions, formats et parcours des Bleus.'},
@@ -49,11 +49,7 @@ window.BLEUS3000_DATA = {
     {key:'bibliographie',title:'Bibliographie & Médias',icon:'book',tags:['Livre','DVD','Reportage','Podcast'],count:'Médias',description:'Ouvrages et médias liés aux sélections françaises.'}
   ],
   referenceEntries: {
-    internationaux:[
-      {id:'ri1',title:'Michael Olise',subtitle:'A Masculine · Bayern Munich · AD/MOC',tags:['A','Actif'],facts:['Première sélection : 2024','Club : Bayern Munich'],sources:['FFF','UEFA','Bayern Munich'],contributors:['Rapli LH','Data Team'],playerId:'olise'},
-      {id:'ri2',title:'Kylian Mbappé',subtitle:'A Masculine · Real Madrid · BU/AG',tags:['A','Capitaine'],facts:['International A','Club : Real Madrid'],sources:['FFF','UEFA'],contributors:['Rapli LH'],playerId:'mbappe'},
-      {id:'ri3',title:'Marie-Antoinette Katoto',subtitle:'A Féminine · OL Lyonnes · BU',tags:['A Féminine','Actif'],facts:['Internationale A','Poste : Avant-centre'],sources:['FFF','UEFA'],contributors:['Alex'],playerId:'katoto'}
-    ],
+    selections:[],
     convocations:[
       {id:'rc1',title:'A Masculine · Septembre 2026',subtitle:'Ligue des Nations',tags:['Masculin','A'],facts:['25 joueurs','Liste initiale + remplacements'],sources:['FFF'],contributors:['Rapli LH']},
       {id:'rc2',title:'A Féminine · Septembre 2026',subtitle:'Qualifications',tags:['Féminin','A'],facts:['23 joueuses','Liste initiale'],sources:['FFF'],contributors:['Alex']}

@@ -1,44 +1,62 @@
-# Bleus 3000 — V1.1.2
+# Bleus 3000 — V1.1.5
 
-Cette version conserve la coque UI/UX héritée de Cotation 3000 et corrige le header sans changer le langage graphique général.
+Fork UI/UX de Cotation 3000 V9 adapté à Bleus 3000.
 
-## Changements V1.1.2
+Cette version ajoute :
+- overlays du header toujours devant le contenu ;
+- favoris à droite sous la toolbar ;
+- gestion complète des Tags & étiquettes dans le profil ;
+- stockage relationnel Supabase des tags et préparation des futures liaisons entre tuiles.
 
-- Suppression complète du système d'avatars membres et de tous les fichiers d'avatars.
-- Suppression du concept de message épinglé du mur des membres.
-- Recherche universelle, compte/profil/connexion et Mur des membres réunis dans le header, à gauche du titre BLEUS 3000.
-- Mur conservé avec messages courts, likes, suppression/modération et Realtime Supabase.
-- Étiquettes personnalisées, présence, rôles, signalements, raccourcis favoris et personnalisation des messages conservés.
+La configuration de production reste `https://bleus3000.netlify.app/` avec le projet Supabase dédié Bleus 3000.
 
-## Contenu fonctionnel
 
-- Accueil : Ladder Bleu, Calendrier & compétitions, Prochain Bleu ?, dernières convocations et bibliothèque.
-- Outils : Onze, Five, Liste de sélectionneur avec sauvegarde locale et export PNG/JPG.
-- Bibliothèque : Internationaux, Convocations, Matchs, Compétitions, Adversaires, Personnel & Officiels, Équipements, Statistiques, Lieux, Bibliographie & Médias.
-- Tuiles : tags, données synthétiques, Sources et Contributeurs.
-- Fiche joueur : 5/10 dernières performances de démonstration, prête à être alimentée par API.
-- Recherche universelle : joueurs, référentiels, entrées et échéances.
-- Compte : inscription/connexion Supabase, rôles, présence, signalements, raccourcis favoris et étiquette personnalisée.
+### V1.1.5 — Icônes personnalisées des tags
+- Import PNG/JPG/WebP dans l’éditeur de tags.
+- Recadrage proportionnel dans un carré transparent 128×128 sans déformation.
+- Conversion WebP côté navigateur avant envoi pour limiter le poids.
+- Stockage dans le bucket Supabase `tag-icons`.
+- Emoji conservé en fallback si aucune image personnalisée n’est définie.
 
-## Nouveau Supabase obligatoire
+## V1.1.6 — Référentiel Sélections
+Le premier référentiel réel est désormais `Sélections`. Les données France A Masculin sont stockées dans Supabase et non dans un JSON frontend. Les autres catégories sont créées mais restent vides jusqu'à leur alimentation. Les fiches joueurs sont relationnelles et destinées à être réutilisées dans les convocations, matchs, compétitions et outils de composition.
 
-Cette archive est configurée avec des identifiants Supabase vides afin de ne jamais toucher au projet Cotation 3000.
 
-1. Créer un nouveau projet Supabase dédié à Bleus 3000.
-2. Exécuter `supabase_setup.sql` dans SQL Editor.
-3. Renseigner `SUPABASE_URL`, `SUPABASE_ANON_KEY` et `PRODUCTION_URL` dans `bleus_config.js`.
-4. Configurer l'URL du site et les Redirect URLs dans Supabase Auth.
-5. Créer le premier compte depuis Bleus 3000 et confirmer l'e-mail.
-6. Remplacer `TON_EMAIL_ICI` dans `SUPABASE_FIRST_ADMIN.sql`, puis exécuter le fichier pour promouvoir ce compte en SUPERADMIN.
+## Correctif V1.1.7
+- Les 949 joueurs France A Masculin utilisent le tag utilisateur existant `INTERNATIONAL` (alias `FRANCE A M`).
+- Aucun tag France A n'est recréé automatiquement.
+- Le rendu personnalisé du tag (icône image, couleurs, bordure) est repris sur les tuiles.
 
-Sans Supabase configuré, l'interface reste testable en mode local de démonstration.
 
-## API football
+## V1.1.9 — Numéros de maillot visuels
+- Sélecteur de numéro dans l’éditeur joueur, avec bouton `+ Ajouter`.
+- Plusieurs numéros peuvent être associés à un joueur sans saisie manuelle par virgules.
+- Chaque numéro est affiché sur un dos de maillot avec les chiffres graphiques France 1998 fournis pour le projet.
+- Les numéros restent stockés individuellement dans `player_jersey_numbers`.
 
-La fonction `netlify/functions/football-api.js` sert de proxy serveur pour API-Football. Ajouter la variable secrète `API_FOOTBALL_KEY` dans Netlify lorsque tu voudras connecter le fournisseur.
 
-## Déploiement
+## V1.1.11
+Le référentiel Sélections affiche désormais deux tuiles joueur par ligne sur les écrans de plus de 760 px.
 
-Le dépôt peut être envoyé tel quel sur GitHub puis importé par Netlify. `netlify.toml` configure le site statique, les Functions et les redirections.
 
-Voir `INSTALLATION_GITHUB_NETLIFY_SUPABASE.md` pour la procédure complète.
+## V1.1.11
+Le référentiel Sélections ajoute des tris croissant/décroissant, un filtre par numéro porté, un filtre par tag et affiche toutes les étiquettes Supabase liées à chaque joueur.
+
+
+## V1.1.12 — Joueurs convoqués sans cape
+Dans le référentiel Sélections, une ligne joueur/sélection peut désormais être marquée `Convocation seulement`. La tuile affiche alors `Convocation` dans la zone d'ordre d'apparition au lieu d'un numéro international. Lors de la première cape, il suffit de passer le statut à `International` et de renseigner le numéro d'apparition.
+
+
+## V1.1.13
+Correctif grille Sélections : 2 tuiles réellement pleine largeur par ligne sur desktop et réparation du bouton ✎ de modification.
+
+
+## V1.1.14 — Base joueurs globale
+L’accueil abandonne les cartes de démonstration au profit d’un tableau compact inspiré de Cotation 3000. Les joueurs de toutes les catégories sont agrégés par identifiant unique. La colonne Poste vient de `players.primary_position`; la colonne Tags équipes vient des sélections représentées et de leur `team_tag_id`. Les autres référentiels restent accessibles depuis la barre d’outils.
+
+## V1.1.15 — Tags liés aux référentiels
+Les tags peuvent désormais être associés explicitement à une entrée du référentiel Sélections. Le tableau d'accueil filtre sur les tags réellement affiliés aux joueurs, et distingue les tags d'appartenance des tags de statut comme `VENU SANS JOUER`.
+
+
+## V1.1.16 — Numéros portés sur l’accueil
+La base joueurs affiche désormais une colonne **Numéros portés**. Les numéros sont composés avec les chiffres France 1998 en PNG transparents dans une capsule bleue compacte. L’affichage maillot complet reste réservé aux tuiles joueur du référentiel Sélections.

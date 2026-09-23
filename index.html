@@ -4,15 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#071426">
-  <title>Bleus 3000 — V1.1.2</title>
+  <title>Bleus 3000 — V1.1.16</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="Bleus_3000_V111_app.css">
+  <link rel="stylesheet" href="Bleus_3000_V111_app.css?v=1.1.14">
   <link rel="stylesheet" href="Bleus_3000_V8_account.css">
   <link rel="stylesheet" href="Bleus_3000_V8_social_profiles.css">
   <link rel="stylesheet" href="Bleus_3000_V8_member_wall.css">
   <link rel="stylesheet" href="Bleus_3000_V8_profile_shortcuts.css">
+  <link rel="stylesheet" href="Bleus_3000_V8_tags.css">
   <link rel="stylesheet" href="Bleus_3000_V8_ui_system.css">
 </head>
 <body>
@@ -25,6 +26,35 @@
         <div class="universal-search-results" id="universalSearchResults" hidden></div>
       </div>
     </div>
+    <div class="card-ghost-controls" id="compactToolbar" aria-label="Barre d’outils compacte">
+          <div class="toolbar-primary-actions">
+            <button class="card-ghost-btn" id="quoteHistoryButton" type="button" title="Historique" aria-label="Historique"><svg viewBox="0 0 24 24"><path d="M4.5 8.5A8 8 0 1 1 4 13"></path><path d="M4.5 4.5v4h4"></path><path d="M12 8v4l2.8 1.8"></path></svg><span class="quote-history-count">0</span></button>
+            <button class="card-ghost-btn" id="favoritesOnlyBtn" type="button" title="Favoris" aria-label="Favoris"><svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"></path></svg><span class="favorites-count-badge" hidden>0</span></button>
+            <button class="card-ghost-btn toolbar-group-toggle" data-toolbar-menu="calculators" id="toolbarCalculatorsBtn" type="button" title="Outils de composition" aria-label="Outils de composition"><svg viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="2"></rect><path d="M8 7h8M8 11h2M12 11h2M16 11h.01M8 15h2M12 15h2M16 15h.01M8 18h6"></path></svg></button>
+            <button class="card-ghost-btn toolbar-group-toggle" data-toolbar-menu="references" id="toolbarReferencesBtn" type="button" title="Référentiels" aria-label="Référentiels"><svg viewBox="0 0 24 24"><path d="M4 5.5c2.8-.8 5.4-.2 8 1.5v12c-2.6-1.7-5.2-2.3-8-1.5z"></path><path d="M20 5.5c-2.8-.8-5.4-.2-8 1.5v12c2.6-1.7 5.2-2.3 8-1.5z"></path><path d="M12 7v12"></path></svg></button>
+            <button class="card-ghost-btn toolbar-group-toggle" data-toolbar-menu="display" id="toolbarDisplayBtn" type="button" title="Affichage" aria-label="Affichage"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 12h3M11 12h9M4 17h8M16 17h4"></path><circle cx="16" cy="7" r="2"></circle><circle cx="9" cy="12" r="2"></circle><circle cx="14" cy="17" r="2"></circle></svg></button>
+          </div>
+          <div class="toolbar-drop-panel" data-toolbar-panel="calculators" hidden>
+            <button type="button" data-tool-open="xi"><span class="menu-icon">⚽</span>Créer un Onze</button>
+            <button type="button" data-tool-open="five"><span class="menu-icon">⑤</span>Créer un Five</button>
+            <button type="button" data-tool-open="list"><span class="menu-icon">📋</span>Créer une liste de sélectionneur</button>
+          </div>
+          <div class="toolbar-drop-panel" data-toolbar-panel="references" hidden>
+            <button type="button" data-reference-open="selections"><span class="menu-icon">👤</span>Sélections</button>
+            <button type="button" data-reference-open="convocations"><span class="menu-icon">📋</span>Convocations</button>
+            <button type="button" data-reference-open="matchs"><span class="menu-icon">⚽</span>Matchs</button>
+            <button type="button" data-reference-open="competitions"><span class="menu-icon">🏆</span>Compétitions</button>
+            <button type="button" data-reference-open="adversaires"><span class="menu-icon">🌍</span>Adversaires</button>
+            <button type="button" data-reference-open="personnel"><span class="menu-icon">👥</span>Personnel & Officiels</button>
+            <button type="button" data-reference-open="equipements"><span class="menu-icon">👕</span>Équipements</button>
+            <button type="button" data-reference-open="statistiques"><span class="menu-icon">📊</span>Statistiques</button>
+            <button type="button" data-reference-open="lieux"><span class="menu-icon">📍</span>Lieux</button>
+            <button type="button" data-reference-open="bibliographie"><span class="menu-icon">📚</span>Bibliographie & Médias</button>
+          </div>
+          <div class="toolbar-drop-panel" data-toolbar-panel="display" hidden>
+            <button type="button" data-setting-open="settings"><span class="menu-icon">☷</span>Largeur & densité</button>
+          </div>
+        </div>
     <div class="logo-wrap">
       <div class="bleus-wordmark">
         <strong>BLEUS <span>3000</span></strong>
@@ -40,68 +70,52 @@
 
         <div class="c3k-space-indicator" id="bleusSpaceIndicator" aria-live="polite">
           <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 12h16M12 4v16"></path><circle cx="12" cy="12" r="8"></circle></svg>
-          <span>Accueil · Veille France</span>
+          <span>Accueil · Base joueurs</span>
         </div>
 
-        <div class="card-ghost-controls" id="compactToolbar" aria-label="Barre d’outils compacte">
-          <div class="toolbar-primary-actions">
-            <button class="card-ghost-btn" id="quoteHistoryButton" type="button" title="Historique" aria-label="Historique"><svg viewBox="0 0 24 24"><path d="M4.5 8.5A8 8 0 1 1 4 13"></path><path d="M4.5 4.5v4h4"></path><path d="M12 8v4l2.8 1.8"></path></svg><span class="quote-history-count">0</span></button>
-            <button class="card-ghost-btn" id="favoritesOnlyBtn" type="button" title="Favoris" aria-label="Favoris"><svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"></path></svg><span class="favorites-count-badge" hidden>0</span></button>
-            <button class="card-ghost-btn toolbar-group-toggle" data-toolbar-menu="calculators" id="toolbarCalculatorsBtn" type="button" title="Outils de composition" aria-label="Outils de composition"><svg viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="2"></rect><path d="M8 7h8M8 11h2M12 11h2M16 11h.01M8 15h2M12 15h2M16 15h.01M8 18h6"></path></svg></button>
-            <button class="card-ghost-btn toolbar-group-toggle" data-toolbar-menu="references" id="toolbarReferencesBtn" type="button" title="Référentiels" aria-label="Référentiels"><svg viewBox="0 0 24 24"><path d="M4 5.5c2.8-.8 5.4-.2 8 1.5v12c-2.6-1.7-5.2-2.3-8-1.5z"></path><path d="M20 5.5c-2.8-.8-5.4-.2-8 1.5v12c2.6-1.7 5.2-2.3 8-1.5z"></path><path d="M12 7v12"></path></svg></button>
-            <button class="card-ghost-btn toolbar-group-toggle" data-toolbar-menu="display" id="toolbarDisplayBtn" type="button" title="Affichage" aria-label="Affichage"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 12h3M11 12h9M4 17h8M16 17h4"></path><circle cx="16" cy="7" r="2"></circle><circle cx="9" cy="12" r="2"></circle><circle cx="14" cy="17" r="2"></circle></svg></button>
-          </div>
-          <div class="toolbar-drop-panel" data-toolbar-panel="calculators" hidden>
-            <button type="button" data-tool-open="xi"><span class="menu-icon">⚽</span>Créer un Onze</button>
-            <button type="button" data-tool-open="five"><span class="menu-icon">⑤</span>Créer un Five</button>
-            <button type="button" data-tool-open="list"><span class="menu-icon">📋</span>Créer une liste de sélectionneur</button>
-          </div>
-          <div class="toolbar-drop-panel" data-toolbar-panel="references" hidden>
-            <button type="button" data-reference-open="internationaux"><span class="menu-icon">👤</span>Internationaux</button>
-            <button type="button" data-reference-open="convocations"><span class="menu-icon">📋</span>Convocations</button>
-            <button type="button" data-reference-open="matchs"><span class="menu-icon">⚽</span>Matchs</button>
-            <button type="button" data-reference-open="competitions"><span class="menu-icon">🏆</span>Compétitions</button>
-            <button type="button" data-reference-open="adversaires"><span class="menu-icon">🌍</span>Adversaires</button>
-            <button type="button" data-reference-open="personnel"><span class="menu-icon">👥</span>Personnel & Officiels</button>
-            <button type="button" data-reference-open="equipements"><span class="menu-icon">👕</span>Équipements</button>
-            <button type="button" data-reference-open="statistiques"><span class="menu-icon">📊</span>Statistiques</button>
-            <button type="button" data-reference-open="lieux"><span class="menu-icon">📍</span>Lieux</button>
-            <button type="button" data-reference-open="bibliographie"><span class="menu-icon">📚</span>Bibliographie & Médias</button>
-          </div>
-          <div class="toolbar-drop-panel" data-toolbar-panel="display" hidden>
-            <button type="button" data-setting-open="settings"><span class="menu-icon">☷</span>Largeur & densité</button>
-          </div>
-        </div>
 
-        <div class="dashboard-grid">
-          <section class="home-card">
-            <header class="home-card-head"><div class="home-card-title"><span class="icon">📊</span><span><strong>Ladder Bleu</strong><small>Classement dynamique · aperçu Top 10</small></span></div><button class="home-card-action" id="openLadder" type="button">Voir tout →</button></header>
-            <div class="home-card-body" id="ladderRows"></div>
-          </section>
-          <section class="home-card">
-            <header class="home-card-head"><div class="home-card-title"><span class="icon">📅</span><span><strong>Calendrier & compétitions</strong><small>Prochaines échéances des sélections</small></span></div><button class="home-card-action" id="openCalendar" type="button">Voir tout →</button></header>
-            <div class="home-card-body" id="calendarRows"></div>
-          </section>
-          <section class="home-card nextblue-card">
-            <header class="home-card-head"><div class="home-card-title"><span class="icon">◉</span><span><strong>Prochain Bleu ?</strong><small>Jamais appelés en A · radar dynamique</small></span></div><button class="home-card-action" id="openNextBlue" type="button">Voir tout →</button></header>
-            <div class="home-card-body" id="nextBlueRows"></div>
-          </section>
-        </div>
 
-        <div class="dashboard-secondary">
-          <section class="home-card">
-            <header class="home-card-head"><div class="home-card-title"><span class="icon">🇫🇷</span><span><strong>Dernières convocations</strong><small>Masculin · Féminin · Espoirs · Jeunes</small></span></div><button class="home-card-action" data-reference="convocations" type="button">Archives →</button></header>
-            <div class="home-card-body"><div class="callup-list" id="callupRows"></div></div>
-          </section>
-          <section class="home-card">
-            <header class="home-card-head"><div class="home-card-title"><span class="icon">📚</span><span><strong>Bibliothèque / Archives</strong><small>Référentiels relationnels · sources · contributeurs</small></span></div><button class="home-card-action" id="openAllReferences" type="button">Accéder →</button></header>
-            <div class="home-card-body"><div class="reference-quick-grid" id="referenceQuickGrid"></div></div>
-          </section>
-        </div>
+        <section class="players-database-shell" aria-label="Base globale des joueurs et joueuses">
+          <header class="players-db-heading">
+            <div>
+              <strong>Base joueurs</strong>
+              <small>Toutes les sélections françaises · Masculin & Féminin · A à U16</small>
+            </div>
+            <span class="players-db-count" id="playersDbCount">Chargement…</span>
+          </header>
+          <div class="players-db-pagination-top" id="playersDbPaginationTop"></div>
+          <div class="players-db-table-wrap">
+            <table class="players-db-table">
+              <thead>
+                <tr>
+                  <th><button type="button" data-player-db-sort="name">Joueur / Joueuse <span>↕</span></button></th>
+                  <th><button type="button" data-player-db-sort="position">Poste <span>↕</span></button></th>
+                  <th><button type="button" data-player-db-sort="teams">Tags équipes <span>↕</span></button></th>
+                  <th class="players-db-jersey-head">Numéros portés</th>
+                  <th class="players-db-actions-head" aria-label="Actions"></th>
+                </tr>
+                <tr class="players-db-filters">
+                  <th>
+                    <div class="players-db-search-line">
+                      <button type="button" id="playersDbReset" class="players-db-reset" title="Réinitialiser les filtres" aria-label="Réinitialiser les filtres">↻</button>
+                      <input id="playersDbSearch" type="search" placeholder="Rechercher un joueur ou une joueuse…" autocomplete="off">
+                    </div>
+                  </th>
+                  <th><select id="playersDbPositionFilter"><option value="">Tous les postes</option></select></th>
+                  <th><select id="playersDbTeamFilter"><option value="">Toutes les sélections</option></select></th>
+                  <th class="players-db-jersey-filter-placeholder"></th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="playersDbRows"><tr><td colspan="5" class="players-db-loading">Chargement de la base joueurs…</td></tr></tbody>
+            </table>
+          </div>
+          <div class="players-db-pagination-bottom" id="playersDbPaginationBottom"></div>
+        </section>
       </div>
     </section>
   </main>
-  <footer class="footer-note"><strong>BLEUS 3000 · V1.1.2</strong> · coque V9 restaurée · couche métier football français</footer>
+  <footer class="footer-note"><strong>BLEUS 3000 · V1.1.16</strong> · coque V9 restaurée · couche métier football français</footer>
 
   <!-- Bibliothèque / référentiels -->
   <div class="modal-backdrop" id="referenceModal" hidden>
@@ -109,7 +123,7 @@
       <header class="modal-head"><div><h2 id="referenceModalTitle">Bibliothèque</h2><p id="referenceModalSub">Référentiels relationnels</p></div><button class="modal-close" data-modal-close="referenceModal" type="button">×</button></header>
       <div class="modal-body">
         <div class="reference-tabs" id="referenceTabs"></div>
-        <div class="modal-toolbar"><input id="referenceSearch" type="search" placeholder="Rechercher dans ce référentiel…"><span class="tag-badge" id="referenceCount">0 tuile</span><button class="primary-btn" id="addReferenceEntry" type="button">＋ Ajouter</button></div>
+        <div class="selection-category-tabs" id="selectionCategoryTabs" hidden></div><div class="modal-toolbar"><input id="referenceSearch" type="search" placeholder="Rechercher dans ce référentiel…"><span class="tag-badge" id="referenceCount">0 tuile</span><button class="primary-btn" id="addReferenceEntry" type="button">＋ Ajouter</button></div>
         <div class="ref-list" id="referenceEntries"></div>
       </div>
     </section>
@@ -183,7 +197,10 @@
   <script src="Bleus_3000_V8_ui_system.js"></script>
   <script src="Bleus_3000_V8_social_profiles.js"></script>
   <script src="Bleus_3000_V8_account.js"></script>
+  <script src="Bleus_3000_V119_selections.js?v=1.1.16"></script>
+  <script src="Bleus_3000_V114_players_table.js?v=1.1.16"></script>
   <script src="Bleus_3000_V8_profile_shortcuts.js"></script>
+  <script src="Bleus_3000_V8_tags.js?v=1.1.16"></script>
   <script src="Bleus_3000_V8_member_wall.js"></script>
 </body>
 </html>

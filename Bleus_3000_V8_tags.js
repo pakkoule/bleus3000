@@ -1,0 +1,250 @@
+/* Bleus 3000 V1.1.15 — gestionnaire global de tags / étiquettes + icônes importées */
+(() => {
+  'use strict';
+  const $=(s,p=document)=>p.querySelector(s), $$=(s,p=document)=>[...p.querySelectorAll(s)];
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const localKey='bleus3000.tags.local.v1';
+  const iconChoices=['🏷️','⭐','🇫🇷','⚽','🏆','📊','📅','📚','📍','👤','👥','🧤','🎯','🔥','✨','🧠','🩺','🎥','📰','🔎'];
+  let tags=[],selectionTeams=[],referenceLinks=[],editingId=null,lastError='',pendingIconFile=null,pendingIconPreview='';
+
+  const state=()=>window.C3K_ACCOUNT_STATE||{};
+  const client=()=>window.BLEUS3000_SUPABASE;
+  const role=()=>state().profile?.role||'user';
+  const canCreate=()=>['contributor','editor','admin','superadmin'].includes(role());
+  const canEditAll=()=>['editor','admin','superadmin'].includes(role());
+  const userId=()=>state().profile?.id||'local-demo';
+  const slugify=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,72)||'tag';
+  const uuid=()=>crypto.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const localRows=()=>{try{return JSON.parse(localStorage.getItem(localKey)||'[]');}catch{return [];}};
+  const saveLocal=()=>localStorage.setItem(localKey,JSON.stringify(tags));
+  const tagStyle=t=>{
+    const bg=t.appearance==='solid'?t.color_start:`linear-gradient(${Number(t.gradient_angle)||135}deg,${t.color_start},${t.color_end})`;
+    return `--tag-bg:${bg};--tag-text:${t.text_color};--tag-border:${t.border_color};--tag-radius:${Number(t.border_radius)||8}px;--tag-bw:${Number(t.border_width)??1}px`;
+  };
+  const publicIconUrl=t=>{
+    const c=client();
+    if(!t?.icon_image_path||!c)return '';
+    const {data}=c.storage.from('tag-icons').getPublicUrl(t.icon_image_path);
+    return data?.publicUrl||'';
+  };
+  const iconMarkup=t=>{
+    const u=publicIconUrl(t);
+    return u?`<img class="b3k-tag-chip-icon-img" src="${esc(u)}" alt="">`:`<span class="b3k-tag-chip-icon">${esc(t.icon_text||'🏷️')}</span>`;
+  };
+  const tagHtml=(t,extra='')=>`<span class="b3k-tag-chip ${extra}" style="${tagStyle(t)}">${iconMarkup(t)}<span>${esc(t.label_text)}</span></span>`;
+
+  async function load(){
+    lastError='';
+    const c=client();
+    if(c&&state().session?.user){
+      const [{data,error},{data:teamsData,error:teamsError},{data:linksData,error:linksError}]=await Promise.all([
+        c.from('tags').select('*').eq('is_active',true).order('label_text',{ascending:true}),
+        c.from('selection_teams').select('id,code,name,gender,category,sort_order').eq('active',true).order('sort_order'),
+        c.from('tag_reference_links').select('id,tag_id,reference_type,reference_id,relation_kind')
+      ]);
+      if(error){lastError=error.message;tags=[];}else tags=data||[];
+      if(teamsError)lastError=lastError||teamsError.message;selectionTeams=teamsData||[];
+      if(linksError)lastError=lastError||linksError.message;referenceLinks=linksData||[];
+    }else{tags=localRows();selectionTeams=[];referenceLinks=[];}
+    render();
+  }
+
+  function open(){
+    const body=$('#c3kV8PanelBody');
+    if(!body)return;
+    body.innerHTML='<div class="c3k-v8-muted">Chargement des tags et étiquettes…</div>';
+    editingId=null;pendingIconFile=null;pendingIconPreview='';
+    load();
+  }
+
+  function blank(){return {kind:'tag',label_text:'',icon_text:'🏷️',icon_image_path:null,appearance:'gradient',color_start:'#2563EB',color_end:'#0EA5C6',text_color:'#FFFFFF',border_color:'#1E4FA7',gradient_angle:135,border_radius:8,border_width:1,aliases:[]};}
+  function current(){return tags.find(t=>t.id===editingId)||blank();}
+
+  function render(){
+    const body=$('#c3kV8PanelBody');if(!body)return;
+    const editable=canCreate(), cur=current();
+    const list=tags.map(t=>{
+      const mine=t.created_by===userId();
+      const mayEdit=editable&&(mine||canEditAll());
+      const assoc=referenceLinks.filter(l=>l.tag_id===t.id&&l.reference_type==='selection').map(l=>{const tm=selectionTeams.find(x=>x.id===l.reference_id);return tm?`${tm.name}${l.relation_kind==='status'?' · statut':''}`:'';}).filter(Boolean);
+      return `<article class="b3k-tag-row" data-tag-row="${esc(t.id)}">
+        <div class="b3k-tag-row-preview">${tagHtml(t)}</div>
+        <div class="b3k-tag-row-meta"><strong>${esc(t.kind==='label'?'Étiquette':'Tag')}</strong><small>${esc((t.aliases||[]).join(' · ')||t.slug||'')}</small>${assoc.length?`<small class="b3k-tag-ref-meta">Référentiel · ${esc(assoc.join(' · '))}</small>`:''}</div>
+        <div class="b3k-tag-row-actions">${mayEdit?`<button type="button" data-tag-edit="${esc(t.id)}">Modifier</button><button type="button" class="is-danger" data-tag-delete="${esc(t.id)}">Supprimer</button>`:''}</div>
+      </article>`;
+    }).join('')||'<div class="b3k-tags-empty">Aucun tag pour le moment.</div>';
+
+    body.innerHTML=`<section class="b3k-tags-manager">
+      <div class="b3k-tags-head"><div><strong>Tags & étiquettes</strong><span>Catalogue visuel commun. Il servira ensuite à relier les tuiles entre elles.</span></div><span class="b3k-tags-count">${tags.length}</span></div>
+      ${lastError?`<div class="c3k-v8-status is-error">${esc(lastError)}</div>`:''}
+      ${editable?editorHtml(cur):`<div class="b3k-tags-readonly">Ton rôle <strong>${esc(role().toUpperCase())}</strong> peut consulter le catalogue. La création et la modification sont réservées aux contributeurs, éditeurs et administrateurs.</div>`}
+      <div class="b3k-tags-list-head"><strong>Catalogue</strong><small>${tags.length} élément${tags.length>1?'s':''}</small></div>
+      <div class="b3k-tags-list">${list}</div>
+      <div class="c3k-v8-actions"><button class="c3k-v8-secondary" id="b3kTagsBack" type="button">Retour</button></div>
+    </section>`;
+
+    $('#b3kTagsBack',body)?.addEventListener('click',()=>$('#c3kV8AccountBtn')?.click());
+    $('#b3kTagForm',body)?.addEventListener('submit',save);
+    $('#b3kTagCancel',body)?.addEventListener('click',()=>{editingId=null;render();});
+    $$('[data-tag-edit]',body).forEach(b=>b.addEventListener('click',()=>{editingId=b.dataset.tagEdit;render();}));
+    $$('[data-tag-delete]',body).forEach(b=>b.addEventListener('click',()=>removeTag(b.dataset.tagDelete)));
+    $$('.b3k-tag-icon-choice',body).forEach(b=>b.addEventListener('click',()=>{const f=$('#b3kTagForm');if(!f)return;f.icon_text.value=b.dataset.icon;pendingIconFile=null;pendingIconPreview='';updatePreview(f);}));
+    const form=$('#b3kTagForm',body);
+    if(form){
+      const file=$('#b3kTagIconFile',form),clear=$('#b3kTagIconClear',form);
+      file?.addEventListener('change',async()=>{
+        const f=file.files?.[0];
+        if(!f)return;
+        try{
+          const out=await prepareIcon(f);
+          pendingIconFile=out.blob;pendingIconPreview=out.preview;
+          updatePreview(form);
+          const meta=$('#b3kTagIconMeta',form);if(meta)meta.textContent=`${out.width}×${out.height}px → 128×128 WebP · ${Math.max(1,Math.round(out.blob.size/1024))} Ko`;
+        }catch(err){alert(err.message||'Image invalide');file.value='';}
+      });
+      clear?.addEventListener('click',()=>{pendingIconFile=null;pendingIconPreview='';form.dataset.removeIcon='1';if(file)file.value='';updatePreview(form);});
+      $$('input,select',form).forEach(n=>n.addEventListener('input',()=>updatePreview(form)));updatePreview(form);
+    }
+  }
+
+  function currentReferenceLink(t){return referenceLinks.find(l=>l.tag_id===t.id&&l.reference_type==='selection')||null;}
+  function referenceEditorHtml(t){
+    const link=currentReferenceLink(t), selected=link?.reference_id||'', kind=link?.relation_kind||'membership';
+    const opts=selectionTeams.map(tm=>`<option value="${esc(tm.id)}" ${selected===tm.id?'selected':''}>${esc(tm.name)}</option>`).join('');
+    return `<fieldset class="b3k-tag-reference-box"><legend>Association au référentiel</legend><div class="b3k-tag-grid three"><label>Référentiel<select name="reference_type"><option value="">Aucun</option><option value="selection" ${selected?'selected':''}>Sélections</option></select></label><label>Entrée<select name="reference_id"><option value="">Aucune entrée</option>${opts}</select></label><label>Type de lien<select name="relation_kind"><option value="membership" ${kind==='membership'?'selected':''}>Appartenance</option><option value="status" ${kind==='status'?'selected':''}>Statut</option><option value="topic" ${kind==='topic'?'selected':''}>Sujet</option></select></label></div><small>Cette liaison permet aux filtres et tableaux de savoir exactement à quel référentiel correspond le tag.</small></fieldset>`;
+  }
+
+  function editorHtml(t){
+    return `<form class="b3k-tag-editor" id="b3kTagForm">
+      <div class="b3k-tag-editor-title"><strong>${editingId?'Modifier le tag':'Créer un tag / une étiquette'}</strong><small>Texte, icône et rendu sont personnalisables.</small></div>
+      <div class="b3k-tag-preview-wrap"><span>APERÇU</span><div id="b3kTagPreview"></div></div>
+      <div class="b3k-tag-grid two">
+        <label>Type<select name="kind"><option value="tag" ${t.kind==='tag'?'selected':''}>Tag</option><option value="label" ${t.kind==='label'?'selected':''}>Étiquette</option></select></label>
+        <label>Texte<input name="label_text" maxlength="40" required value="${esc(t.label_text||'')}"></label>
+      </div>
+      <div class="b3k-tag-grid two">
+        <label>Icône<input name="icon_text" maxlength="12" value="${esc(t.icon_text||'🏷️')}"></label>
+        <label>Style<select name="appearance"><option value="gradient" ${t.appearance!=='solid'?'selected':''}>Dégradé</option><option value="solid" ${t.appearance==='solid'?'selected':''}>Couleur unie</option></select></label>
+      </div>
+      <div class="b3k-tag-icon-palette">${iconChoices.map(i=>`<button type="button" class="b3k-tag-icon-choice" data-icon="${esc(i)}" title="${esc(i)}">${esc(i)}</button>`).join('')}</div>
+      <div class="b3k-tag-icon-upload">
+        <div><strong>Icône personnalisée</strong><small>PNG/JPG/WebP · redimensionnée automatiquement en 128×128, sans déformation.</small></div>
+        <label class="b3k-tag-file-btn">Importer une image<input id="b3kTagIconFile" type="file" accept="image/png,image/jpeg,image/webp"></label>
+        <button type="button" class="c3k-v8-secondary" id="b3kTagIconClear">Retirer</button>
+        <small id="b3kTagIconMeta">${t.icon_image_path?'Icône personnalisée active':'Aucune image importée'}</small>
+      </div>
+      <label class="b3k-tag-wide">Alias / mots-clés<input name="aliases" placeholder="ex : EDF, A, senior" value="${esc((t.aliases||[]).join(', '))}"></label>
+      ${referenceEditorHtml(t)}
+      <div class="b3k-tag-color-grid">
+        <label>Couleur 1<input type="color" name="color_start" value="${esc(t.color_start||'#2563EB')}"></label>
+        <label>Couleur 2<input type="color" name="color_end" value="${esc(t.color_end||'#0EA5C6')}"></label>
+        <label>Texte<input type="color" name="text_color" value="${esc(t.text_color||'#FFFFFF')}"></label>
+        <label>Bordure<input type="color" name="border_color" value="${esc(t.border_color||'#1E4FA7')}"></label>
+      </div>
+      <div class="b3k-tag-grid three">
+        <label>Angle<input type="number" name="gradient_angle" min="0" max="360" step="5" value="${Number(t.gradient_angle)||135}"></label>
+        <label>Arrondi<input type="number" name="border_radius" min="2" max="24" value="${Number(t.border_radius)||8}"></label>
+        <label>Bordure<input type="number" name="border_width" min="0" max="4" value="${Number(t.border_width)??1}"></label>
+      </div>
+      <div class="b3k-tag-editor-actions"><button type="button" class="c3k-v8-secondary" id="b3kTagCancel">${editingId?'Annuler':'Vider'}</button><button class="c3k-v8-primary" type="submit">${editingId?'Enregistrer':'Ajouter'}</button></div>
+      <div class="c3k-v8-status" id="b3kTagStatus" hidden></div>
+    </form>`;
+  }
+
+  function formPayload(form){
+    const fd=new FormData(form), label=String(fd.get('label_text')||'').trim();
+    return {
+      kind:String(fd.get('kind')||'tag'),label_text:label,icon_text:String(fd.get('icon_text')||'🏷️').trim()||'🏷️',icon_image_path:current().icon_image_path||null,
+      appearance:String(fd.get('appearance')||'gradient'),color_start:String(fd.get('color_start')||'#2563EB'),color_end:String(fd.get('color_end')||'#0EA5C6'),
+      text_color:String(fd.get('text_color')||'#FFFFFF'),border_color:String(fd.get('border_color')||'#1E4FA7'),gradient_angle:Number(fd.get('gradient_angle')||135),
+      border_radius:Number(fd.get('border_radius')||8),border_width:Number(fd.get('border_width')||1),aliases:String(fd.get('aliases')||'').split(',').map(x=>x.trim()).filter(Boolean),
+      reference_type:String(fd.get('reference_type')||''),reference_id:String(fd.get('reference_id')||''),relation_kind:String(fd.get('relation_kind')||'membership')
+    };
+  }
+
+  function updatePreview(form){
+    const out=$('#b3kTagPreview');if(!out)return;
+    const p=formPayload(form);p.label_text=p.label_text||'Exemple';
+    if(form.dataset.removeIcon==='1')p.icon_image_path=null;
+    if(pendingIconPreview){const bg=tagStyle(p);out.innerHTML=`<span class="b3k-tag-chip is-preview" style="${bg}"><img class="b3k-tag-chip-icon-img" src="${pendingIconPreview}" alt=""><span>${esc(p.label_text)}</span></span>`;}
+    else out.innerHTML=tagHtml(p,'is-preview');
+  }
+
+  async function save(e){
+    e.preventDefault();const form=e.currentTarget,st=$('#b3kTagStatus'),payload=formPayload(form);
+    if(!payload.label_text)return status(st,'Ajoute un texte.','error');
+    status(st,'Enregistrement…');
+    const c=client();
+    const removeIcon=form.dataset.removeIcon==='1';
+    if(removeIcon)payload.icon_image_path=null;
+    if(c&&state().session?.user&&pendingIconFile){
+      try{payload.icon_image_path=await uploadIcon(pendingIconFile,payload.label_text,editingId);}catch(err){return status(st,err.message||'Échec de l’import de l’icône.','error');}
+    }
+    const refSpec={reference_type:payload.reference_type,reference_id:payload.reference_id,relation_kind:payload.relation_kind};
+    delete payload.reference_type;delete payload.reference_id;delete payload.relation_kind;
+    let savedTagId=editingId;
+    if(c&&state().session?.user){
+      if(editingId){
+        const {error}=await c.from('tags').update({...payload,updated_at:new Date().toISOString()}).eq('id',editingId);
+        if(error)return status(st,error.message,'error');
+      }else{
+        const row={...payload,slug:slugify(payload.label_text),created_by:userId()};
+        const {data:created,error}=await c.from('tags').insert(row).select('id').single();
+        if(error)return status(st,error.message.includes('duplicate')?'Ce texte est déjà utilisé par un tag.':error.message,'error');
+        savedTagId=created?.id||null;
+      }
+      if(savedTagId){
+        const oldLinks=referenceLinks.filter(l=>l.tag_id===savedTagId&&l.reference_type==='selection');
+        const {error:delErr}=await c.from('tag_reference_links').delete().eq('tag_id',savedTagId).eq('reference_type','selection');
+        if(delErr)return status(st,'Association référentiel · '+delErr.message,'error');
+        const oldMembershipIds=oldLinks.filter(l=>l.relation_kind==='membership').map(l=>l.reference_id);
+        if(oldMembershipIds.length)await c.from('selection_teams').update({team_tag_id:null}).in('id',oldMembershipIds).eq('team_tag_id',savedTagId);
+        if(refSpec.reference_type==='selection'&&refSpec.reference_id){
+          const {error:linkErr}=await c.from('tag_reference_links').insert({tag_id:savedTagId,reference_type:'selection',reference_id:refSpec.reference_id,relation_kind:refSpec.relation_kind||'membership',created_by:userId()});
+          if(linkErr)return status(st,'Association référentiel · '+linkErr.message,'error');
+          if(refSpec.relation_kind==='membership')await c.from('selection_teams').update({team_tag_id:savedTagId}).eq('id',refSpec.reference_id);
+        }
+      }
+    }else{
+      if(editingId){const i=tags.findIndex(x=>x.id===editingId);if(i>=0)tags[i]={...tags[i],...payload,updated_at:new Date().toISOString()};}
+      else tags.push({id:uuid(),...payload,slug:slugify(payload.label_text),created_by:userId(),is_active:true,created_at:new Date().toISOString()});
+      saveLocal();
+    }
+    const old=current().icon_image_path||null;
+    if(c&&state().session?.user&&old&&(removeIcon||pendingIconFile)&&old!==payload.icon_image_path){await c.storage.from('tag-icons').remove([old]).catch?.(()=>{});}
+    editingId=null;pendingIconFile=null;pendingIconPreview='';await load();
+  }
+
+
+  async function prepareIcon(file){
+    if(!/^image\/(png|jpeg|webp)$/.test(file.type))throw new Error('Format accepté : PNG, JPG ou WebP.');
+    if(file.size>8*1024*1024)throw new Error('Image trop lourde : 8 Mo maximum avant optimisation.');
+    const src=await createImageBitmap(file),originalWidth=src.width,originalHeight=src.height;
+    const side=Math.max(src.width,src.height), canvas=document.createElement('canvas');canvas.width=128;canvas.height=128;
+    const ctx=canvas.getContext('2d',{alpha:true});ctx.clearRect(0,0,128,128);ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+    const scale=128/side,w=src.width*scale,h=src.height*scale,x=(128-w)/2,y=(128-h)/2;ctx.drawImage(src,x,y,w,h);
+    src.close?.();
+    const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Conversion impossible.')),'image/webp',0.88));
+    return {blob,preview:canvas.toDataURL('image/webp',0.88),width:originalWidth,height:originalHeight};
+  }
+
+  async function uploadIcon(blob,label,id){
+    const c=client(),uid=state().session?.user?.id;if(!c||!uid)throw new Error('Connexion requise pour importer une icône.');
+    const safe=slugify(label),key=`${uid}/${id||uuid()}-${safe}-${Date.now()}.webp`;
+    const {error}=await c.storage.from('tag-icons').upload(key,blob,{contentType:'image/webp',upsert:false,cacheControl:'31536000'});
+    if(error)throw error;
+    return key;
+  }
+
+  async function removeTag(id){
+    const t=tags.find(x=>x.id===id);if(!t||!confirm(`Supprimer « ${t.label_text} » ?`))return;
+    const c=client();
+    if(c&&state().session?.user){const {error}=await c.from('tags').delete().eq('id',id);if(error)return alert(error.message);}
+    else{tags=tags.filter(x=>x.id!==id);saveLocal();}
+    if(editingId===id)editingId=null;await load();
+  }
+
+  function status(node,msg,type=''){if(!node)return;node.hidden=false;node.className='c3k-v8-status'+(type?` is-${type}`:'');node.textContent=msg;}
+
+  window.BLEUS3000_TAGS={open,refresh:load,getAll:()=>[...tags],chipHtml:tagHtml};
+})();

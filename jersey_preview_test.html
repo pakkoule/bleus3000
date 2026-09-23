@@ -1,0 +1,5 @@
+<!doctype html><meta charset='utf-8'><link rel='stylesheet' href='Bleus_3000_V111_app.css'><style>body{background:#eef4fb;padding:20px;font-family:Arial}.row{display:flex;gap:15px;align-items:center}.box{background:#fff;padding:20px;border-radius:14px}</style><div class='box'><div class='row' id='r'></div></div><script>
+const back='assets/jersey-back-france-1998.webp';const digit=n=>`assets/jersey-numbers/france-1998/${n}.png`;
+function v(n,mode='editor'){return `<span class="selection-jersey-visual ${mode==='editor'?'is-editor':'is-tile'}"><img class="selection-jersey-back" src="${back}"><span class="selection-jersey-digits">${String(n).split('').map(d=>`<img src="${digit(d)}">`).join('')}</span></span>`}
+document.querySelector('#r').innerHTML=[1,7,10,12,20,98].map(n=>v(n)).join('');
+</script>

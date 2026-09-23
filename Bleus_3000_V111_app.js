@@ -9,7 +9,7 @@
     calendar:'📅', binoculars:'◉', source:'🔗', edit:'✎', add:'＋', close:'×', football:'⚽'
   };
   const localRefKey='bleus3000.reference.custom.v1';
-  let refState={key:'internationaux',query:''};
+  let refState={key:'selections',query:''};
   let activeSearchIndex=-1, activeSearchItems=[];
   let currentPlayer=null, performanceLimit=5;
 
@@ -25,16 +25,12 @@
     return `<svg aria-hidden="true" viewBox="0 0 24 24">${p}</svg>`;
   }
 
-  function refEmoji(key){return ({internationaux:'👤',convocations:'📋',matchs:'⚽',competitions:'🏆',adversaires:'🌍',personnel:'👥',equipements:'👕',statistiques:'📊',lieux:'📍',bibliographie:'📚'})[key]||'▦';}
+  function refEmoji(key){return ({selections:'👤',convocations:'📋',matchs:'⚽',competitions:'🏆',adversaires:'🌍',personnel:'👥',equipements:'👕',statistiques:'📊',lieux:'📍',bibliographie:'📚'})[key]||'▦';}
 
   function renderDashboard(){
-    const players=[...(D.players||[])].filter(p=>p.gender==='M'&&!p.neverA).sort((a,b)=>b.index-a.index).slice(0,10);
-    const next=[...(D.players||[])].filter(p=>p.gender==='M'&&p.neverA).sort((a,b)=>b.index-a.index).slice(0,10);
-    $('#ladderRows').innerHTML=players.map((p,i)=>`<button class="ladder-row" data-player="${esc(p.id)}" type="button"><span class="ladder-rank">${String(i+1).padStart(2,'0')}</span><span class="ladder-name"><strong>${esc(p.name)}</strong><small>${esc(p.club)}</small></span><span class="position-badge">${esc(p.position.split(' / ')[0])}</span><span class="ladder-trend ${p.trend>0?'up':p.trend<0?'down':''}">${p.trend>0?'▲ +'+p.trend:p.trend<0?'▼ '+p.trend:'—'}</span><span class="ladder-index">${p.index.toFixed(1)}</span></button>`).join('');
-    $('#calendarRows').innerHTML=(D.calendar||[]).slice(0,5).map(x=>`<div class="timeline-item"><div class="timeline-date">${esc(x.date)}</div><div class="timeline-copy"><strong>${esc(x.title)}</strong><small>${esc(x.subtitle)}</small><span class="tag-badge">${esc(x.tag)}</span></div></div>`).join('');
-    $('#nextBlueRows').innerHTML=next.map((p,i)=>`<button class="nextblue-row" data-player="${esc(p.id)}" type="button"><span class="ladder-rank">${i+1}</span><span><strong>${esc(p.name)}</strong><small>${esc(p.club)} · ${esc(p.position)}</small></span><span class="nextblue-age">${p.age} ans</span><span class="nextblue-index">${p.index.toFixed(1)}</span></button>`).join('');
-    $('#callupRows').innerHTML=(D.callups||[]).map(x=>`<button class="callup-item" data-reference="convocations" type="button"><span class="flag">🇫🇷</span><span><strong>${esc(x.title)}</strong><small>${esc(x.date)} · ${esc(x.competition)}</small></span><span class="count">${x.count}</span></button>`).join('');
-    $('#referenceQuickGrid').innerHTML=(D.references||[]).map(r=>`<button class="reference-quick" data-reference="${esc(r.key)}" type="button"><span class="r-icon">${refEmoji(r.key)}</span><strong>${esc(r.title)}</strong><small>${esc(r.description)}</small></button>`).join('');
+    // V1.1.14 : l'accueil est désormais occupé par la base globale des joueurs.
+    // Les anciens blocs Ladder / Calendrier / Prochain Bleu / Convocations / Bibliothèque
+    // sont conservés dans les données mais ne sont plus rendus ici.
     bindDashboardButtons();
   }
 
@@ -69,7 +65,7 @@
   function customRefs(){try{return JSON.parse(localStorage.getItem(localRefKey)||'{}')||{};}catch{return {};}}
   function entriesFor(key){const base=(D.referenceEntries?.[key]||[]);const custom=customRefs()[key]||[];return [...custom,...base];}
 
-  function openReferences(key='internationaux'){
+  function openReferences(key='selections'){
     refState.key=key;refState.query='';$('#referenceSearch').value='';renderReferenceTabs();renderReferenceEntries();openModal('referenceModal');
     window.dispatchEvent(new CustomEvent('bleus:space',{detail:{label:'Bibliothèque · '+(D.references.find(x=>x.key===key)?.title||'Référentiels')}}));
   }
@@ -78,6 +74,8 @@
     $$('[data-ref-tab]').forEach(b=>b.addEventListener('click',()=>{refState.key=b.dataset.refTab;renderReferenceTabs();renderReferenceEntries();}));
   }
   function renderReferenceEntries(){
+    if(refState.key==='selections'&&window.BLEUS3000_SELECTIONS){window.BLEUS3000_SELECTIONS.render(refState.query);return;}
+    const cat=$('#selectionCategoryTabs');if(cat)cat.hidden=true;const sf=$('#selectionFilterBar');if(sf)sf.hidden=true;
     const q=refState.query.trim().toLowerCase();const rows=entriesFor(refState.key).filter(x=>!q||JSON.stringify(x).toLowerCase().includes(q));
     const ref=D.references.find(x=>x.key===refState.key);$('#referenceModalTitle').textContent=ref?.title||'Référentiel';$('#referenceModalSub').textContent=ref?.description||'';$('#referenceCount').textContent=`${rows.length} tuile${rows.length>1?'s':''}`;
     $('#referenceEntries').innerHTML=rows.length?rows.map(row=>`<article class="ref-tile" data-ref-id="${esc(row.id)}"><div class="ref-tile-head"><div><h3>${esc(row.title)}</h3><div class="subtitle">${esc(row.subtitle||'')}</div></div><div class="tile-actions">${row.playerId?`<button class="tile-action" type="button" data-open-player="${esc(row.playerId)}" title="Ouvrir la fiche joueur">↗</button>`:''}${row.custom?`<button class="tile-action" type="button" data-delete-custom="${esc(row.id)}" title="Supprimer">×</button>`:''}</div></div><div class="ref-tags">${(row.tags||[]).map(t=>`<span>${esc(t)}</span>`).join('')}</div><div class="ref-facts">${(row.facts||[]).map(f=>`<span>• ${esc(f)}</span>`).join('')}</div><div class="ref-tile-foot"><button class="source-btn" type="button" data-sources="${esc(row.id)}">🔗 Sources ${(row.sources||[]).length}</button><div class="contributors">${(row.contributors||[]).map(c=>`<span class="contrib-label">${esc(c)}</span>`).join('')}</div></div></article>`).join(''):'<div class="universal-search-empty">Aucune tuile ne correspond à la recherche.</div>';
@@ -90,6 +88,7 @@
   }
   function deleteCustomEntry(id){if(!confirm('Supprimer cette tuile ajoutée localement ?'))return;const all=customRefs(),arr=all[refState.key]||[];all[refState.key]=arr.filter(x=>x.id!==id);localStorage.setItem(localRefKey,JSON.stringify(all));renderReferenceEntries();}
   function openReferenceEditor(){
+    if(refState.key==='selections'&&window.BLEUS3000_SELECTIONS){window.BLEUS3000_SELECTIONS.openNewPlayer();return;}
     const ref=D.references.find(x=>x.key===refState.key);$('#editorRefName').textContent=ref?.title||refState.key;$('#refEditorForm').reset();openModal('referenceEditorModal');
   }
   function saveReferenceEditor(e){
@@ -104,7 +103,7 @@
     const all=p.performances||[],sample=all.slice(0,performanceLimit),mins=sample.reduce((s,x)=>s+x.minutes,0),goals=sample.reduce((s,x)=>s+x.goals,0),assists=sample.reduce((s,x)=>s+x.assists,0),rating=sample.length?sample.reduce((s,x)=>s+x.rating,0)/sample.length:0;$('#playerPerfSummary').textContent=sample.length?`${mins} min · ${goals} but${goals>1?'s':''} · ${assists} passe${assists>1?'s':''} · moyenne ${rating.toFixed(2)}`:'Données à connecter';
   }
 
-  function playerOptions(){return `<option value="">— Choisir —</option>${(D.players||[]).map(p=>`<option value="${esc(p.name)}">${esc(p.name)} · ${esc(p.position)}</option>`).join('')}`;}
+  function playerOptions(){const reg=window.BLEUS3000_PLAYER_REGISTRY||[];const list=reg.length?reg:(D.players||[]).map(p=>({name:p.name,position:p.position,international_number:null}));return `<option value="">— Choisir —</option>${list.map(p=>`<option value="${esc(p.name||p.display_name)}">${esc(p.name||p.display_name)}${p.international_number?` · n°${p.international_number}`:p.position?` · ${esc(p.position)}`:''}</option>`).join('')}`;}
   function openTool(kind){
     if(kind==='xi'||kind==='five'){const title=kind==='xi'?'Créateur de Onze':'Créateur de Five';$('#teamToolTitle').textContent=title;$('#teamToolSub').textContent=kind==='xi'?'Composition 11 joueurs · terrain plein':'Composition 5 joueurs · terrain réduit';buildPitch(kind);$('#teamToolModal').dataset.kind=kind;openModal('teamToolModal');}
     if(kind==='list'){buildListTool();openModal('listToolModal');}
@@ -127,7 +126,7 @@
   }
 
   function searchDataset(q){
-    const out=[];const s=q.toLowerCase();(D.players||[]).forEach(p=>{if(JSON.stringify(p).toLowerCase().includes(s))out.push({type:'Joueurs',icon:'👤',title:p.name,meta:`${p.club} · ${p.position}`,action:()=>openPlayer(p.id)});});(D.references||[]).forEach(r=>{if(JSON.stringify(r).toLowerCase().includes(s))out.push({type:'Référentiels',icon:refEmoji(r.key),title:r.title,meta:r.description,action:()=>openReferences(r.key)});});for(const [k,rows] of Object.entries(D.referenceEntries||{})){rows.forEach(r=>{if(JSON.stringify(r).toLowerCase().includes(s))out.push({type:D.references.find(x=>x.key===k)?.title||'Archives',icon:refEmoji(k),title:r.title,meta:r.subtitle||'',action:()=>{openReferences(k);setTimeout(()=>{$('#referenceSearch').value=r.title;refState.query=r.title.toLowerCase();renderReferenceEntries();},50);}});});}(D.calendar||[]).forEach(x=>{if(JSON.stringify(x).toLowerCase().includes(s))out.push({type:'Calendrier',icon:'📅',title:x.title,meta:`${x.date} · ${x.subtitle}`,action:()=>alert(`${x.date}\n${x.title}\n${x.subtitle}`)});});return out.slice(0,35);
+    const out=[];const s=q.toLowerCase();const reg=window.BLEUS3000_PLAYER_REGISTRY||[];(D.players||[]).forEach(p=>{if(JSON.stringify(p).toLowerCase().includes(s))out.push({type:'Joueurs',icon:'👤',title:p.name,meta:`${p.club} · ${p.position}`,action:()=>openPlayer(p.id)});});reg.forEach(p=>{if((p.name||'').toLowerCase().includes(s)||String(p.international_number||'').includes(s))out.push({type:'Sélections',icon:'🇫🇷',title:p.name,meta:`${(p.selection_names||[]).slice(0,3).join(' · ')||'Sélections'}${p.position?' · '+p.position:''}`,action:()=>{openReferences('selections');setTimeout(()=>{const inp=$('#referenceSearch');if(inp){inp.value=p.name;refState.query=p.name.toLowerCase();renderReferenceEntries();}},80);}});});(D.references||[]).forEach(r=>{if(JSON.stringify(r).toLowerCase().includes(s))out.push({type:'Référentiels',icon:refEmoji(r.key),title:r.title,meta:r.description,action:()=>openReferences(r.key)});});for(const [k,rows] of Object.entries(D.referenceEntries||{})){rows.forEach(r=>{if(JSON.stringify(r).toLowerCase().includes(s))out.push({type:D.references.find(x=>x.key===k)?.title||'Archives',icon:refEmoji(k),title:r.title,meta:r.subtitle||'',action:()=>{openReferences(k);setTimeout(()=>{$('#referenceSearch').value=r.title;refState.query=r.title.toLowerCase();renderReferenceEntries();},50);}});});}(D.calendar||[]).forEach(x=>{if(JSON.stringify(x).toLowerCase().includes(s))out.push({type:'Calendrier',icon:'📅',title:x.title,meta:`${x.date} · ${x.subtitle}`,action:()=>alert(`${x.date}\n${x.title}\n${x.subtitle}`)});});return out.slice(0,35);
   }
   function renderSearch(q){
     const box=$('#universalSearchResults');if(!q.trim()){box.hidden=true;box.innerHTML='';activeSearchItems=[];activeSearchIndex=-1;return;}const rows=searchDataset(q);activeSearchItems=rows;activeSearchIndex=-1;if(!rows.length){box.innerHTML='<div class="universal-search-empty">Aucun résultat dans Bleus 3000.</div>';box.hidden=false;return;}const grouped=rows.reduce((m,r)=>((m[r.type]??=[]).push(r),m),{});let index=0;box.innerHTML=Object.entries(grouped).map(([type,list])=>`<section class="universal-search-section"><div class="universal-search-section-title">${esc(type)}</div>${list.map(r=>`<button class="universal-search-result" data-search-index="${index++}" type="button"><span class="universal-search-result-icon">${r.icon}</span><span class="universal-search-result-copy"><span class="universal-search-result-title">${esc(r.title)}</span><span class="universal-search-result-meta">${esc(r.meta)}</span></span></button>`).join('')}</section>`).join('');box.hidden=false;$$('[data-search-index]',box).forEach(b=>b.addEventListener('click',()=>{const row=activeSearchItems[Number(b.dataset.searchIndex)];box.hidden=true;row?.action?.();}));
@@ -140,7 +139,7 @@
     $$('[data-perf-limit]').forEach(b=>b.addEventListener('click',()=>{performanceLimit=Number(b.dataset.perfLimit);renderPerformances();}));
     $('#saveTeamTool').addEventListener('click',()=>saveToolLocally($('#teamToolModal').dataset.kind||'xi'));$('#exportTeamPng').addEventListener('click',()=>exportTool($('#teamToolModal').dataset.kind||'xi','png'));$('#exportTeamJpg').addEventListener('click',()=>exportTool($('#teamToolModal').dataset.kind||'xi','jpg'));
     $('#saveListTool').addEventListener('click',()=>saveToolLocally('list'));$('#exportListPng').addEventListener('click',()=>exportTool('list','png'));$('#exportListJpg').addEventListener('click',()=>exportTool('list','jpg'));
-    $('#openAllReferences')?.addEventListener('click',()=>openReferences('internationaux'));$('#openCalendar')?.addEventListener('click',()=>alert('Le calendrier complet sera alimenté par les échéances liées aux convocations, matchs et compétitions.'));$('#openLadder')?.addEventListener('click',()=>alert('Le Ladder complet reprendra le même moteur de classement avec filtres par poste, période et sexe.'));$('#openNextBlue')?.addEventListener('click',()=>alert('Prochain Bleu ? est réservé aux joueurs jamais appelés en A et classés sur des critères objectifs de forme et temps de jeu.'));
+    $('#openAllReferences')?.addEventListener('click',()=>openReferences('selections'));$('#openCalendar')?.addEventListener('click',()=>alert('Le calendrier complet sera alimenté par les échéances liées aux convocations, matchs et compétitions.'));$('#openLadder')?.addEventListener('click',()=>alert('Le Ladder complet reprendra le même moteur de classement avec filtres par poste, période et sexe.'));$('#openNextBlue')?.addEventListener('click',()=>alert('Prochain Bleu ? est réservé aux joueurs jamais appelés en A et classés sur des critères objectifs de forme et temps de jeu.'));
     document.addEventListener('keydown',e=>{if(e.key==='Escape'){const top=$$('.modal-backdrop:not([hidden])').at(-1);if(top)closeModal(top.id);}});
   }
 
@@ -148,6 +147,7 @@
     const el=$('#bleusSpaceIndicator');window.addEventListener('bleus:space',e=>{if(el)el.querySelector('span:last-child').textContent=e.detail?.label||'Accueil · Veille France';});
   }
 
+  window.BLEUS3000_APP={openReferences,openTool,openModal,closeModal};
   function init(){renderDashboard();setupToolbar();setupSearch();setupEvents();loadSettings();initSpaceIndicator();document.body.classList.add('js-ready');}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();

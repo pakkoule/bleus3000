@@ -1,4 +1,4 @@
--- BLEUS 3000 V1.1.2
+-- BLEUS 3000 V1.1.4
 -- NOUVEAU PROJET SUPABASE UNIQUEMENT. À exécuter dans un projet dédié à Bleus 3000.
 
 create extension if not exists pgcrypto;
@@ -17,9 +17,13 @@ create table if not exists public.profiles (
 );
 
 create or replace function public.handle_new_user() returns trigger language plpgsql security definer set search_path=public as $$
+declare assigned_role text := 'user';
 begin
-  insert into public.profiles(id,email,first_name,username)
-  values(new.id,new.email,coalesce(new.raw_user_meta_data->>'first_name',''),coalesce(new.raw_user_meta_data->>'username',split_part(new.email,'@',1)))
+  -- Le tout premier compte Bleus 3000 devient SUPERADMIN. Le verrou évite un double bootstrap simultané.
+  perform pg_advisory_xact_lock(hashtext('bleus3000_first_superadmin'));
+  if not exists (select 1 from public.profiles) then assigned_role := 'superadmin'; end if;
+  insert into public.profiles(id,email,first_name,username,role)
+  values(new.id,new.email,coalesce(new.raw_user_meta_data->>'first_name',''),coalesce(new.raw_user_meta_data->>'username',split_part(new.email,'@',1)),assigned_role)
   on conflict(id) do nothing;
   return new;
 end $$;
@@ -321,3 +325,91 @@ DO $$ begin
   if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='member_wall_posts') then alter publication supabase_realtime add table public.member_wall_posts; end if;
   if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='member_wall_likes') then alter publication supabase_realtime add table public.member_wall_likes; end if;
 exception when undefined_object then null; end $$;
+
+
+-- V1.1.4 — catalogue global Tags & Étiquettes + liaisons génériques aux tuiles
+create table if not exists public.tags (
+  id uuid primary key default gen_random_uuid(),
+  slug text not null unique,
+  kind text not null default 'tag' check (kind in ('tag','label')),
+  label_text text not null check (char_length(label_text) between 1 and 40),
+  icon_text text not null default '🏷️',
+  aliases text[] not null default '{}',
+  appearance text not null default 'gradient' check (appearance in ('solid','gradient')),
+  color_start text not null default '#2563EB',
+  color_end text not null default '#0EA5C6',
+  text_color text not null default '#FFFFFF',
+  border_color text not null default '#1E4FA7',
+  gradient_angle int not null default 135 check (gradient_angle between 0 and 360),
+  border_radius int not null default 8 check (border_radius between 0 and 32),
+  border_width int not null default 1 check (border_width between 0 and 6),
+  created_by uuid references public.profiles(id) on delete set null,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create table if not exists public.entity_tags (
+  entity_type text not null,
+  entity_id uuid not null,
+  tag_id uuid not null references public.tags(id) on delete cascade,
+  added_by uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  primary key(entity_type,entity_id,tag_id)
+);
+
+drop trigger if exists tags_touch on public.tags;
+create trigger tags_touch before update on public.tags for each row execute function public.touch_updated_at();
+alter table public.tags enable row level security;
+alter table public.entity_tags enable row level security;
+
+drop policy if exists tags_read on public.tags;
+drop policy if exists tags_insert on public.tags;
+drop policy if exists tags_update on public.tags;
+drop policy if exists tags_delete on public.tags;
+drop policy if exists entity_tags_read on public.entity_tags;
+drop policy if exists entity_tags_write on public.entity_tags;
+create policy tags_read on public.tags for select to anon,authenticated using (is_active=true);
+create policy tags_insert on public.tags for insert to authenticated with check (public.can_contribute() and created_by=auth.uid());
+create policy tags_update on public.tags for update to authenticated using (created_by=auth.uid() or public.can_edit()) with check (created_by=auth.uid() or public.can_edit());
+create policy tags_delete on public.tags for delete to authenticated using (created_by=auth.uid() or public.can_edit());
+create policy entity_tags_read on public.entity_tags for select to anon,authenticated using (true);
+create policy entity_tags_write on public.entity_tags for all to authenticated using (public.can_contribute()) with check (public.can_contribute());
+
+create index if not exists tags_created_by_idx on public.tags(created_by);
+create index if not exists entity_tags_tag_id_idx on public.entity_tags(tag_id);
+create index if not exists entity_tags_entity_idx on public.entity_tags(entity_type,entity_id);
+
+-- V1.1.5 — icônes personnalisées pour tags/étiquettes
+alter table public.tags add column if not exists icon_image_path text;
+insert into storage.buckets (id,name,public,file_size_limit,allowed_mime_types)
+values ('tag-icons','tag-icons',true,524288,array['image/webp','image/png','image/jpeg']::text[])
+on conflict (id) do update set public=true,file_size_limit=excluded.file_size_limit,allowed_mime_types=excluded.allowed_mime_types;
+drop policy if exists tag_icons_insert on storage.objects;
+drop policy if exists tag_icons_update on storage.objects;
+drop policy if exists tag_icons_delete on storage.objects;
+create policy tag_icons_insert on storage.objects for insert to authenticated
+with check(bucket_id='tag-icons' and public.can_contribute() and (storage.foldername(name))[1]=auth.uid()::text);
+create policy tag_icons_update on storage.objects for update to authenticated
+using(bucket_id='tag-icons' and (owner=auth.uid() or public.can_edit()))
+with check(bucket_id='tag-icons' and (owner=auth.uid() or public.can_edit()));
+create policy tag_icons_delete on storage.objects for delete to authenticated
+using(bucket_id='tag-icons' and (owner=auth.uid() or public.can_edit()));
+
+-- V1.1.15 — Tags ↔ Référentiels
+create table if not exists public.tag_reference_links (
+  id uuid primary key default gen_random_uuid(),
+  tag_id uuid not null references public.tags(id) on delete cascade,
+  reference_type text not null check (reference_type in ('selection','competition','opponent','place','personnel','equipment','bibliography','match','callup')),
+  reference_id uuid not null,
+  relation_kind text not null default 'membership' check (relation_kind in ('membership','status','topic')),
+  created_by uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  unique(tag_id,reference_type,reference_id,relation_kind)
+);
+alter table public.tag_reference_links enable row level security;
+drop policy if exists tag_reference_links_read on public.tag_reference_links;
+drop policy if exists tag_reference_links_write on public.tag_reference_links;
+create policy tag_reference_links_read on public.tag_reference_links for select to anon,authenticated using(true);
+create policy tag_reference_links_write on public.tag_reference_links for all to authenticated using(public.can_contribute()) with check(public.can_contribute());
+create index if not exists tag_reference_links_tag_idx on public.tag_reference_links(tag_id);
+create index if not exists tag_reference_links_ref_idx on public.tag_reference_links(reference_type,reference_id,relation_kind);

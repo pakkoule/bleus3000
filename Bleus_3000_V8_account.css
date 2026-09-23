@@ -73,3 +73,28 @@ body.ultra-compact-density .c3k-top-left-rail{top:54px;left:6px}
 .header-left-tools .c3k-v8-account-shell{position:relative!important;inset:auto!important;top:auto!important;left:auto!important;width:100%!important;margin:0!important}
 .header-left-tools .c3k-profile-shortcuts{position:relative!important;inset:auto!important;width:100%!important;margin:0!important}
 @media(max-width:680px){.header-left-tools .c3k-top-left-rail{width:100%!important;margin:0!important}.header-left-tools .c3k-v8-account-shell{width:100%!important;margin:0!important}}
+
+
+/* V1.1.3 — icônes compte et action alignées */
+.c3k-v8-account-actions.has-notify{
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr) 31px!important;
+}
+.c3k-v8-account-btn .c3k-ui-icon,
+.c3k-v8-notify-btn .c3k-ui-icon{
+  display:block;
+  width:13px!important;
+  height:13px!important;
+  min-width:13px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.8;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.c3k-v8-notify-btn .c3k-ui-icon{width:14px!important;height:14px!important}
+.header-left-tools .c3k-v8-account-shell{padding:6px!important;box-shadow:0 5px 16px rgba(9,25,52,.12)}
+.header-left-tools .c3k-v8-account-actions{align-items:center}
+.header-left-tools .c3k-v8-account-btn,
+.header-left-tools .c3k-v8-signup-shortcut,
+.header-left-tools .c3k-v8-notify-btn{height:31px;min-height:31px}
+.header-left-tools .c3k-v8-presence{height:31px;min-height:31px}
