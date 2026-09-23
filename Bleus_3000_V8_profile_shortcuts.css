@@ -1,0 +1,37 @@
+/* Bleus 3000 V9.0.1.2.11.1 — raccourcis favoris du profil */
+.c3k-profile-shortcuts{
+  position:absolute;z-index:155;display:grid;grid-template-columns:repeat(var(--c3k-shortcut-count,3),minmax(0,1fr));
+  gap:5px;padding:5px;box-sizing:border-box;overflow:visible;
+  background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(247,243,235,.97));
+  border:1px solid rgba(37,99,235,.31);border-radius:var(--c3k-radius-md,10px);
+  box-shadow:var(--c3k-shadow-sm,0 3px 10px rgba(29,24,17,.10));
+  -webkit-backdrop-filter:blur(9px) saturate(112%);backdrop-filter:blur(9px) saturate(112%);
+}
+.c3k-profile-shortcuts[hidden]{display:none!important}
+.c3k-profile-shortcuts[data-count="1"]{--c3k-shortcut-count:1}
+.c3k-profile-shortcuts[data-count="2"]{--c3k-shortcut-count:2}
+.c3k-profile-shortcuts[data-count="3"]{--c3k-shortcut-count:3}
+.c3k-profile-shortcut{
+  position:relative;min-width:0;height:58px;padding:5px 3px 4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;overflow:visible;
+  border:1px solid rgba(110,95,58,.58);border-radius:8px;
+  background:linear-gradient(180deg,#a5905d 0%,#2563eb 100%);color:#fff;cursor:pointer;
+  box-shadow:0 4px 10px rgba(66,54,31,.13),inset 0 1px 0 rgba(255,255,255,.20);
+  transition:transform .14s ease,filter .14s ease,box-shadow .14s ease;
+}
+.c3k-profile-shortcut:hover,.c3k-profile-shortcut:focus-visible{transform:translateY(-1px);filter:brightness(1.06);box-shadow:0 6px 14px rgba(66,54,31,.18),inset 0 1px 0 rgba(255,255,255,.24)}
+.c3k-profile-shortcut:focus-visible{outline:2px solid rgba(37,99,235,.5);outline-offset:2px}
+.c3k-profile-shortcut-icon{display:flex;align-items:center;justify-content:center;width:34px;height:34px;color:#fffdf6;filter:drop-shadow(0 1px 0 rgba(70,57,31,.22))}
+.c3k-profile-shortcut-icon svg,.c3k-profile-shortcut-icon .c3k-icon,.c3k-profile-shortcut-icon .c3k-ui-icon,.c3k-profile-shortcut-icon .vat-eu-home-emblem,.c3k-profile-shortcut-icon .vat-eu-home-emblem svg{width:28px!important;height:28px!important;color:inherit!important;stroke:currentColor}
+.c3k-profile-shortcut-tooltip{position:absolute;left:50%;top:calc(100% + 7px);transform:translate(-50%,-5px);z-index:7;min-width:max-content;max-width:132px;padding:6px 8px;border:1px solid rgba(37,99,235,.34);border-radius:8px;background:rgba(255,250,240,.98);box-shadow:0 6px 16px rgba(45,34,18,.16);color:#5f5238;font-size:8px;font-weight:900;letter-spacing:.015em;line-height:1.2;text-align:center;white-space:normal;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .14s ease,transform .14s ease,visibility .14s ease}
+.c3k-profile-shortcut:hover .c3k-profile-shortcut-tooltip,.c3k-profile-shortcut:focus-visible .c3k-profile-shortcut-tooltip{opacity:1;visibility:visible;transform:translate(-50%,0)}
+.c3k-profile-shortcut-star{position:absolute;right:4px;top:3px;font-size:6px;line-height:1;color:#fff2bb;opacity:.9}
+.c3k-shortcut-pref-intro{margin:0 0 10px;padding:8px 9px;border:1px solid #e4ded2;border-radius:8px;background:#faf8f3;color:#756a58;font-size:9px;line-height:1.45}
+.c3k-shortcut-pref-grid{display:grid;gap:8px}
+.c3k-shortcut-pref-grid label{display:grid;gap:4px;font-size:9px;font-weight:850;color:#655b4d}
+.c3k-shortcut-pref-grid select{width:100%;min-height:35px;border:1px solid #d9d3c8;border-radius:8px;background:#fff;color:#312b22;padding:6px 9px;font-size:10px;font-weight:750}
+.c3k-shortcut-pref-grid select option:disabled{color:#b8b2a7}
+@media(max-width:680px){.c3k-profile-shortcuts{z-index:43}.c3k-profile-shortcut{height:54px}.c3k-profile-shortcut-tooltip{max-width:112px;font-size:7.4px;padding:5px 7px}}
+
+
+/* V9.0.1.2.11.1 — les favoris appartiennent exclusivement à la colonne droite */
+.c3k-profile-shortcuts{z-index:159!important}
