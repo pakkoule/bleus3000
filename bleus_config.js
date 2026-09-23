@@ -3,6 +3,6 @@
 window.BLEUS3000_CONFIG = {
   SUPABASE_URL: 'https://hwhydccoslslfqqhmirj.supabase.co',
   SUPABASE_ANON_KEY: 'sb_publishable_KZC8Kp0q748L9URdgOnw0A_HwRI-Sug',
-  PRODUCTION_URL: '',
+  PRODUCTION_URL: 'https://bleus3000.netlify.app/',
   API_FOOTBALL_PROXY: '/api/football'
 };
