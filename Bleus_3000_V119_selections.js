@@ -1,4 +1,4 @@
-/* Bleus 3000 V1.1.15 — Référentiel Sélections · poste + tags équipe */
+/* Bleus 3000 V1.1.17 — Référentiel Sélections · France A M/F + compteurs dynamiques */
 (() => {
   'use strict';
   const $=(s,p=document)=>p.querySelector(s), $$=(s,p=document)=>[...p.querySelectorAll(s)];
@@ -7,7 +7,7 @@
   const role=()=>window.C3K_ACCOUNT_STATE?.profile?.role||'guest';
   const canEdit=()=>['contributor','admin','superadmin'].includes(role());
   const cfg=window.BLEUS3000_CONFIG||{};
-  let client=null,teams=[],borders=new Map(),rows=[],selectedCode='FRA-A-M',query='',page=1,pageSize=60,loading=false,tags=[],tagReferenceLinks=[];
+  let client=null,teams=[],teamCounts=new Map(),borders=new Map(),rows=[],selectedCode='FRA-A-M',query='',page=1,pageSize=60,loading=false,tags=[],tagReferenceLinks=[];
   let sortKey='selections',sortDir='desc',jerseyFilter='',tagFilter='';
   let currentEditor=null,pendingPhoto=null,pendingPhotoPreview='',pendingJerseyNumbers=[];
 
@@ -44,13 +44,14 @@
 
   async function loadTeams(){
     if(!client)await waitClient();if(!client)return;
-    const [{data:t,error:te},{data:b,error:be},{data:tg,error:tge},{data:trl,error:trle}]=await Promise.all([
+    const [{data:t,error:te},{data:b,error:be},{data:tg,error:tge},{data:trl,error:trle},{data:tc,error:tce}]=await Promise.all([
       client.from('selection_teams').select('*').eq('active',true).order('sort_order'),
       client.from('selection_photo_borders').select('*'),
       client.from('tags').select('*').eq('is_active',true).order('label_text'),
-      client.from('tag_reference_links').select('tag_id,reference_type,reference_id,relation_kind').eq('reference_type','selection')
+      client.from('tag_reference_links').select('tag_id,reference_type,reference_id,relation_kind').eq('reference_type','selection'),
+      client.from('selection_team_counts').select('selection_id,player_count')
     ]);
-    if(te)throw new Error('Sélections · '+te.message);if(be)throw be;if(tge)throw tge;if(trle)throw trle;teams=t||[];borders=new Map((b||[]).map(x=>[x.selection_id,x]));tags=tg||[];tagReferenceLinks=trl||[];
+    if(te)throw new Error('Sélections · '+te.message);if(be)throw be;if(tge)throw tge;if(trle)throw trle;if(tce)throw tce;teams=t||[];teamCounts=new Map((tc||[]).map(x=>[x.selection_id,Number(x.player_count||0)]));borders=new Map((b||[]).map(x=>[x.selection_id,x]));tags=tg||[];tagReferenceLinks=trl||[];
   }
   async function loadRows(code=selectedCode){
     if(!client)await waitClient();if(!client)return [];
@@ -68,7 +69,7 @@
 
   function renderCategoryTabs(){
     const host=$('#selectionCategoryTabs');if(!host)return;host.hidden=false;
-    host.innerHTML=teams.map(t=>`<button type="button" class="selection-category-tab ${t.code===selectedCode?'is-active':''}" data-selection-code="${esc(t.code)}"><span>${t.gender==='F'?'♀':'♂'}</span><strong>${esc(t.name.replace(/^France\s*/,''))}</strong>${t.code==='FRA-A-M'?'<small>949</small>':''}</button>`).join('');
+    host.innerHTML=teams.map(t=>{const count=teamCounts.get(t.id)||0;return `<button type="button" class="selection-category-tab ${t.code===selectedCode?'is-active':''}" data-selection-code="${esc(t.code)}"><span>${t.gender==='F'?'♀':'♂'}</span><strong>${esc(t.name.replace(/^France\s*/,''))}</strong>${count?`<small>${count}</small>`:''}</button>`;}).join('');
     $$('[data-selection-code]',host).forEach(b=>b.addEventListener('click',async()=>{selectedCode=b.dataset.selectionCode;page=1;rows=[];jerseyFilter='';tagFilter='';renderLoading();await loadRows();render(query);}));
   }
   function renderLoading(){const host=$('#referenceEntries');if(host)host.innerHTML='<div class="selection-loading">Chargement du référentiel…</div>';}

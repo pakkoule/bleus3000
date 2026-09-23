@@ -60,3 +60,7 @@ Les tags peuvent désormais être associés explicitement à une entrée du réf
 
 ## V1.1.16 — Numéros portés sur l’accueil
 La base joueurs affiche désormais une colonne **Numéros portés**. Les numéros sont composés avec les chiffres France 1998 en PNG transparents dans une capsule bleue compacte. L’affichage maillot complet reste réservé aux tuiles joueur du référentiel Sélections.
+
+
+## V1.1.17 — France A Féminine
+339 internationales France A féminine sont intégrées à Supabase et utilisent le tag existant INTERNATIONALE F. Le référentiel Sélections affiche désormais des compteurs dynamiques par catégorie.

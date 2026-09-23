@@ -1,8 +1,12 @@
-# Bleus 3000 — V1.1.16
+# Bleus 3000 — V1.1.17
 
-- Ajout de la colonne **Numéros portés** dans la base joueurs de l’accueil.
-- Affichage compact sous forme de capsules bleues à coins arrondis.
-- Utilisation des vrais chiffres France 1998 déjà extraits en PNG transparents, sans le dos de maillot.
-- Jusqu’à 4 numéros visibles puis compteur `+N`.
-- Les tuiles du référentiel Sélections conservent le rendu complet avec dos de maillot.
-- Aucune migration Supabase requise : réutilisation de `player_jersey_numbers`.
+## France A Féminine
+
+- Import Supabase de 339 internationales France A féminine depuis le référentiel fourni.
+- Utilisation du tag existant `INTERNATIONALE F` (aucun doublon créé).
+- Même moteur de tuiles/édition que France A Masculin.
+- Sélections et buts importés ; champs absents de la source laissés vides.
+- Première sélection, première convocation et qualité de source conservées en base.
+- Deux sources liées à chaque fiche : StatsFootFéminin et FFF.
+- Compteurs d'onglets Sélections désormais dynamiques.
+- Les joueuses alimentent automatiquement la base globale et le registre XI/Five/Liste.

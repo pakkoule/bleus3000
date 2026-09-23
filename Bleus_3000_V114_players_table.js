@@ -1,4 +1,4 @@
-/* Bleus 3000 V1.1.16 — Base globale joueurs · capsules numéros */
+/* Bleus 3000 V1.1.17 — Base globale joueurs · capsules numéros */
 (() => {
   'use strict';
   const $=(s,p=document)=>p.querySelector(s), $$=(s,p=document)=>[...p.querySelectorAll(s)];
