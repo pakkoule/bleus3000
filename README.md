@@ -104,3 +104,8 @@ Correction du surlignage des correspondances et ajout de variantes de recherche 
 
 ## V1.1.24 — moteur de recherche unifié
 Le moteur de recherche a été réécrit côté frontend uniquement. Aucun changement de schéma ou de données Supabase. Les recherches par prénom, nom, nom complet, préfixes et fautes légères utilisent désormais la même logique dans la base d’accueil, Sélections et la recherche universelle.
+
+
+## V1.1.25 — Accomplissements dans les fiches joueur
+
+Le mode modification d’une tuile joueur possède désormais un sélecteur d’accomplissement, un bouton `+ Ajouter`, un champ numérique facultatif et un retrait individuel. Les choix proviennent du catalogue d’accomplissements affiliés au référentiel Sélections.

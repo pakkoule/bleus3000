@@ -282,3 +282,23 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .players-db-name-hit.is-fuzzy{background:linear-gradient(180deg,transparent 10%,#d8eaff 10%,#d8eaff 94%,transparent 94%);outline:0}
 .selection-player-tile.is-search-target{animation:b3k-player-search-target 1.8s ease}
 @keyframes b3k-player-search-target{0%,100%{box-shadow:0 0 0 0 rgba(47,109,255,0)}20%{box-shadow:0 0 0 4px rgba(47,109,255,.28)}55%{box-shadow:0 0 0 3px rgba(14,165,198,.22)}}
+
+/* Bleus 3000 V1.1.25 — ajout d'accomplissements depuis la fiche joueur */
+.selection-editor-achievement-field{grid-column:1/-1;display:grid;gap:7px}
+.selection-editor-achievement-field>label{font-size:10px;font-weight:800;color:#244b7b}
+.selection-achievement-picker{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
+.selection-achievement-picker select{min-width:0;width:100%;padding:9px 10px;border:1px solid #c7d8ee;border-radius:9px;background:#fff;color:#173f73;font-weight:700}
+.selection-achievement-picker button{white-space:nowrap}
+.selection-achievements-editor{max-height:260px}
+.selection-achievement-editor-row.is-assigned{grid-template-columns:48px minmax(0,1fr) 90px 30px!important;position:relative}
+.selection-achievement-editor-name{display:grid!important;grid-template-columns:1fr!important}
+.selection-achievement-editor-name small{grid-column:auto!important}
+.selection-achievement-remove{width:28px;height:28px;border:1px solid #bdd0ea;border-radius:8px;background:#eef5ff;color:#1752a2;font-size:18px;font-weight:800;line-height:1;cursor:pointer;display:grid;place-items:center}
+.selection-achievement-remove:hover{background:#dfeaff;border-color:#90b5e7}
+.selection-editor-achievement-field>small{font-size:8px;color:#7387a0;font-weight:500}
+@media(max-width:760px){
+  .selection-achievement-picker{grid-template-columns:1fr}
+  .selection-achievement-editor-row.is-assigned{grid-template-columns:44px minmax(0,1fr) 28px!important}
+  .selection-achievement-value-label{grid-column:2!important}
+  .selection-achievement-remove{grid-column:3;grid-row:1}
+}
