@@ -233,3 +233,32 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .players-db-jersey-more{display:inline-grid;place-items:center;flex:0 0 auto;min-width:29px;height:27px;padding:0 6px;border-radius:9px;background:#dfeaff;border:1px solid #b9cff4;color:#194d9b;font-size:9px;font-weight:900}
 .players-db-jersey-empty{color:#8a98ab;font-size:11px;font-weight:700}
 @media(max-width:980px){.players-db-table{min-width:940px}}
+
+/* V1.1.18 — accomplissement Capitanat */
+.selection-achievements-field{min-height:66px;overflow:visible}
+.selection-achievements-slot{display:flex;align-items:center;gap:6px;min-height:46px;overflow:visible}
+.selection-achievement-badge{position:relative;display:inline-grid;place-items:center;flex:0 0 auto;width:40px;height:40px;overflow:visible}
+.selection-achievement-badge>img{display:block;width:40px;height:40px;object-fit:contain}
+.selection-achievement-fallback{display:grid;place-items:center;width:40px;height:40px;font-size:22px}
+.selection-achievement-count{position:absolute;z-index:3;top:-7px;right:-8px;min-width:25px;height:17px;padding:0 5px;display:grid;place-items:center;border-radius:999px;background:linear-gradient(135deg,#061632 0%,#173d74 52%,#0a234b 100%);border:1px solid #071a38;color:#fff;font-size:8px!important;font-weight:900;line-height:1;box-shadow:0 2px 5px rgba(5,21,47,.22),inset 0 1px 0 rgba(255,255,255,.18);white-space:nowrap}
+.selection-achievement-empty{font-size:10px;color:#7c8da3}
+.selection-achievements-editor{display:grid;gap:8px;font-size:10px;font-weight:500;color:#4d6685;border:1px dashed #cbd9e9;border-radius:9px;padding:9px;background:#fbfdff;max-height:220px;overflow:auto}
+.selection-achievement-editor-row{display:grid!important;grid-template-columns:48px minmax(0,1fr) 90px!important;align-items:center;gap:10px!important;padding:8px!important;border:1px solid #d8e4f1;border-radius:10px;background:#fff}
+.selection-achievement-editor-icon{display:grid;place-items:center;min-height:44px}
+.selection-achievement-editor-name{display:grid;grid-template-columns:auto 1fr;align-items:center;column-gap:6px;row-gap:2px;color:#183c69}
+.selection-achievement-editor-name input{width:auto!important}
+.selection-achievement-editor-name strong{font-size:10px}
+.selection-achievement-editor-name small{grid-column:1/-1;color:#768aa4;font-size:8px;font-weight:500}
+.selection-achievement-value-label{display:grid!important;gap:4px!important;font-size:8px!important;color:#617895!important}
+.selection-achievement-value-label input{width:100%!important;min-width:0!important;padding:7px!important;text-align:center;font-weight:800;color:#123b72}
+.selection-achievement-value-label input:disabled{opacity:.45;background:#eef3f8}
+@media(max-width:760px){.selection-achievement-editor-row{grid-template-columns:44px minmax(0,1fr)!important}.selection-achievement-value-label{grid-column:2}}
+
+/* V1.1.19 — accomplissements corrigés + postes multiples */
+.selection-achievements-field{min-height:72px!important;overflow:visible!important}
+.selection-achievements-slot{display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:8px!important;min-height:52px!important;padding-top:4px;overflow:visible!important;white-space:normal!important}
+.selection-linked-fields .selection-achievements-slot .selection-achievement-badge{position:relative!important;display:inline-grid!important;place-items:center!important;flex:0 0 40px!important;width:40px!important;height:40px!important;overflow:visible!important;white-space:normal!important;text-overflow:clip!important}
+.selection-linked-fields .selection-achievements-slot .selection-achievement-badge>img{display:block!important;width:auto!important;height:auto!important;max-width:40px!important;max-height:40px!important;object-fit:contain!important;overflow:visible!important}
+.selection-linked-fields .selection-achievements-slot .selection-achievement-count{display:grid!important;position:absolute!important;z-index:5!important;top:-6px!important;right:-8px!important;min-width:26px!important;height:17px!important;padding:0 5px!important;overflow:visible!important;border-radius:999px!important;color:#fff!important;font-size:8px!important;font-weight:900!important;line-height:1!important;background:linear-gradient(135deg,#07172f 0%,#173e73 55%,#0a244d 100%)!important;border:1px solid #06162e!important;box-shadow:0 2px 5px rgba(5,21,47,.22),inset 0 1px 0 rgba(255,255,255,.16)!important}
+.selection-player-tile footer{justify-content:flex-end}.selection-player-tile footer:has(.contributors:empty){display:none}
+.selection-editor-positions-label{grid-column:1/-1!important}.selection-position-checks{display:flex;flex-wrap:wrap;gap:6px;border:1px solid #cbd9e9;border-radius:9px;padding:8px;background:#fbfdff}.selection-position-check{display:flex!important;align-items:center;gap:4px;padding:5px 8px!important;border-radius:999px;background:#eff5fc;color:#31577f;font-size:9px!important;font-weight:750!important;cursor:pointer}.selection-position-check input{width:auto!important;margin:0}.selection-editor-positions-label>small{margin-top:4px;font-size:8px;color:#7387a0;font-weight:500}.selection-position{line-height:1.35}

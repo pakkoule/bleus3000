@@ -64,3 +64,26 @@ La base joueurs affiche désormais une colonne **Numéros portés**. Les numéro
 
 ## V1.1.17 — France A Féminine
 339 internationales France A féminine sont intégrées à Supabase et utilisent le tag existant INTERNATIONALE F. Le référentiel Sélections affiche désormais des compteurs dynamiques par catégorie.
+
+## V1.1.19 — Accomplissements · Capitanat
+- Ajout du premier accomplissement structuré : `Capitanat`.
+- Icône brassard affichée dans les tuiles avec compteur optionnel `×N` en bulle bleu marine bichrome.
+- Sélection et saisie du nombre depuis l’éditeur de joueur.
+- Valeur enregistrée par joueur et par sélection dans `player_achievements`.
+
+
+## V1.1.19
+- correction du rendu des icônes d’accomplissements dans les tuiles ;
+- gestionnaire **Accomplissements** dans le menu Profil ;
+- import PNG/JPG/WebP, normalisation automatique sur canevas transparent 128×128 ;
+- affiliation d’un accomplissement à un ou plusieurs référentiels ;
+- prise en charge de plusieurs postes par joueur (`primary_position` + `secondary_positions`) ;
+- filtre Poste de l’accueil compatible avec les postes secondaires ;
+- suppression de l’icône Sources en haut des tuiles et de la ligne Source en pied de tuile.
+
+
+## V1.1.20 — France A Féminine enrichie
+- 339/339 joueuses avec Victoires, Nuls et Défaites issus du référentiel V2.
+- 51 associations de numéros de maillot observés pour 44 joueuses.
+- 4 capitanats vérifiés dans l’échantillon fourni, enregistrés comme minimum vérifié non exhaustif.
+- Les 12 écarts entre le compteur de sélections V1 et la source V/N/D sont conservés et tracés via `vnd_source_selections` / `vnd_coherence`, sans écraser la valeur V1.

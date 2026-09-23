@@ -1,12 +1,5 @@
-# Bleus 3000 — V1.1.17
+# Bleus 3000 — V1.1.20
 
-## France A Féminine
+France A Féminine : ajout des bilans Victoires / Nuls / Défaites pour 339 joueuses, des numéros de maillot observés et des capitanats vérifiés disponibles dans le référentiel V2.
 
-- Import Supabase de 339 internationales France A féminine depuis le référentiel fourni.
-- Utilisation du tag existant `INTERNATIONALE F` (aucun doublon créé).
-- Même moteur de tuiles/édition que France A Masculin.
-- Sélections et buts importés ; champs absents de la source laissés vides.
-- Première sélection, première convocation et qualité de source conservées en base.
-- Deux sources liées à chaque fiche : StatsFootFéminin et FFF.
-- Compteurs d'onglets Sélections désormais dynamiques.
-- Les joueuses alimentent automatiquement la base globale et le registre XI/Five/Liste.
+Les numéros et capitanats restent marqués comme reconstruction partielle vérifiée / non exhaustive conformément à la source fournie.

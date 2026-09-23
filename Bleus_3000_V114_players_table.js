@@ -1,4 +1,4 @@
-/* Bleus 3000 V1.1.17 — Base globale joueurs · capsules numéros */
+/* Bleus 3000 V1.1.19 — Base globale joueurs · postes multiples */
 (() => {
   'use strict';
   const $=(s,p=document)=>p.querySelector(s), $$=(s,p=document)=>[...p.querySelectorAll(s)];
@@ -17,7 +17,7 @@
   async function fetchAllStats(){
     const out=[];let from=0;const chunk=1000;
     while(true){
-      const {data,error}=await client.from('player_selection_stats').select(`player_id,selection_id,appearance_status,selections,international_number,player:players!player_selection_stats_player_id_fkey(id,display_name,last_name,primary_position,birth_date,photo_path,gender)`).range(from,from+chunk-1);
+      const {data,error}=await client.from('player_selection_stats').select(`player_id,selection_id,appearance_status,selections,international_number,player:players!player_selection_stats_player_id_fkey(id,display_name,last_name,primary_position,secondary_positions,birth_date,photo_path,gender)`).range(from,from+chunk-1);
       if(error)throw error;const rows=data||[];out.push(...rows);if(rows.length<chunk)break;from+=chunk;
     }
     return out;
@@ -39,7 +39,7 @@
     for(const row of stats){
       const p=row.player||{};if(!p.id)continue;
       let item=map.get(p.id);
-      if(!item){item={id:p.id,name:p.display_name||'Joueur',last_name:p.last_name||p.display_name||'',position:p.primary_position||'',birth_date:p.birth_date||null,gender:p.gender||'',photo_path:p.photo_path||null,teams:[]};map.set(p.id,item);}
+      if(!item){item={id:p.id,name:p.display_name||'Joueur',last_name:p.last_name||p.display_name||'',position:p.primary_position||'',positions:[...new Set([p.primary_position,...(p.secondary_positions||[])].filter(Boolean))],birth_date:p.birth_date||null,gender:p.gender||'',photo_path:p.photo_path||null,teams:[]};map.set(p.id,item);}
       const team=teamMap.get(row.selection_id);if(team&&!item.teams.some(x=>x.id===team.id))item.teams.push({...team,appearance_status:row.appearance_status,international_number:row.international_number,selections:row.selections});
     }
     players=[...map.values()];
@@ -74,7 +74,7 @@
 
   function buildFilters(){
     const pos=$('#playersDbPositionFilter'),team=$('#playersDbTeamFilter');if(!pos||!team)return;
-    const positions=[...new Set(players.map(p=>p.position).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fr',{sensitivity:'base'}));
+    const positions=[...new Set(players.flatMap(p=>p.positions||[]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fr',{sensitivity:'base'}));
     pos.innerHTML='<option value="">Tous les postes</option>'+positions.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');
     const linked=[...new Map(tagLinks.map(l=>{const tag=tags.get(l.tag_id),tm=teams.find(t=>t.id===l.reference_id);return [l.tag_id,{...l,tag,team:tm}]})).values()].filter(x=>x.tag&&x.team).sort((a,b)=>(a.team.sort_order||999)-(b.team.sort_order||999)||String(a.tag.label_text).localeCompare(String(b.tag.label_text),'fr'));
     team.innerHTML='<option value="">Tous les tags équipes</option>'+linked.map(x=>`<option value="${esc(x.tag.id)}">${esc(x.tag.label_text)} · ${esc(x.team.name)}${x.relation_kind==='status'?' · statut':''}</option>`).join('');
@@ -82,7 +82,7 @@
   }
 
   function publishRegistry(){
-    const reg=players.map(p=>({id:p.id,name:p.name,display_name:p.name,position:p.position||'',international_number:p.teams.find(t=>t.code==='FRA-A-M')?.international_number||null,selection_code:p.teams[0]?.code||'',selection_names:p.teams.map(t=>t.name),team_codes:p.teams.map(t=>t.code),team_tag_ids:(p.teamTags||[]).map(x=>x.tag.id),team_tag_labels:(p.teamTags||[]).map(x=>x.tag.label_text),jersey_numbers:p.jerseyNumbers||[],birth_date:p.birth_date,photo_path:p.photo_path})).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
+    const reg=players.map(p=>({id:p.id,name:p.name,display_name:p.name,position:p.position||'',positions:p.positions||[],international_number:p.teams.find(t=>t.code==='FRA-A-M')?.international_number||null,selection_code:p.teams[0]?.code||'',selection_names:p.teams.map(t=>t.name),team_codes:p.teams.map(t=>t.code),team_tag_ids:(p.teamTags||[]).map(x=>x.tag.id),team_tag_labels:(p.teamTags||[]).map(x=>x.tag.label_text),jersey_numbers:p.jerseyNumbers||[],birth_date:p.birth_date,photo_path:p.photo_path})).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
     window.BLEUS3000_PLAYER_REGISTRY_ALL=reg;
     window.BLEUS3000_PLAYER_REGISTRY=reg;
     window.dispatchEvent(new CustomEvent('bleus:player-registry',{detail:{players:reg,scope:'all-selections'}}));
@@ -117,9 +117,9 @@
   function apply(){
     const q=norm(search);
     filtered=players.filter(p=>{
-      if(positionFilter&&p.position!==positionFilter)return false;
+      if(positionFilter&&!(p.positions||[]).includes(positionFilter))return false;
       if(teamFilter&&!(p.teamTags||[]).some(x=>x.tag.id===teamFilter))return false;
-      if(q){const hay=norm([p.name,p.last_name,p.position,...p.teams.map(t=>t.name),...(p.teamTags||[]).map(x=>x.tag.label_text),...(p.teamTags||[]).flatMap(x=>x.tag.aliases||[])].join(' '));if(!hay.includes(q))return false;}
+      if(q){const hay=norm([p.name,p.last_name,...(p.positions||[]),...p.teams.map(t=>t.name),...(p.teamTags||[]).map(x=>x.tag.label_text),...(p.teamTags||[]).flatMap(x=>x.tag.aliases||[])].join(' '));if(!hay.includes(q))return false;}
       return true;
     }).sort(compare);
     const pages=Math.max(1,Math.ceil(filtered.length/pageSize));if(page>pages)page=pages;if(page<1)page=1;render();
@@ -131,7 +131,7 @@
     const start=(page-1)*pageSize, rows=filtered.slice(start,start+pageSize);
     body.innerHTML=rows.length?rows.map(p=>`<tr data-global-player="${esc(p.id)}">
       <td><div class="players-db-player"><span class="players-db-player-marker">◆</span><span class="players-db-player-name">${esc(p.name)}</span><span class="players-db-player-meta">${p.gender==='F'?'F':'M'}</span></div></td>
-      <td><span class="players-db-position ${p.position?'':'is-empty'}">${esc(p.position||'Poste non renseigné')}</span></td>
+      <td><span class="players-db-position ${(p.positions||[]).length?'':'is-empty'}">${esc((p.positions||[]).join(' · ')||'Poste non renseigné')}</span></td>
       <td><div class="players-db-team-tags">${(p.teamTags||[]).length?(p.teamTags||[]).map(x=>tagChipHtml(x.tag)).join(''):p.teams.map(teamTagHtml).join('')}</div></td>
       <td><div class="players-db-jersey-capsules">${jerseyCapsulesHtml(p.jerseyNumbers)}</div></td>
       <td><button type="button" class="players-db-action" data-open-global-player="${esc(p.id)}" title="Ouvrir dans Sélections">⚙</button></td>
