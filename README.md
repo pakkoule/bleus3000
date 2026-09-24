@@ -144,3 +144,11 @@ Les onglets Matchs et Personnel & Officiels utilisent désormais les premières 
 
 ## V1.1.30 — Calendrier
 Le calendrier est alimenté par `public.matches` afin de ne jamais dupliquer le référentiel Matchs. L'accueil montre les prochains matchs et l'icône calendrier ouvre la liste complète. La synchronisation API-Football est fournie dans `netlify/functions/calendar-sync.js` et reste inactive tant que ses variables serveur et le mapping des IDs d'équipes ne sont pas configurés. Voir `CALENDRIER_V1.1.30.md`.
+
+
+## V1.1.31 — Mapping API-Football multi-ID
+`BLEUS_API_TEAM_MAP` accepte désormais une valeur numérique ou un tableau d'IDs API-Football. Exemple : `"FRA-ESP-M":[8194,16621]` pour ranger France U21 et France U23 sous le même référentiel Espoirs. Le backend Calendrier accepte également les nouvelles clés serveur Supabase `sb_secret_*`.
+
+
+## V1.1.32 — Diagnostic Netlify API-Football
+`calendar-sync` journalise uniquement la présence/validité des quatre variables requises. Aucune clé ni valeur secrète n’est écrite dans les logs. Le but est d’identifier immédiatement la variable Netlify manquante ou un JSON `BLEUS_API_TEAM_MAP` invalide.

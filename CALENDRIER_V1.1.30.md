@@ -21,3 +21,14 @@ La fonction ne modifie jamais un match `data_state='locked'`. Les champs éditor
 
 ## Suite prévue
 Le même `provider_fixture_id` servira à rattacher les lineups, joueurs et événements de but à `match_appearances` / `match_goal_events`, puis à recalculer les compteurs joueurs sans incréments fragiles.
+
+
+## Correctif V1.1.31 — plusieurs IDs API pour une sélection
+Le mapping peut contenir soit un ID simple, soit un tableau. Exemple :
+```json
+{
+  "FRA-A-M": 2,
+  "FRA-ESP-M": [8194,16621]
+}
+```
+Les deux IDs sont synchronisés vers la même sélection Bleus 3000. Les fixtures restent dédoublonnées grâce à `provider + provider_fixture_id`.
