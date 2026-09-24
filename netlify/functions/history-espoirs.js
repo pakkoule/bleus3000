@@ -1,4 +1,4 @@
-/* 3615 Bleus V1.1.43 — pilote historique TheSportsDB : France Espoirs / U21
+/* 3615 Bleus V1.1.45 — pilote historique TheSportsDB : Espoirs U21 + Olympique U23
    - lecture non destructive des saisons TheSportsDB
    - rattache les événements aux matchs déjà présents dans Supabase
    - complète uniquement les champs vides (score / stade / phase)
@@ -6,7 +6,7 @@
    - audite la disponibilité lineups / timeline / stats / TV / highlights sur un petit échantillon
 */
 const SPORTSDB='https://www.thesportsdb.com/api/v2/json';
-const TEAM_IDS=[136843,143161]; // France U21 + France U23, regroupés sous FRA-ESP-M
+const TEAM_IDS=[136843,143161]; // même référentiel FRA-ESP-M ; France U23 aux JO reçoit le tag OLYMPIQUE U23
 const LEAGUE_SEARCH_TERMS=[
   'UEFA European Under-21 Championship',
   'International Friendlies'
@@ -59,6 +59,7 @@ function remoteSide(e){
   if(TEAM_IDS.includes(away))return {home:false,franceId:away,oppId:home,oppName:e?.strHomeTeam};
   return null;
 }
+function isOlympicU23Event(e){const side=remoteSide(e);return Number(side?.franceId)===143161&&norm(e?.strLeague).includes('olympic');}
 function seasonStart(v){const m=String(v||'').match(/(19|20)\d{2}/);return m?Number(m[0]):null;}
 function dateDistanceDays(a,b){
   const x=Date.parse(`${a}T12:00:00Z`),y=Date.parse(`${b}T12:00:00Z`);
@@ -103,6 +104,7 @@ exports.handler=async()=>{
 
   const selection=(await sb('/selection_teams?code=eq.FRA-ESP-M&select=id,code,name,provider_ids&limit=1'))[0];
   if(!selection)return {statusCode:200,body:JSON.stringify({ok:false,error:'FRA-ESP-M introuvable'})};
+  const olympicTag=(await sb('/tags?slug=eq.olympique-u23&select=id,slug,label_text&limit=1').catch(()=>[]))[0]||null;
   const local=await sb(`/matches?selection_team_id=eq.${selection.id}&select=id,match_date,opponent_id,competition_id,place_id,france_score,opponent_score,status,phase,data_state,provider,provider_fixture_id,external_ids,api_payload,manual_overrides&order=match_date.asc&limit=5000`);
   const opponents=await sb('/opponents?select=id,name&limit=5000');
   const places=await sb('/places?select=id,name,city,country&limit=5000');
@@ -211,6 +213,9 @@ exports.handler=async()=>{
       patch.source_calendar_url=`https://www.thesportsdb.com/team/${side.franceId}`;
       patch.external_ids={...(localMatch.external_ids||{}),thesportsdb_event_id:String(e.idEvent),thesportsdb_team_id:String(side.franceId),thesportsdb_league_id:e.idLeague?String(e.idLeague):null};
       patch.api_payload={...(localMatch.api_payload||{}),thesportsdb_history:e};
+      if(olympicTag?.id&&isOlympicU23Event(e)&&!localMatch.manual_overrides?.selection_tag_id){
+        patch.manual_overrides={...(localMatch.manual_overrides||{}),selection_tag_id:olympicTag.id};
+      }
 
       const homeScore=toInt(e.intHomeScore),awayScore=toInt(e.intAwayScore);
       const frScore=side.home?homeScore:awayScore,opScore=side.home?awayScore:homeScore;
@@ -247,12 +252,13 @@ exports.handler=async()=>{
   },180);
 
   const unmatchedLocal=local.filter(m=>!matchedLocalIds.has(String(m.id)));
-  const samples=unmatchedRemote.slice(0,12).map(e=>({idEvent:String(e.idEvent),date:eventDateCandidates(e)[0]||null,event:e.strEvent||null,league:e.strLeague||null,season:e.strSeason||null}));
+  const olympicU23Candidates=unmatchedRemote.filter(isOlympicU23Event);
+  const samples=unmatchedRemote.slice(0,12).map(e=>({idEvent:String(e.idEvent),date:eventDateCandidates(e)[0]||null,event:e.strEvent||null,league:e.strLeague||null,season:e.strSeason||null,section_tag:isOlympicU23Event(e)?'OLYMPIQUE U23':null}));
   const summary={
     event:'3615bleus-history-espoirs',provider:'thesportsdb',mode:'safe-link-enrich',
     localMatches:local.length,teamIds:TEAM_IDS,leagueIds:[...leagueIds],seasonJobs:seasonJobs.length,seasonJobsFetched:cappedJobs.length,
     remoteEvents:remote.length,matched,attached,enrichedScores,enrichedVenues,enrichedPhase,locked,
-    unmatchedLocal:unmatchedLocal.length,unmatchedRemote:unmatchedRemote.length,unmatchedRemoteSamples:samples,
+    unmatchedLocal:unmatchedLocal.length,unmatchedRemote:unmatchedRemote.length,olympicU23Candidates:olympicU23Candidates.length,unmatchedRemoteSamples:samples,
     detail,apiRequests,apiErrors,dbErrors,
     note:'Aucun événement TheSportsDB sans correspondance locale n’est importé par ce pilote.'
   };
