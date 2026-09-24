@@ -38,7 +38,8 @@ exports.runCalendarSync=async({shard=0,shardCount=2,label='A'}={})=>{
     BLEUS_API_TEAM_MAP_entries:Object.keys(teamMap).length,
     api_team_ids_total:allEntries.length,
     api_team_ids_this_shard:shardEntries.length,
-    query_mode:'team+next=50'
+    query_mode:'team+season',
+    season:Number(process.env.API_FOOTBALL_SEASON||new Date().getUTCFullYear())
   };
   if(teamMapParseError) configStatus.BLEUS_API_TEAM_MAP_error=teamMapParseError;
   if(!footballKey||!supabaseUrl||!supabaseSecret||!allEntries.length){
@@ -77,11 +78,13 @@ exports.runCalendarSync=async({shard=0,shardCount=2,label='A'}={})=>{
     }catch(e){errors++;console.error('calendar-sync',selectionCode,'selection',e.message);continue;}
 
     try{
-      // API-Football accepte team + next pour le calendrier d'une équipe sans exiger season.
-      // L'ancienne combinaison team + from + to déclenchait "The Season field is required".
+      // Le plan Free n'autorise pas le paramètre `next`. En revanche, /fixtures accepte
+      // team + season. On récupère la saison courante puis on filtre localement les matchs
+      // à venir / en cours afin de ne pas dupliquer les matchs historiques déjà référencés.
+      const season=Number(process.env.API_FOOTBALL_SEASON||new Date().getUTCFullYear());
       const u=new URL(`${API}/fixtures`);
       u.searchParams.set('team',String(teamId));
-      u.searchParams.set('next','50');
+      u.searchParams.set('season',String(season));
       u.searchParams.set('timezone','Europe/Paris');
 
       apiRequests++;
@@ -90,9 +93,17 @@ exports.runCalendarSync=async({shard=0,shardCount=2,label='A'}={})=>{
       const apiErrors=data?.errors&&Object.keys(data.errors).length?data.errors:null;
       if(!ar.ok||apiErrors)throw new Error(JSON.stringify(apiErrors||data));
 
+      const now=Date.now();
+      const horizon=now+370*24*60*60*1000;
+      const liveStatuses=new Set(['1H','HT','2H','ET','BT','P','SUSP','INT','LIVE']);
       for(const x of data.response||[]){
         const f=x.fixture||{}, home=x.teams?.home||{}, away=x.teams?.away||{};
         if(!f.id)continue;
+        const kickoff=Date.parse(f.date||'');
+        const status=String(f.status?.short||'NS').toUpperCase();
+        const isLive=liveStatuses.has(status);
+        const isUpcoming=Number.isFinite(kickoff)&&kickoff>=now-12*60*60*1000&&kickoff<=horizon;
+        if(!isLive&&!isUpcoming)continue;
         const franceHome=Number(home.id)===teamId, franceAway=Number(away.id)===teamId;
         if(!franceHome&&!franceAway)continue;
 

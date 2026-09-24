@@ -154,8 +154,10 @@ Le calendrier est alimenté par `public.matches` afin de ne jamais dupliquer le 
 `calendar-sync` journalise uniquement la présence/validité des quatre variables requises. Aucune clé ni valeur secrète n’est écrite dans les logs. Le but est d’identifier immédiatement la variable Netlify manquante ou un JSON `BLEUS_API_TEAM_MAP` invalide.
 
 
-## V1.1.33 — Correctif API-Football calendrier + rate limit
-- `calendar-sync` utilise désormais `/fixtures?team=...&next=50` : aucun `season` n’est requis pour récupérer les prochains matchs d’une équipe.
-- Les 14 IDs API-Football sont divisés en deux groupes de 7 afin de respecter le plafond FREE de 10 requêtes/minute.
+## V1.1.34 — Correctif API-Football plan Free
+- Le plan gratuit n'autorise pas le paramètre `next`. La synchronisation utilise désormais `/fixtures?team=...&season=<année>`.
+- La saison utilisée par défaut est l'année courante ; une surcharge facultative `API_FOOTBALL_SEASON` reste possible.
+- Les fixtures reçues sont filtrées côté serveur pour ne conserver que les matchs à venir ou en cours, afin de ne pas dupliquer l'historique Bleus 3000.
+- Les 14 IDs API-Football restent divisés en deux groupes de 7 afin de respecter le plafond FREE de 10 requêtes/minute.
 - Deux Scheduled Functions : `calendar-sync` à minute 0 et `calendar-sync-b` à minute 2, toutes les 6 heures.
 - Pour un test manuel initial, lancer `calendar-sync`, attendre au moins 60 secondes, puis lancer `calendar-sync-b`.
