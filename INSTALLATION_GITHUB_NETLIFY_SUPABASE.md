@@ -1,4 +1,4 @@
-# Mise en ligne de Bleus 3000 V1.1.2
+# Mise en ligne de Bleus 3000 V1.1.35
 
 ## Ordre conseillé
 
@@ -42,7 +42,7 @@ window.BLEUS3000_CONFIG = {
   SUPABASE_URL: 'https://TON-PROJET.supabase.co',
   SUPABASE_ANON_KEY: 'TA_CLE_PUBLIQUE',
   PRODUCTION_URL: 'https://TON-SITE.netlify.app',
-  API_FOOTBALL_PROXY: '/api/football'
+  SPORTSDB_LIVE_PROXY: '/api/sportsdb-live'
 };
 ```
 
@@ -70,6 +70,18 @@ Une fois le site connecté à Supabase :
 
 Le compte sera alors `SUPERADMIN`. Ensuite, le registre administrateur peut attribuer les autres rôles depuis l'interface.
 
-## API-Football — plus tard
+## Calendrier TheSportsDB — V1.1.35
 
-Quand tu voudras activer les vraies données, dans Netlify : Project configuration > Environment variables, ajouter `API_FOOTBALL_KEY` avec la clé API-Football. Cette valeur est lue uniquement par `netlify/functions/football-api.js`.
+1. Exécuter `MIGRATION_V1.1.35_THESPORTSDB_CALENDRIER.sql` uniquement sur une installation neuve ou si la migration n’a pas encore été appliquée. Sur le projet Bleus 3000 actuel, elle est déjà appliquée.
+2. Dans **Netlify > Project configuration > Environment variables**, créer :
+   - `THESPORTSDB_KEY` → cocher **Contains secret values** ;
+   - `SUPABASE_SECRET_KEY` → cocher **Contains secret values** ;
+   - `SUPABASE_URL` → ne pas marquer secret ;
+   - facultatif : `BLEUS_SPORTSDB_TEAM_MAP` → mapping JSON non secret.
+3. Faire un nouveau deploy Netlify.
+4. Dans **Functions > calendar-sync**, lancer une seule fois **Run now** pour le premier import.
+5. Le cron fourni relance ensuite le sync toutes les 6 heures.
+
+`THESPORTSDB_KEY` doit rester exclusivement côté Netlify. Elle ne doit jamais être ajoutée à `bleus_config.js`, GitHub ou au code du navigateur.
+
+Les variables `API_FOOTBALL_KEY` et `BLEUS_API_TEAM_MAP` des versions précédentes peuvent être supprimées : elles ne sont plus lues.

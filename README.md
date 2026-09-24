@@ -1,4 +1,6 @@
-# Bleus 3000 V1.1.29
+# Bleus 3000 V1.1.35
+
+**Évolution principale : calendrier TheSportsDB + corrections éditoriales.** Un seul sync Netlify alimente les matchs futurs/récents, le live est affiché dans le calendrier, le référentiel Matchs est réparé et filtrable, et chaque champ API peut être corrigé manuellement sans bloquer la synchronisation des autres champs.
 
 Ajout du référentiel **France U17 Masculin 2004–2026** (376 joueurs), avec continuité des profils globaux, tag U17 Masculin existant et contexte GENERAL. Voir `MIGRATION_V1.1.29_U17_MASCULIN.sql`.
 
@@ -142,22 +144,18 @@ Les onglets Matchs et Personnel & Officiels utilisent désormais les premières 
 - Référentiels, sélections, filtres, éditeurs, outils XI/Five, mur des membres et présence optimisés pour le tactile.
 - Aucun blocage du zoom manuel : l’accessibilité navigateur est conservée.
 
-## V1.1.30 — Calendrier
-Le calendrier est alimenté par `public.matches` afin de ne jamais dupliquer le référentiel Matchs. L'accueil montre les prochains matchs et l'icône calendrier ouvre la liste complète. La synchronisation API-Football est fournie dans `netlify/functions/calendar-sync.js` et reste inactive tant que ses variables serveur et le mapping des IDs d'équipes ne sont pas configurés. Voir `CALENDRIER_V1.1.30.md`.
+## V1.1.35 — Calendrier TheSportsDB
+- API-Football retirée du calendrier ; TheSportsDB devient le fournisseur automatique.
+- Un seul `calendar-sync` et un seul **Run now** pour toutes les sélections mappées.
+- France U21 + France U23 sont réunies sous le référentiel/tag **Espoirs**.
+- Les 226 matchs Espoirs déjà présents dans `public.matches` alimentent maintenant aussi `Calendrier > Matchs passés`.
+- Référentiel Matchs réparé visuellement, dates françaises et grille pleine largeur.
+- Filtres Matchs : sélection, sexe, compétition, année et résultat.
+- Score live TheSportsDB dans le calendrier avec indicateur vert lumineux et minute/progression.
+- Diffusions TV TheSportsDB enrichies quand disponibles.
+- Correction manuelle **champ par champ** : une correction de stade, ville, date, score, adversaire, compétition ou diffusion reste prioritaire sur l’API ; les autres champs continuent à se synchroniser.
+- `data_state = locked` reste le verrouillage complet d’une ligne.
+- Migration : `MIGRATION_V1.1.35_THESPORTSDB_CALENDRIER.sql`.
+- Variables Netlify serveur : `THESPORTSDB_KEY`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`.
 
-
-## V1.1.31 — Mapping API-Football multi-ID
-`BLEUS_API_TEAM_MAP` accepte désormais une valeur numérique ou un tableau d'IDs API-Football. Exemple : `"FRA-ESP-M":[8194,16621]` pour ranger France U21 et France U23 sous le même référentiel Espoirs. Le backend Calendrier accepte également les nouvelles clés serveur Supabase `sb_secret_*`.
-
-
-## V1.1.32 — Diagnostic Netlify API-Football
-`calendar-sync` journalise uniquement la présence/validité des quatre variables requises. Aucune clé ni valeur secrète n’est écrite dans les logs. Le but est d’identifier immédiatement la variable Netlify manquante ou un JSON `BLEUS_API_TEAM_MAP` invalide.
-
-
-## V1.1.34 — Correctif API-Football plan Free
-- Le plan gratuit n'autorise pas le paramètre `next`. La synchronisation utilise désormais `/fixtures?team=...&season=<année>`.
-- La saison utilisée par défaut est l'année courante ; une surcharge facultative `API_FOOTBALL_SEASON` reste possible.
-- Les fixtures reçues sont filtrées côté serveur pour ne conserver que les matchs à venir ou en cours, afin de ne pas dupliquer l'historique Bleus 3000.
-- Les 14 IDs API-Football restent divisés en deux groupes de 7 afin de respecter le plafond FREE de 10 requêtes/minute.
-- Deux Scheduled Functions : `calendar-sync` à minute 0 et `calendar-sync-b` à minute 2, toutes les 6 heures.
-- Pour un test manuel initial, lancer `calendar-sync`, attendre au moins 60 secondes, puis lancer `calendar-sync-b`.
+Voir `CALENDRIER_V1.1.35_THESPORTSDB.md`.

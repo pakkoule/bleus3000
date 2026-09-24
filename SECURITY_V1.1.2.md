@@ -1,9 +1,7 @@
-# Bleus 3000 — sécurité V1.1.2
+# Sécurité complémentaire — V1.1.35
 
-- Projet Supabase obligatoirement distinct de Cotation 3000.
-- Identifiants Supabase absents par défaut du package.
-- RLS activé sur les tables applicatives.
-- Auto-promotion de rôle interdite côté client ; ADMIN/SUPERADMIN protégés côté base.
-- La clé API-Football reste uniquement dans une variable d'environnement Netlify et n'est jamais placée dans le navigateur.
-- Les messages du mur peuvent être supprimés par leur auteur ou l'administration ; aucun mécanisme d'épinglage n'est présent.
-- Les avatars membres ont été retirés du code, de la base et du package.
+- Ne jamais committer de fichier `.env` contenant des secrets.
+- Conserver le Secret Scanning Netlify activé.
+- `THESPORTSDB_KEY` et `SUPABASE_SECRET_KEY` doivent être marquées **Contains secret values** dans Netlify.
+- `SUPABASE_URL` et les mappings d'IDs ne doivent pas être marqués secrets afin d'éviter les faux positifs de Secret Scanning.
+- Les données TheSportsDB sont traitées comme une source externe : elles alimentent les champs source, tandis que `manual_overrides` permet de préserver les corrections Bleus 3000.

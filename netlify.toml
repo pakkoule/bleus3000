@@ -3,8 +3,8 @@
   functions = "netlify/functions"
 
 [[redirects]]
-  from = "/api/football"
-  to = "/.netlify/functions/football-api"
+  from = "/api/sportsdb-live"
+  to = "/.netlify/functions/sportsdb-live"
   status = 200
 
 [[redirects]]
@@ -12,10 +12,6 @@
   to = "/index.html"
   status = 200
 
-# API-Football FREE = 10 requêtes/minute.
-# Le mapping actuel représente 14 IDs API : deux shards de 7 évitent le 429.
+# Un seul synchroniseur : prochains + derniers matchs de toutes les sélections mappées.
 [functions."calendar-sync"]
   schedule = "0 */6 * * *"
-
-[functions."calendar-sync-b"]
-  schedule = "2 */6 * * *"

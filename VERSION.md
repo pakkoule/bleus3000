@@ -1,11 +1,12 @@
-# Bleus 3000 — V1.1.34
+# Bleus 3000 — V1.1.35
 
-## Correctif API-Football — plan Free
-- Remplacement de `team + next=50` (indisponible sur le plan Free) par `team + season`.
-- Saison par défaut : année courante ; surcharge facultative via `API_FOOTBALL_SEASON`.
-- Filtrage local des fixtures pour synchroniser uniquement les matchs à venir ou en cours et éviter les doublons avec l'historique éditorial.
-- Mapping de 14 IDs API-Football réparti en 2 shards de 7 requêtes.
-- `calendar-sync` à H:00 et `calendar-sync-b` à H:02 toutes les 6 heures pour rester sous la limite FREE de 10 requêtes/minute.
-- Diagnostic sécurisé des variables Netlify conservé.
-- Support multi-ID Espoirs conservé : `FRA-ESP-M: [8194,16621]`.
-- Aucun changement de schéma Supabase.
+## Calendrier TheSportsDB + corrections éditoriales
+- TheSportsDB remplace API-Football.
+- Synchronisation unique `calendar-sync` toutes les 6 heures + un seul `Run now`.
+- Livescore via `/api/sportsdb-live`, rafraîchi côté interface toutes les 2 minutes.
+- Matchs passés et futurs lisent la même table `public.matches`.
+- Les 226 matchs Espoirs historiques sont donc visibles dans le calendrier passé.
+- Référentiel Matchs : grille réparée + filtres sélection/sexe/compétition/année/résultat.
+- Corrections manuelles champ par champ dans `matches.manual_overrides` : l’API peut continuer à mettre à jour les autres champs sans écraser la correction.
+- Mapping TheSportsDB stocké dans `selection_teams.provider_ids`; U21 + U23 masculins restent regroupés sous `FRA-ESP-M`.
+- Migration Supabase V1.1.35 appliquée sur le projet Bleus 3000.
