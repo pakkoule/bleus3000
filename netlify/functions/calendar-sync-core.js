@@ -1,4 +1,4 @@
-/* 3615 Bleus V1.1.39 — TheSportsDB + familles de compétitions partagées */
+/* 3615 Bleus V1.1.42 — TheSportsDB + familles + chaînes de diffusion */
 const SPORTSDB='https://www.thesportsdb.com/api/v2/json';
 
 const BUILTIN_TEAM_IDS={
@@ -24,6 +24,7 @@ const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLo
 const arr=v=>(Array.isArray(v)?v:[v]).map(Number).filter(Number.isFinite).filter(Boolean);
 const unique=a=>[...new Set(a)];
 const cleanText=v=>String(v??'').trim();
+const countryOnlyName=v=>cleanText(v).replace(/\s+(Women\s+)?U(16|17|18|19|20|21|23)$/i,'').replace(/\s+(Women|Woman|Female|Féminine|Feminine|Espoirs)$/i,'').trim();
 const isFriendlyCompetition=name=>{const n=norm(name);return n.includes('friendly')||n.includes('friendlies')||n.includes('amic');};
 const competitionFamilySpec=(name,selection={})=>{
   const n=norm(name);
@@ -183,6 +184,17 @@ exports.runCalendarSync=async()=>{
   const providerMatchMap=new Map(providerMatches.map(x=>[String(x.provider_fixture_id),x]));
 
   async function createOne(table,payload){const rows=await sb(`/${table}`,{method:'POST',body:JSON.stringify(payload)});return rows[0]||null;}
+  async function ensureBroadcastChannel(name){
+    const channelName=cleanText(name);if(!channelName)return null;
+    const cslug=norm(channelName).replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,72)||'chaine';
+    let rows=await sb(`/broadcast_channels?slug=eq.${escFilter(cslug)}&select=id,slug,name,tag_id&limit=1`).catch(()=>[]);
+    if(rows[0])return rows[0];
+    let tag=(await sb(`/tags?slug=eq.${escFilter('diffusion-'+cslug)}&select=id,slug&limit=1`).catch(()=>[]))[0]||null;
+    if(!tag){tag=await createOne('tags',{slug:'diffusion-'+cslug,kind:'tag',label_text:channelName.slice(0,40),icon_text:'📺',aliases:[channelName],appearance:'gradient',color_start:'#082654',color_end:'#2563eb',gradient_colors:['#082654','#2563eb'],text_color:'#ffffff',border_color:'#082654',gradient_angle:135,border_radius:10,border_width:1,created_by:null,is_active:true,reference_scope:'broadcast'});}
+    const channel=await createOne('broadcast_channels',{slug:cslug,name:channelName,aliases:[channelName],tag_id:tag?.id||null,active:true});
+    if(channel?.id&&tag?.id){try{await createOne('tag_reference_links',{tag_id:tag.id,reference_type:'broadcast',reference_id:channel.id,relation_kind:'membership',created_by:null});}catch(err){if(!/duplicate key|23505/i.test(err.message))console.warn('calendar-sync broadcast tag link',err.message);}}
+    return channel;
+  }
   async function opponentFor(name,externalId){const key=norm(name||'Adversaire à confirmer');if(oppMap.has(key))return oppMap.get(key);const row=await createOne('opponents',{name:name||'Adversaire à confirmer'});if(row)oppMap.set(key,row);return row;}
   async function ensureCompetitionTag(comp,selection={}){
     if(!comp)return comp;
@@ -269,7 +281,7 @@ exports.runCalendarSync=async()=>{
 
       // Les lignes créées par l'API peuvent être resynchronisées entièrement. Les éventuels
       // manual_overrides restent séparés et continuent de gagner à l'affichage.
-      const opp=await opponentFor(side.oppName||'Adversaire à confirmer',side.oppId);
+      const opp=await opponentFor(countryOnlyName(side.oppName)||'Adversaire à confirmer',side.oppId);
       const comp=await competitionFor(e,selection);
       const plc=await placeFor(e);
       const body={
@@ -300,8 +312,12 @@ exports.runCalendarSync=async()=>{
       if(!rows.length)return null;
       const french=rows.filter(r=>/france|french|fr\b/i.test(cleanText(r.strCountry)));
       const use=(french.length?french:rows).map(r=>cleanText(r.strChannel)).filter(Boolean);
-      const channels=unique(use).slice(0,4).join(' · ');if(!channels)return null;
-      await sb(`/matches?provider=eq.thesportsdb&provider_fixture_id=eq.${escFilter(x.id)}`,{method:'PATCH',body:JSON.stringify({broadcast_text:channels,provider_updated_at:new Date().toISOString()})});tvUpdated++;
+      const channelNames=unique(use).slice(0,4);const channels=channelNames.join(' · ');if(!channels)return null;
+      await sb(`/matches?provider=eq.thesportsdb&provider_fixture_id=eq.${escFilter(x.id)}`,{method:'PATCH',body:JSON.stringify({broadcast_text:channels,provider_updated_at:new Date().toISOString()})});
+      const linkedMatches=await sb(`/matches?provider=eq.thesportsdb&provider_fixture_id=eq.${escFilter(x.id)}&select=id&limit=2`).catch(()=>[]);
+      const entities=[];for(const channelName of channelNames){try{const ch=await ensureBroadcastChannel(channelName);if(ch?.id)entities.push(ch);}catch(err){console.warn('calendar-sync broadcast channel',channelName,err.message);}}
+      for(const match of linkedMatches){for(const ch of entities){try{await createOne('match_broadcast_channels',{match_id:match.id,broadcast_channel_id:ch.id,source:'thesportsdb'});}catch(err){if(!/duplicate key|23505/i.test(err.message))console.warn('calendar-sync broadcast link',x.id,ch.name,err.message);}}}
+      tvUpdated++;
     }catch(e){apiErrors++;console.error('calendar-sync tv',x.id,e.message);}return null;
   });
 

@@ -1,4 +1,4 @@
-/* Bleus 3000 V1.1.36 — proxy livescore TheSportsDB (clé jamais exposée au navigateur) */
+/* Bleus 3000 V1.1.42 — proxy livescore TheSportsDB (clé jamais exposée au navigateur) */
 const API='https://www.thesportsdb.com/api/v2/json';
 const BUILTIN={'FRA-A-M':[133913],'FRA-ESP-M':[136843,143161],'FRA-U20-M':[152249],'FRA-U19-M':[149863],'FRA-U17-M':[149609],'FRA-A-F':[136801],'FRA-U17-F':[153623]};
 const arr=v=>(Array.isArray(v)?v:[v]).map(Number).filter(Number.isFinite).filter(Boolean);
