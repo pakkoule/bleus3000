@@ -1,4 +1,4 @@
-/* Bleus 3000 V1.1.35 — TheSportsDB calendar synchronizer */
+/* Bleus 3000 V1.1.36 — TheSportsDB calendar synchronizer + tags globaux */
 const SPORTSDB='https://www.thesportsdb.com/api/v2/json';
 
 const BUILTIN_TEAM_IDS={
@@ -156,7 +156,7 @@ exports.runCalendarSync=async()=>{
   // Charge les référentiels une seule fois pour éviter des dizaines d'allers-retours Supabase.
   const [opponents,competitions,places,providerMatches,recentMatches]=await Promise.all([
     sb('/opponents?select=id,name&limit=5000').catch(()=>[]),
-    sb('/competitions?select=id,name,edition,external_ids&limit=5000').catch(()=>[]),
+    sb('/competitions?select=id,name,edition,external_ids,tag_id&limit=5000').catch(()=>[]),
     sb('/places?select=id,name,city,country&limit=5000').catch(()=>[]),
     sb('/matches?provider=eq.thesportsdb&select=id,provider_fixture_id,data_state,manual_overrides,selection_team_id,match_date,opponent_id&limit=5000').catch(()=>[]),
     sb('/matches?select=id,selection_team_id,match_date,opponent_id,provider,provider_fixture_id,data_state,manual_overrides&order=match_date.desc&limit=5000').catch(()=>[])
@@ -169,7 +169,32 @@ exports.runCalendarSync=async()=>{
 
   async function createOne(table,payload){const rows=await sb(`/${table}`,{method:'POST',body:JSON.stringify(payload)});return rows[0]||null;}
   async function opponentFor(name,externalId){const key=norm(name||'Adversaire à confirmer');if(oppMap.has(key))return oppMap.get(key);const row=await createOne('opponents',{name:name||'Adversaire à confirmer'});if(row)oppMap.set(key,row);return row;}
-  async function competitionFor(e,selection){const name=cleanText(e.strLeague)||'Match international';const key=norm(name);if(compMap.has(key))return compMap.get(key);const row=await createOne('competitions',{name,edition:cleanText(e.strSeason)||null,organizer:null,competition_type:null,gender:selection.gender,selection_category:selection.category,status:'active',external_ids:{thesportsdb_league_id:e.idLeague||null}});if(row)compMap.set(key,row);return row;}
+  async function ensureCompetitionTag(comp){
+    if(!comp)return comp;
+    if(comp.tag_id)return comp;
+    const tagSlug=`competition-${String(comp.id||'').replace(/-/g,'').slice(0,12)}`;
+    let tag=null;
+    try{
+      const found=await sb(`/tags?slug=eq.${escFilter(tagSlug)}&select=id,slug&limit=1`);
+      tag=found[0]||null;
+      if(!tag){
+        tag=await createOne('tags',{slug:tagSlug,kind:'tag',label_text:cleanText(comp.name).slice(0,40)||'Compétition',icon_text:'🏆',aliases:[cleanText(comp.name),cleanText(comp.edition)].filter(Boolean),appearance:'gradient',color_start:'#eef4fb',color_end:'#dce8f6',text_color:'#18304e',border_color:'#c5d4e6',gradient_angle:135,border_radius:16,border_width:1,created_by:null,is_active:true});
+      }
+      if(tag?.id){
+        await sb(`/competitions?id=eq.${comp.id}`,{method:'PATCH',body:JSON.stringify({tag_id:tag.id,updated_at:new Date().toISOString()})});
+        try{await createOne('tag_reference_links',{tag_id:tag.id,reference_type:'competition',reference_id:comp.id,relation_kind:'membership',created_by:null});}catch(err){if(!/duplicate key|23505/i.test(err.message))throw err;}
+        comp.tag_id=tag.id;
+      }
+    }catch(err){console.warn('calendar-sync competition tag',comp.id,err.message);}
+    return comp;
+  }
+  async function competitionFor(e,selection){
+    const name=cleanText(e.strLeague)||'Match international',key=norm(name);
+    if(compMap.has(key))return ensureCompetitionTag(compMap.get(key));
+    const row=await createOne('competitions',{name,edition:cleanText(e.strSeason)||null,organizer:null,competition_type:null,gender:selection.gender,selection_category:selection.category,status:'active',external_ids:{thesportsdb_league_id:e.idLeague||null}});
+    if(row){compMap.set(key,row);await ensureCompetitionTag(row);}
+    return row;
+  }
   async function placeFor(e){const name=cleanText(e.strVenue);if(!name)return null;const city=cleanText(e.strCity)||null,key=`${norm(name)}|${norm(city)}`;if(placeMap.has(key))return placeMap.get(key);if(placeNameMap.has(norm(name)))return placeNameMap.get(norm(name));const row=await createOne('places',{place_type:'stadium',name,city,country:cleanText(e.strCountry)||null});if(row){placeMap.set(key,row);placeNameMap.set(norm(name),row);}return row;}
 
   let imported=0,updated=0,attached=0,skippedLocked=0,skippedHistorical=0,preservedVerified=0,dbErrors=0;

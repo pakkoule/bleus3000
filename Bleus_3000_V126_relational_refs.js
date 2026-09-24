@@ -1,4 +1,4 @@
-/* Bleus 3000 V1.1.35 — Référentiels relationnels globaux : Matchs + Personnel/Officiels */
+/* Bleus 3000 V1.1.36 — Référentiels relationnels globaux : Matchs + tags globaux + Personnel/Officiels */
 (() => {
   'use strict';
   const $=(s,p=document)=>p.querySelector(s), $$=(s,p=document)=>[...p.querySelectorAll(s)];
@@ -7,7 +7,7 @@
   const norm=v=>S?.normalize?S.normalize(v):String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
   const matchQuery=(q,vals)=>!String(q||'').trim()||(S?.matches?S.matches(q,vals,.5):vals.some(v=>norm(v).includes(norm(q))));
   const matchFilters={team:'all',gender:'all',competition:'all',year:'all',result:'all'};
-  let client=null,loaded=false,loading=null,matches=[],people=[],tagsById=new Map(),searchRegistry=[];
+  let client=null,loaded=false,loading=null,matches=[],people=[],tagsById=new Map(),selectionRows=[],competitionRows=[],searchRegistry=[];
 
   async function waitClient(){for(let i=0;i<70;i++){client=window.BLEUS3000_SUPABASE||null;if(client)return client;await new Promise(r=>setTimeout(r,100));}return null;}
   const parseDate=v=>{if(!v)return null;const d=new Date(v);return Number.isNaN(+d)?null:d;};
@@ -24,20 +24,33 @@
     broadcast_url:m.broadcast_url||'',
     france_score:m.france_score,
     opponent_score:m.opponent_score,
-    status:m.status||''
+    status:m.status||'',
+    selection_tag_id:m.selection?.team_tag_id||'',
+    competition_tag_id:m.competition?.tag_id||''
   })[key];
   const effective=(m,key)=>Object.prototype.hasOwnProperty.call(overrides(m),key)?overrides(m)[key]:baseValue(m,key);
   const selectionLabel=m=>m.selection?.name?.replace(/ Masculin$/,'').replace(/ Féminine$/,' F')||m.selection_category||'France';
   const resultLetter=m=>{const a=Number(effective(m,'france_score')),b=Number(effective(m,'opponent_score'));if(!Number.isFinite(a)||!Number.isFinite(b))return '—';return a>b?'V':a<b?'D':'N';};
   const scoreClass=m=>({V:'is-win',N:'is-draw',D:'is-loss'}[resultLetter(m)]||'');
   const isManual=m=>Object.keys(overrides(m)).length>0;
+  const flagImg=name=>window.BLEUS3000_FLAGS?.img?.(name,'rel-svg-flag')||'';
 
-  function chipForMatch(m){
-    const t=m.selection?.team_tag_id?tagsById.get(m.selection.team_tag_id):null;
-    if(!t)return `<span class="rel-tag-fallback">${esc((m.selection?.category||m.selection_category||'FRANCE').replace('Espoirs/U21','ESPOIRS'))}</span>`;
-    if(window.BLEUS3000_TAGS?.chipHtml)return window.BLEUS3000_TAGS.chipHtml(t,'relational-team-chip');
+  function tagChip(t,extra=''){
+    if(!t)return '';
+    if(window.BLEUS3000_TAGS?.chipHtml)return window.BLEUS3000_TAGS.chipHtml(t,extra);
     const bg=t.appearance==='solid'?(t.color_start||'#2563eb'):`linear-gradient(${Number(t.gradient_angle||135)}deg,${t.color_start||'#123B8F'},${t.color_end||'#4dc6ff'})`;
-    return `<span class="rel-tag-fallback" style="background:${bg};color:${esc(t.text_color||'#fff')};border-color:${esc(t.border_color||'#123B8F')}">${esc(t.icon_text||'🇫🇷')} ${esc(t.label_text||m.selection?.category||'FRANCE')}</span>`;
+    return `<span class="rel-tag-fallback ${extra}" style="background:${bg};color:${esc(t.text_color||'#fff')};border-color:${esc(t.border_color||'#123B8F')}">${esc(t.icon_text||'🏷️')} ${esc(t.label_text||'TAG')}</span>`;
+  }
+  function chipForMatch(m){
+    const id=effective(m,'selection_tag_id');
+    const t=id?tagsById.get(id):null;
+    if(!t)return `<span class="rel-tag-fallback">${esc((m.selection?.category||m.selection_category||'FRANCE').replace('Espoirs/U21','ESPOIRS'))}</span>`;
+    return tagChip(t,'relational-team-chip');
+  }
+  function competitionChipForMatch(m){
+    const id=effective(m,'competition_tag_id');
+    const t=id?tagsById.get(id):null;
+    return t?tagChip(t,'relational-competition-chip'):'';
   }
 
   async function fetchIn(table,columns,ids){if(!ids.length)return[];const {data,error}=await client.from(table).select(columns).in('id',ids);if(error)throw error;return data||[];}
@@ -52,13 +65,13 @@
         client.from('tags').select('*').eq('kind','tag').limit(1000)
       ]);
       if(me)throw me;if(se)throw se;if(pe)console.warn('Personnel Espoirs',pe);if(te)console.warn('Tags',te);
-      const selections=new Map((ss||[]).map(x=>[x.id,x]));tagsById=new Map((tagRows||[]).map(x=>[x.id,x]));
+      selectionRows=ss||[];const selections=new Map(selectionRows.map(x=>[x.id,x]));tagsById=new Map((tagRows||[]).map(x=>[x.id,x]));
       const rows=mm||[];
       const oppIds=[...new Set(rows.map(x=>x.opponent_id).filter(Boolean))],compIds=[...new Set(rows.map(x=>x.competition_id).filter(Boolean))],placeIds=[...new Set(rows.map(x=>x.place_id).filter(Boolean))],coachIds=[...new Set(rows.map(x=>x.coach_id).filter(Boolean))];
       const [oo,cc,ll,hh]=await Promise.all([
-        fetchIn('opponents','id,name,fifa_code',oppIds),fetchIn('competitions','id,name,edition',compIds),fetchIn('places','id,name,city,country',placeIds),fetchIn('personnel','id,display_name',coachIds)
+        fetchIn('opponents','id,name,fifa_code',oppIds),fetchIn('competitions','id,name,edition,tag_id',compIds),fetchIn('places','id,name,city,country',placeIds),fetchIn('personnel','id,display_name',coachIds)
       ]);
-      const om=new Map(oo.map(x=>[x.id,x])),cm=new Map(cc.map(x=>[x.id,x])),lm=new Map(ll.map(x=>[x.id,x])),hm=new Map(hh.map(x=>[x.id,x]));
+      competitionRows=cc||[];const om=new Map(oo.map(x=>[x.id,x])),cm=new Map(competitionRows.map(x=>[x.id,x])),lm=new Map(ll.map(x=>[x.id,x])),hm=new Map(hh.map(x=>[x.id,x]));
       matches=rows.map(x=>({...x,selection:selections.get(x.selection_team_id)||null,opponent:om.get(x.opponent_id)||null,competition:cm.get(x.competition_id)||null,place:lm.get(x.place_id)||null,coach:hm.get(x.coach_id)||null}));
       people=pp||[];
       const d=window.BLEUS3000_DATA;if(d?.references){const mr=d.references.find(x=>x.key==='matchs'),pr=d.references.find(x=>x.key==='personnel');if(mr)mr.count=String(matches.length);if(pr)pr.count=String(people.length);}
@@ -93,7 +106,7 @@
 
   function renderMatchCard(m){
     const opp=effective(m,'opponent_name')||'Adversaire';const home=m.home_away==='home';const sel=selectionLabel(m);const left=home?sel:opp,right=home?opp:sel;const a=effective(m,'france_score'),b=effective(m,'opponent_score');const has=Number.isFinite(Number(a))&&Number.isFinite(Number(b));const score=has?(home?`${a} – ${b}`:`${b} – ${a}`):'—';const place=[effective(m,'venue_name'),effective(m,'city')].filter(Boolean).join(' · ');const comp=effective(m,'competition_name')||sel;const provider=m.provider==='thesportsdb'?'TheSportsDB':m.provider||'';
-    return `<article class="rel-ref-tile rel-match-tile" data-match-id="${esc(m.id)}"><div class="rel-ref-head"><div><small>${esc(fmtDateLong(effective(m,'match_date')))}</small><h3>${esc(left)} <span class="rel-score ${scoreClass(m)}">${esc(score)}</span> ${esc(right)}</h3><div class="subtitle">${esc(comp)}${m.phase?` · ${esc(m.phase)}`:''}</div></div><span class="rel-result ${scoreClass(m)}">${resultLetter(m)}</span></div><div class="rel-facts">${place?`<span>🏟 ${esc(place)}</span>`:''}${m.coach?.display_name?`<span>👔 ${esc(m.coach.display_name)}</span>`:''}${m.spectators?`<span>👥 ${Number(m.spectators).toLocaleString('fr-FR')}</span>`:''}${effective(m,'broadcast_text')?`<span>📺 ${esc(effective(m,'broadcast_text'))}</span>`:''}<span>${esc(m.lineup_status||m.notes_short||m.status||'Match')}</span></div><div class="rel-match-bottom"><div class="rel-tags">${chipForMatch(m)}${provider?`<span class="rel-provider">${esc(provider)}</span>`:''}${isManual(m)?'<span class="rel-manual">✎ Correction manuelle</span>':''}</div><button class="rel-edit-match" type="button" data-calendar-edit="${esc(m.id)}">✎ Modifier</button></div></article>`;
+    return `<article class="rel-ref-tile rel-match-tile" data-match-id="${esc(m.id)}"><div class="rel-ref-head"><div><small>${esc(fmtDateLong(effective(m,'match_date')))}</small><h3><span class="rel-team-name">${flagImg(left)}${esc(left)}</span> <span class="rel-score ${scoreClass(m)}">${esc(score)}</span> <span class="rel-team-name">${esc(right)}${flagImg(right)}</span></h3><div class="subtitle">${esc(comp)}${m.phase?` · ${esc(m.phase)}`:''}</div></div><span class="rel-result ${scoreClass(m)}">${resultLetter(m)}</span></div><div class="rel-facts">${place?`<span>🏟 ${esc(place)}</span>`:''}${m.coach?.display_name?`<span>👔 ${esc(m.coach.display_name)}</span>`:''}${m.spectators?`<span>👥 ${Number(m.spectators).toLocaleString('fr-FR')}</span>`:''}${effective(m,'broadcast_text')?`<span>📺 ${esc(effective(m,'broadcast_text'))}</span>`:''}<span>${esc(m.lineup_status||m.notes_short||m.status||'Match')}</span></div><div class="rel-match-bottom"><div class="rel-tags">${chipForMatch(m)}${competitionChipForMatch(m)}${provider?`<span class="rel-provider">${esc(provider)}</span>`:''}${isManual(m)?'<span class="rel-manual">✎ Correction manuelle</span>':''}</div><button class="rel-edit-match" type="button" data-calendar-edit="${esc(m.id)}">✎ Modifier</button></div></article>`;
   }
   function renderPersonCard(p){const coach=Number(p.coached_matches||0)>0;const roles=(p.official_roles||[]).filter(Boolean);return `<article class="selection-player-tile rel-ref-tile rel-person-tile"><div class="rel-person-avatar">${esc((p.display_name||'?').split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase())}</div><div class="rel-ref-head"><div><h3>${esc(p.display_name)}</h3><div class="subtitle">${coach?'Sélectionneur France Espoirs':esc(roles.join(' · ')||p.person_type||'Officiel')}</div></div></div>${coach?`<div class="rel-stat-grid"><span><small>Matchs</small><strong>${Number(p.coached_matches||0)}</strong></span><span><small>V</small><strong>${Number(p.coached_wins||0)}</strong></span><span><small>N</small><strong>${Number(p.coached_draws||0)}</strong></span><span><small>D</small><strong>${Number(p.coached_losses||0)}</strong></span></div>`:`<div class="rel-stat-grid one"><span><small>Matchs documentés</small><strong>${Number(p.official_matches||0)}</strong></span></div>`}</article>`;}
 
@@ -107,6 +120,6 @@
   function getMatch(id){return matches.find(m=>String(m.id)===String(id))||null;}
   function applyLocalOverride(id,manual_overrides){const m=getMatch(id);if(m)m.manual_overrides=manual_overrides||{};}
   function invalidate(){loaded=false;matches=[];searchRegistry=[];}
-  window.BLEUS3000_RELATIONAL_REFS={render,load,search,getMatch,effective,baseValue,applyLocalOverride,invalidate,get matches(){return matches;},get people(){return people;}};
+  window.BLEUS3000_RELATIONAL_REFS={render,load,search,getMatch,effective,baseValue,applyLocalOverride,invalidate,getTag:id=>tagsById.get(id)||null,getTags:()=>[...tagsById.values()],getSectionTags:()=>[...new Set(selectionRows.map(x=>x.team_tag_id).filter(Boolean))].map(id=>tagsById.get(id)).filter(Boolean),getCompetitionTags:()=>[...tagsById.values()].filter(t=>String(t.slug||'').startsWith('competition-')),get matches(){return matches;},get people(){return people;}};
   load().catch(()=>{});
 })();

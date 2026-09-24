@@ -1,4 +1,4 @@
-# Bleus 3000 V1.1.35
+# Bleus 3000 V1.1.36
 
 **Évolution principale : calendrier TheSportsDB + corrections éditoriales.** Un seul sync Netlify alimente les matchs futurs/récents, le live est affiché dans le calendrier, le référentiel Matchs est réparé et filtrable, et chaque champ API peut être corrigé manuellement sans bloquer la synchronisation des autres champs.
 
@@ -143,6 +143,18 @@ Les onglets Matchs et Personnel & Officiels utilisent désormais les premières 
 - Tableaux joueurs conservés complets avec défilement horizontal tactile et colonne joueur figée.
 - Référentiels, sélections, filtres, éditeurs, outils XI/Five, mur des membres et présence optimisés pour le tactile.
 - Aucun blocage du zoom manuel : l’accessibilité navigateur est conservée.
+
+
+## V1.1.36 — Tags globaux & drapeaux SVG
+- Les tags du calendrier utilisent maintenant les tags métier de Bleus 3000 : **INTERNATIONAL**, **ESPOIRS**, U20/U19/U18/U17/U16 et leurs variantes féminines.
+- Les 14 sections sont reliées à un tag global dans Supabase.
+- Chaque compétition possède un `tag_id` et un tag modifiable depuis **Profil > Tags & étiquettes**.
+- Les futures compétitions créées par TheSportsDB reçoivent automatiquement leur tag.
+- Dans **Modifier le match**, le tag de section et le tag de compétition peuvent être surchargés pour une tuile précise, sans modifier le référentiel global.
+- Les drapeaux emoji sont remplacés par des drapeaux SVG ISO dans le Calendrier et le référentiel Matchs.
+- Migration : `MIGRATION_V1.1.36_TAGS_DRAPEAUX.sql` (déjà appliquée au Supabase Bleus 3000).
+
+Voir `CALENDRIER_V1.1.36_TAGS_DRAPEAUX.md`.
 
 ## V1.1.35 — Calendrier TheSportsDB
 - API-Football retirée du calendrier ; TheSportsDB devient le fournisseur automatique.

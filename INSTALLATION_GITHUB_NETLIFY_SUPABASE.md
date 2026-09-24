@@ -85,3 +85,8 @@ Le compte sera alors `SUPERADMIN`. Ensuite, le registre administrateur peut attr
 `THESPORTSDB_KEY` doit rester exclusivement côté Netlify. Elle ne doit jamais être ajoutée à `bleus_config.js`, GitHub ou au code du navigateur.
 
 Les variables `API_FOOTBALL_KEY` et `BLEUS_API_TEAM_MAP` des versions précédentes peuvent être supprimées : elles ne sont plus lues.
+
+## V1.1.36
+La migration `v1_1_36_tags_drapeaux` est déjà appliquée sur le projet Supabase Bleus 3000.
+Aucune nouvelle variable Netlify n'est requise.
+Conserver : `THESPORTSDB_KEY`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`.

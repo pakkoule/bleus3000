@@ -1,11 +1,11 @@
-/* Bleus 3000 V1.1.15 — gestionnaire global de tags / étiquettes + icônes importées */
+/* Bleus 3000 V1.1.36 — gestionnaire global de tags / étiquettes + sections + compétitions + icônes importées */
 (() => {
   'use strict';
   const $=(s,p=document)=>p.querySelector(s), $$=(s,p=document)=>[...p.querySelectorAll(s)];
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const localKey='bleus3000.tags.local.v1';
   const iconChoices=['🏷️','⭐','🇫🇷','⚽','🏆','📊','📅','📚','📍','👤','👥','🧤','🎯','🔥','✨','🧠','🩺','🎥','📰','🔎'];
-  let tags=[],selectionTeams=[],referenceLinks=[],editingId=null,lastError='',pendingIconFile=null,pendingIconPreview='';
+  let tags=[],selectionTeams=[],competitions=[],referenceLinks=[],editingId=null,lastError='',pendingIconFile=null,pendingIconPreview='';
 
   const state=()=>window.C3K_ACCOUNT_STATE||{};
   const client=()=>window.BLEUS3000_SUPABASE;
@@ -37,15 +37,17 @@
     lastError='';
     const c=client();
     if(c&&state().session?.user){
-      const [{data,error},{data:teamsData,error:teamsError},{data:linksData,error:linksError}]=await Promise.all([
+      const [{data,error},{data:teamsData,error:teamsError},{data:compData,error:compError},{data:linksData,error:linksError}]=await Promise.all([
         c.from('tags').select('*').eq('is_active',true).order('label_text',{ascending:true}),
-        c.from('selection_teams').select('id,code,name,gender,category,sort_order').eq('active',true).order('sort_order'),
+        c.from('selection_teams').select('id,code,name,gender,category,sort_order,team_tag_id').eq('active',true).order('sort_order'),
+        c.from('competitions').select('id,name,edition,tag_id').order('name'),
         c.from('tag_reference_links').select('id,tag_id,reference_type,reference_id,relation_kind')
       ]);
       if(error){lastError=error.message;tags=[];}else tags=data||[];
       if(teamsError)lastError=lastError||teamsError.message;selectionTeams=teamsData||[];
+      if(compError)lastError=lastError||compError.message;competitions=compData||[];
       if(linksError)lastError=lastError||linksError.message;referenceLinks=linksData||[];
-    }else{tags=localRows();selectionTeams=[];referenceLinks=[];}
+    }else{tags=localRows();selectionTeams=[];competitions=[];referenceLinks=[];}
     render();
   }
 
@@ -66,7 +68,7 @@
     const list=tags.map(t=>{
       const mine=t.created_by===userId();
       const mayEdit=editable&&(mine||canEditAll());
-      const assoc=referenceLinks.filter(l=>l.tag_id===t.id&&l.reference_type==='selection').map(l=>{const tm=selectionTeams.find(x=>x.id===l.reference_id);return tm?`${tm.name}${l.relation_kind==='status'?' · statut':''}`:'';}).filter(Boolean);
+      const assoc=referenceLinks.filter(l=>l.tag_id===t.id).map(l=>{if(l.reference_type==='selection'){const tm=selectionTeams.find(x=>x.id===l.reference_id);return tm?`Sélection · ${tm.name}`:'';}if(l.reference_type==='competition'){const cp=competitions.find(x=>x.id===l.reference_id);return cp?`Compétition · ${cp.name}${cp.edition?` · ${cp.edition}`:''}`:'';}return '';}).filter(Boolean);
       return `<article class="b3k-tag-row" data-tag-row="${esc(t.id)}">
         <div class="b3k-tag-row-preview">${tagHtml(t)}</div>
         <div class="b3k-tag-row-meta"><strong>${esc(t.kind==='label'?'Étiquette':'Tag')}</strong><small>${esc((t.aliases||[]).join(' · ')||t.slug||'')}</small>${assoc.length?`<small class="b3k-tag-ref-meta">Référentiel · ${esc(assoc.join(' · '))}</small>`:''}</div>
@@ -75,7 +77,7 @@
     }).join('')||'<div class="b3k-tags-empty">Aucun tag pour le moment.</div>';
 
     body.innerHTML=`<section class="b3k-tags-manager">
-      <div class="b3k-tags-head"><div><strong>Tags & étiquettes</strong><span>Catalogue visuel commun. Il servira ensuite à relier les tuiles entre elles.</span></div><span class="b3k-tags-count">${tags.length}</span></div>
+      <div class="b3k-tags-head"><div><strong>Tags & étiquettes</strong><span>Catalogue global : sections, compétitions et étiquettes personnalisées. Toute modification se répercute dans Matchs et Calendrier.</span></div><span class="b3k-tags-count">${tags.length}</span></div>
       ${lastError?`<div class="c3k-v8-status is-error">${esc(lastError)}</div>`:''}
       ${editable?editorHtml(cur):`<div class="b3k-tags-readonly">Ton rôle <strong>${esc(role().toUpperCase())}</strong> peut consulter le catalogue. La création et la modification sont réservées aux contributeurs, éditeurs et administrateurs.</div>`}
       <div class="b3k-tags-list-head"><strong>Catalogue</strong><small>${tags.length} élément${tags.length>1?'s':''}</small></div>
@@ -103,15 +105,19 @@
         }catch(err){alert(err.message||'Image invalide');file.value='';}
       });
       clear?.addEventListener('click',()=>{pendingIconFile=null;pendingIconPreview='';form.dataset.removeIcon='1';if(file)file.value='';updatePreview(form);});
+      const refType=form.elements.reference_type,refId=form.elements.reference_id;
+      const syncReferenceChoices=()=>{const type=refType?.value||'';if(!refId)return;[...refId.querySelectorAll('optgroup')].forEach(g=>{const gt=g.label==='Sélections'?'selection':'competition';g.hidden=!!type&&gt!==type;});if(type){const selected=refId.selectedOptions?.[0];if(selected?.dataset?.refType&&selected.dataset.refType!==type)refId.value='';}};
+      refType?.addEventListener('change',syncReferenceChoices);syncReferenceChoices();
       $$('input,select',form).forEach(n=>n.addEventListener('input',()=>updatePreview(form)));updatePreview(form);
     }
   }
 
-  function currentReferenceLink(t){return referenceLinks.find(l=>l.tag_id===t.id&&l.reference_type==='selection')||null;}
+  function currentReferenceLink(t){return referenceLinks.find(l=>l.tag_id===t.id&&(l.reference_type==='selection'||l.reference_type==='competition'))||null;}
   function referenceEditorHtml(t){
-    const link=currentReferenceLink(t), selected=link?.reference_id||'', kind=link?.relation_kind||'membership';
-    const opts=selectionTeams.map(tm=>`<option value="${esc(tm.id)}" ${selected===tm.id?'selected':''}>${esc(tm.name)}</option>`).join('');
-    return `<fieldset class="b3k-tag-reference-box"><legend>Association au référentiel</legend><div class="b3k-tag-grid three"><label>Référentiel<select name="reference_type"><option value="">Aucun</option><option value="selection" ${selected?'selected':''}>Sélections</option></select></label><label>Entrée<select name="reference_id"><option value="">Aucune entrée</option>${opts}</select></label><label>Type de lien<select name="relation_kind"><option value="membership" ${kind==='membership'?'selected':''}>Appartenance</option><option value="status" ${kind==='status'?'selected':''}>Statut</option><option value="topic" ${kind==='topic'?'selected':''}>Sujet</option></select></label></div><small>Cette liaison permet aux filtres et tableaux de savoir exactement à quel référentiel correspond le tag.</small></fieldset>`;
+    const link=currentReferenceLink(t), selected=link?.reference_id||'', type=link?.reference_type||'', kind=link?.relation_kind||'membership';
+    const teamOpts=selectionTeams.map(tm=>`<option value="${esc(tm.id)}" data-ref-type="selection" ${selected===tm.id?'selected':''}>${esc(tm.name)}</option>`).join('');
+    const compOpts=competitions.map(cp=>`<option value="${esc(cp.id)}" data-ref-type="competition" ${selected===cp.id?'selected':''}>${esc(cp.name)}${cp.edition?` · ${esc(cp.edition)}`:''}</option>`).join('');
+    return `<fieldset class="b3k-tag-reference-box"><legend>Association au référentiel</legend><div class="b3k-tag-grid three"><label>Référentiel<select name="reference_type"><option value="">Aucun</option><option value="selection" ${type==='selection'?'selected':''}>Sélections</option><option value="competition" ${type==='competition'?'selected':''}>Compétitions</option></select></label><label>Entrée<select name="reference_id"><option value="">Aucune entrée</option><optgroup label="Sélections">${teamOpts}</optgroup><optgroup label="Compétitions">${compOpts}</optgroup></select></label><label>Type de lien<select name="relation_kind"><option value="membership" ${kind==='membership'?'selected':''}>Appartenance</option><option value="status" ${kind==='status'?'selected':''}>Statut</option><option value="topic" ${kind==='topic'?'selected':''}>Sujet</option></select></label></div><small>Pour les tags de section et de compétition, le lien d'appartenance pilote directement l'affichage dans Matchs et Calendrier.</small></fieldset>`;
   }
 
   function editorHtml(t){
@@ -181,6 +187,8 @@
       try{payload.icon_image_path=await uploadIcon(pendingIconFile,payload.label_text,editingId);}catch(err){return status(st,err.message||'Échec de l’import de l’icône.','error');}
     }
     const refSpec={reference_type:payload.reference_type,reference_id:payload.reference_id,relation_kind:payload.relation_kind};
+    if(refSpec.reference_type==='selection'&&refSpec.reference_id&&!selectionTeams.some(x=>String(x.id)===String(refSpec.reference_id)))return status(st,'Choisis une entrée du référentiel Sélections.','error');
+    if(refSpec.reference_type==='competition'&&refSpec.reference_id&&!competitions.some(x=>String(x.id)===String(refSpec.reference_id)))return status(st,'Choisis une entrée du référentiel Compétitions.','error');
     delete payload.reference_type;delete payload.reference_id;delete payload.relation_kind;
     let savedTagId=editingId;
     if(c&&state().session?.user){
@@ -194,15 +202,18 @@
         savedTagId=created?.id||null;
       }
       if(savedTagId){
-        const oldLinks=referenceLinks.filter(l=>l.tag_id===savedTagId&&l.reference_type==='selection');
-        const {error:delErr}=await c.from('tag_reference_links').delete().eq('tag_id',savedTagId).eq('reference_type','selection');
-        if(delErr)return status(st,'Association référentiel · '+delErr.message,'error');
-        const oldMembershipIds=oldLinks.filter(l=>l.relation_kind==='membership').map(l=>l.reference_id);
-        if(oldMembershipIds.length)await c.from('selection_teams').update({team_tag_id:null}).in('id',oldMembershipIds).eq('team_tag_id',savedTagId);
-        if(refSpec.reference_type==='selection'&&refSpec.reference_id){
-          const {error:linkErr}=await c.from('tag_reference_links').insert({tag_id:savedTagId,reference_type:'selection',reference_id:refSpec.reference_id,relation_kind:refSpec.relation_kind||'membership',created_by:userId()});
+        const oldLinks=referenceLinks.filter(l=>l.tag_id===savedTagId&&(l.reference_type==='selection'||l.reference_type==='competition'));
+        for(const l of oldLinks){
+          const {error:delErr}=await c.from('tag_reference_links').delete().eq('id',l.id);
+          if(delErr)return status(st,'Association référentiel · '+delErr.message,'error');
+          if(l.relation_kind==='membership'&&l.reference_type==='selection')await c.from('selection_teams').update({team_tag_id:null}).eq('id',l.reference_id).eq('team_tag_id',savedTagId);
+          if(l.relation_kind==='membership'&&l.reference_type==='competition')await c.from('competitions').update({tag_id:null}).eq('id',l.reference_id).eq('tag_id',savedTagId);
+        }
+        if((refSpec.reference_type==='selection'||refSpec.reference_type==='competition')&&refSpec.reference_id){
+          const {error:linkErr}=await c.from('tag_reference_links').insert({tag_id:savedTagId,reference_type:refSpec.reference_type,reference_id:refSpec.reference_id,relation_kind:refSpec.relation_kind||'membership',created_by:userId()});
           if(linkErr)return status(st,'Association référentiel · '+linkErr.message,'error');
-          if(refSpec.relation_kind==='membership')await c.from('selection_teams').update({team_tag_id:savedTagId}).eq('id',refSpec.reference_id);
+          if(refSpec.relation_kind==='membership'&&refSpec.reference_type==='selection')await c.from('selection_teams').update({team_tag_id:savedTagId}).eq('id',refSpec.reference_id);
+          if(refSpec.relation_kind==='membership'&&refSpec.reference_type==='competition')await c.from('competitions').update({tag_id:savedTagId}).eq('id',refSpec.reference_id);
         }
       }
     }else{
@@ -213,6 +224,8 @@
     const old=current().icon_image_path||null;
     if(c&&state().session?.user&&old&&(removeIcon||pendingIconFile)&&old!==payload.icon_image_path){await c.storage.from('tag-icons').remove([old]).catch?.(()=>{});}
     editingId=null;pendingIconFile=null;pendingIconPreview='';await load();
+    window.BLEUS3000_RELATIONAL_REFS?.invalidate?.();
+    window.BLEUS3000_CALENDAR?.refresh?.();
   }
 
 
@@ -242,6 +255,8 @@
     if(c&&state().session?.user){const {error}=await c.from('tags').delete().eq('id',id);if(error)return alert(error.message);}
     else{tags=tags.filter(x=>x.id!==id);saveLocal();}
     if(editingId===id)editingId=null;await load();
+    window.BLEUS3000_RELATIONAL_REFS?.invalidate?.();
+    window.BLEUS3000_CALENDAR?.refresh?.();
   }
 
   function status(node,msg,type=''){if(!node)return;node.hidden=false;node.className='c3k-v8-status'+(type?` is-${type}`:'');node.textContent=msg;}
