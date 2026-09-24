@@ -12,5 +12,10 @@
   to = "/index.html"
   status = 200
 
+# API-Football FREE = 10 requêtes/minute.
+# Le mapping actuel représente 14 IDs API : deux shards de 7 évitent le 429.
 [functions."calendar-sync"]
   schedule = "0 */6 * * *"
+
+[functions."calendar-sync-b"]
+  schedule = "2 */6 * * *"

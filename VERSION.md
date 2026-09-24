@@ -1,8 +1,9 @@
-# Bleus 3000 — V1.1.32
+# Bleus 3000 — V1.1.33
 
-## Diagnostic configuration Calendrier / API-Football
-- `calendar-sync` indique maintenant précisément quelles variables Netlify sont visibles par la Function, sans afficher aucune valeur secrète.
-- Vérification séparée de `API_FOOTBALL_KEY`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY` et `BLEUS_API_TEAM_MAP`.
-- Le mapping signale aussi s’il est absent, invalide JSON ou vide.
-- Le support multi-ID de V1.1.31 est conservé (`FRA-ESP-M: [8194,16621]`).
+## Correctif API-Football : calendrier + limite FREE
+- Remplacement de la requête `team + from + to` par `team + next=50`, ce qui évite l’erreur API-Football « The Season field is required ».
+- Le mapping de 14 IDs API-Football est réparti automatiquement en 2 shards de 7 requêtes.
+- `calendar-sync` tourne à H:00 et `calendar-sync-b` à H:02 toutes les 6 heures afin de rester sous la limite FREE de 10 requêtes/minute.
+- Le diagnostic sécurisé des variables Netlify reste actif (booléens uniquement, aucune clé affichée).
+- Support multi-ID Espoirs conservé : `FRA-ESP-M: [8194,16621]`.
 - Aucun changement de schéma Supabase.
