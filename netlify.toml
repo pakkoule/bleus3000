@@ -2,6 +2,9 @@
   publish = "."
   functions = "netlify/functions"
 
+[functions]
+  included_files = ["data/U23_FEMININES_2014_2026_V1.json"]
+
 [[redirects]]
   from = "/api/sportsdb-live"
   to = "/.netlify/functions/sportsdb-live"

@@ -3,7 +3,7 @@
   'use strict';
   const $=(s,p=document)=>p.querySelector(s), $$=(s,p=document)=>[...p.querySelectorAll(s)];
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  let client=null, teams=[], tags=new Map(), tagLinks=[], players=[], filtered=[], page=1, pageSize=100, sortKey='name', sortDir='asc';
+  let client=null, teams=[], tags=new Map(), tagLinks=[], players=[], filtered=[], page=1, pageSize=10, sortKey='name', sortDir='asc';
   let search='', positionFilter='', teamFilter='', jerseyFilter='';
 
   const waitClient=()=>new Promise(resolve=>{let n=0;const tick=()=>{client=window.BLEUS3000_SUPABASE||null;if(client||n++>50)return resolve(client);setTimeout(tick,100)};tick();});

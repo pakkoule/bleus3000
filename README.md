@@ -1,4 +1,24 @@
-# 3615 Bleus V1.1.40
+# 3615 Bleus
+
+## V1.1.44 — France U23 / Espoirs féminines
+
+Import du classeur fourni `Bleus3000_Espoirs_Feminines_U23_2014_2026_V1.xlsx` : 72 matchs, 133 joueuses, 25 lignes de statistiques carrière vérifiées FFF, 152 observations joueuse-match, 22 buts détaillés et 4 périodes de sélectionneur. Le tag existant `ESPOIRS F` est réutilisé. L'import se lance une seule fois via la fonction Netlify `import-u23f`. Voir `U23_FEMININES_V1.1.44_IMPORT.md`.
+
+## V1.1.43 — Calendrier paginé, affiches mises en avant, UI allégée
+- `VS` remplace l'absence de score sur les rencontres futures.
+- Calendrier accueil paginé (4 rencontres/page).
+- Cadre de diffusion personnalisable et automatique sur France A M/F, avec override par match.
+- Base joueurs à 10 lignes/page sur l'accueil.
+- Raccourcis icône uniquement, accomplissements avec infobulle, descriptions et titularisations retirées.
+- Origine fournisseur et attribution du modificateur retirées de l'affichage.
+- Indicateur supérieur supprimé et vague rouge ajoutée au header.
+
+## V1.1.41 — Diffusions, ergonomie joueur et historique TheSportsDB
+
+Cette version ajoute un gestionnaire de chaînes de diffusion dans le menu profil, des entités et tags de diffusion avec logos, un calendrier plus compact et des noms de pays sans suffixe de section. La sauvegarde de la fiche joueur reste ouverte afin d'enchaîner les contextes de sélection. Les indicateurs visuels « manuel » ont été retirés.
+
+TheSportsDB peut être exploité pour enrichir l'historique via ses calendriers précédents et ses calendriers de saison. L'import historique doit rester progressif et respecter les lignes `verified` / `locked`.
+
 
 ## V1.1.40 — Correctif Tags Compétitions → Calendrier
 
@@ -197,3 +217,7 @@ Voir `CALENDRIER_V1.1.36_TAGS_DRAPEAUX.md`.
 - Variables Netlify serveur : `THESPORTSDB_KEY`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`.
 
 Voir `CALENDRIER_V1.1.35_THESPORTSDB.md`.
+
+## V1.1.43 — pilote historique Espoirs
+
+Ajout de la fonction Netlify manuelle `history-espoirs` pour auditer et rattacher sans destruction les données historiques TheSportsDB de France Espoirs/U21 à la base existante. Voir `HISTORIQUE_ESPOIRS_V1.1.43.md`.

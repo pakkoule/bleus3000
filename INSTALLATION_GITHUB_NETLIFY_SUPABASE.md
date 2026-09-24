@@ -1,3 +1,8 @@
+
+## V1.1.41
+
+Aucune nouvelle variable Netlify. Conserver `THESPORTSDB_KEY`, `SUPABASE_URL` et `SUPABASE_SECRET_KEY`. La migration production des chaînes de diffusion est déjà appliquée.
+
 # Mise en ligne de Bleus 3000 V1.1.35
 
 ## Ordre conseillé
@@ -103,3 +108,17 @@ Conserver : `THESPORTSDB_KEY`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`.
 - TheSportsDB reste configuré avec `THESPORTSDB_KEY`.
 - Les migrations V1.1.40 ont déjà été appliquées sur la base Supabase de production.
 - Après déploiement du package : aucun SQL à lancer.
+
+## V1.1.43 — cadre de diffusion et accueil
+La migration `v1_1_42_calendar_feature_frames` est déjà appliquée sur le projet Supabase courant. Elle ajoute `matches.feature_frame_mode` et la table `calendar_feature_styles`. Aucune nouvelle variable Netlify n'est requise.
+
+
+## V1.1.43 — test historique Espoirs
+
+Après déploiement, ouvrir Netlify → Functions → `history-espoirs` → **Run now**.
+La fonction réutilise `THESPORTSDB_KEY`, `SUPABASE_URL` et `SUPABASE_SECRET_KEY`. Aucun secret supplémentaire.
+Elle ne doit pas être planifiée : c'est un pilote manuel et non destructif.
+
+## V1.1.44 — Import U23 féminines
+
+Aucune nouvelle variable Netlify et aucune migration SQL manuelle. Après le déploiement, lancer une seule fois `Functions → import-u23f → Run now`. La fonction utilise `SUPABASE_URL` et `SUPABASE_SECRET_KEY` déjà configurées.

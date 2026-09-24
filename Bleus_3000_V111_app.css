@@ -349,3 +349,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
 /* V1.1.37 — lien légal sous le tableau principal */
 .footer-note .footer-legal-link{display:inline-block;margin-top:5px;color:#9fc7ff;text-decoration:none;font-weight:800;font-size:8px}.footer-note .footer-legal-link:hover{text-decoration:underline;color:#fff}
+
+/* V1.1.42 — accomplissements : infobulle overlay, descriptions supprimées */
+.selection-achievement-badge{outline:none}
+.selection-achievement-tooltip{position:absolute;left:50%;bottom:calc(100% + 7px);z-index:50;min-width:max-content;max-width:180px;padding:5px 8px;border:1px solid #b9cbea;border-radius:8px;background:rgba(7,20,38,.97);color:#fff;font-size:8px!important;font-weight:850;line-height:1.25;text-align:center;white-space:normal;box-shadow:0 8px 22px rgba(3,15,35,.26);opacity:0;visibility:hidden;transform:translate(-50%,4px);pointer-events:none;transition:.14s ease}
+.selection-achievement-badge:hover .selection-achievement-tooltip,.selection-achievement-badge:focus-visible .selection-achievement-tooltip,.selection-achievement-badge.is-tooltip-open .selection-achievement-tooltip{opacity:1;visibility:visible;transform:translate(-50%,0)}
+.selection-achievement-editor-name small{display:none!important}
+
+/* V1.1.42 — troisième vague rouge dans le header */
+.logo-wrap::before{content:"";position:absolute;inset:-16px -4%;z-index:-1;pointer-events:none;opacity:.13;background-repeat:no-repeat;background-position:center;background-size:100% 100%;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 180' preserveAspectRatio='none'%3E%3Cpath d='M-20 126 C160 70 305 161 480 112 S820 58 1220 121' fill='none' stroke='%23ef3340' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E")}
+.table-wrap{padding-top:14px}
+@media(max-width:720px){.table-wrap{padding-top:14px!important}}

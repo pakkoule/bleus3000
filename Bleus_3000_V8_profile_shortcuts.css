@@ -71,3 +71,12 @@
     top:48px!important;
   }
 }
+
+/* V1.1.42 — raccourcis icône uniquement */
+.top-header>.card-ghost-controls .c3k-profile-shortcuts{width:auto!important;min-width:0!important;padding:5px!important;background:rgba(9,25,52,.96)!important;border-color:rgba(78,150,255,.55)!important}
+.top-header>.card-ghost-controls .c3k-profile-shortcuts-title{display:none!important}
+.top-header>.card-ghost-controls .c3k-profile-shortcuts-grid{display:flex!important;gap:5px!important}
+.top-header>.card-ghost-controls .c3k-profile-shortcut{width:44px!important;height:44px!important;padding:3px!important;border-color:rgba(255,255,255,.12)!important}
+.top-header>.card-ghost-controls .c3k-profile-shortcut-icon{width:30px;height:30px;font-size:18px}
+.top-header>.card-ghost-controls .c3k-profile-shortcut-tooltip{display:block}
+@media(max-width:720px){.top-header>.card-ghost-controls .c3k-profile-shortcuts{width:auto!important;max-width:calc(100vw - 20px)!important}.top-header>.card-ghost-controls .c3k-profile-shortcut{width:42px!important;height:42px!important}}
