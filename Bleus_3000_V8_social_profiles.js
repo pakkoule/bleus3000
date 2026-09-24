@@ -1,4 +1,4 @@
-/* Bleus 3000 V1.1.2 — profils sociaux sans image de profil : étiquettes + présence */
+/* 3615 Bleus V1.1.2 — profils sociaux sans image de profil : étiquettes + présence */
 (() => {
   'use strict';
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

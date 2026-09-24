@@ -1,4 +1,4 @@
-/* Bleus 3000 V1.1.2 — mur des membres : messages courts + likes, sans épinglage */
+/* 3615 Bleus V1.1.2 — mur des membres : messages courts + likes, sans épinglage */
 (() => {
   'use strict';
   const $=(s,p=document)=>p.querySelector(s), $$=(s,p=document)=>[...p.querySelectorAll(s)];

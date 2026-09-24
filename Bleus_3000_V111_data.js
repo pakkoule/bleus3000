@@ -75,7 +75,7 @@ window.BLEUS3000_DATA = {
       {id:'re2',title:'France extérieur 2026',subtitle:'Maillot · Équipe de France A',tags:['Extérieur','Nike'],facts:['Saison : 2026','Photos à ajouter'],sources:['Nike'],contributors:['Alex']}
     ],
     statistiques:[
-      {id:'rs1',title:'Sélections · A Masculine',subtitle:'Classement historique',tags:['Record','Sélections'],facts:['Calculé depuis les apparitions','Mise à jour relationnelle'],sources:['FFF','Matchs Bleus 3000'],contributors:['Data Team']},
+      {id:'rs1',title:'Sélections · A Masculine',subtitle:'Classement historique',tags:['Record','Sélections'],facts:['Calculé depuis les apparitions','Mise à jour relationnelle'],sources:['FFF','Matchs 3615 Bleus'],contributors:['Data Team']},
       {id:'rs2',title:'Buteurs · A Féminine',subtitle:'Classement historique',tags:['Record','Buts'],facts:['Calculé depuis les matchs','Filtres par période'],sources:['FFF'],contributors:['Alex']}
     ],
     lieux:[
@@ -84,7 +84,7 @@ window.BLEUS3000_DATA = {
     ],
     bibliographie:[
       {id:'rb1',title:'Les Bleus · ouvrage de référence',subtitle:'Livre · exemple de structure',tags:['Livre','Archive'],facts:['Auteur / éditeur / année','Liens vers joueurs, matchs et compétitions'],sources:['Notice bibliographique'],contributors:['Rapli LH']},
-      {id:'rb2',title:'Documentaire France 1998',subtitle:'Documentaire · exemple de structure',tags:['Documentaire','1998'],facts:['Durée / diffuseur','Objets Bleus 3000 associés'],sources:['Diffuseur'],contributors:['Alex']}
+      {id:'rb2',title:'Documentaire France 1998',subtitle:'Documentaire · exemple de structure',tags:['Documentaire','1998'],facts:['Durée / diffuseur','Objets 3615 Bleus associés'],sources:['Diffuseur'],contributors:['Alex']}
     ]
   }
 };

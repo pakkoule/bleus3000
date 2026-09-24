@@ -346,3 +346,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .match-reference-filters select{width:100%;min-width:0;height:36px;border:1px solid #c5d6ea;border-radius:8px;background:#fff;color:#264568;padding:0 8px;font:700 10px Poppins,sans-serif}
 @media(max-width:900px){.match-reference-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.rel-match-grid{grid-template-columns:1fr}}
 @media(max-width:560px){.match-reference-filters{grid-template-columns:1fr}.rel-match-bottom{align-items:flex-start;flex-direction:column}.rel-edit-match{width:100%}}
+
+/* V1.1.37 — lien légal sous le tableau principal */
+.footer-note .footer-legal-link{display:inline-block;margin-top:5px;color:#9fc7ff;text-decoration:none;font-weight:800;font-size:8px}.footer-note .footer-legal-link:hover{text-decoration:underline;color:#fff}

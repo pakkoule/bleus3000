@@ -1,4 +1,4 @@
-/* Bleus 3000 V1.1.36 — gestionnaire global de tags / étiquettes + sections + compétitions + icônes importées */
+/* 3615 Bleus V1.1.40 — tags : création d’entrée Compétitions + dégradés 5 couleurs */
 (() => {
   'use strict';
   const $=(s,p=document)=>p.querySelector(s), $$=(s,p=document)=>[...p.querySelectorAll(s)];
@@ -17,8 +17,15 @@
   const uuid=()=>crypto.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const localRows=()=>{try{return JSON.parse(localStorage.getItem(localKey)||'[]');}catch{return [];}};
   const saveLocal=()=>localStorage.setItem(localKey,JSON.stringify(tags));
+  const gradientColors=t=>{
+    let colors=Array.isArray(t?.gradient_colors)?t.gradient_colors.filter(Boolean).slice(0,5):[];
+    if(!colors.length)colors=[t?.color_start||'#2563EB',t?.color_end||t?.color_start||'#0EA5C6'];
+    if(colors.length===1)colors.push(t?.color_end||colors[0]);
+    return colors.slice(0,5);
+  };
   const tagStyle=t=>{
-    const bg=t.appearance==='solid'?t.color_start:`linear-gradient(${Number(t.gradient_angle)||135}deg,${t.color_start},${t.color_end})`;
+    const colors=gradientColors(t);
+    const bg=t.appearance==='solid'?colors[0]:`linear-gradient(${Number(t.gradient_angle)||135}deg,${colors.join(',')})`;
     return `--tag-bg:${bg};--tag-text:${t.text_color};--tag-border:${t.border_color};--tag-radius:${Number(t.border_radius)||8}px;--tag-bw:${Number(t.border_width)??1}px`;
   };
   const publicIconUrl=t=>{
@@ -59,7 +66,7 @@
     load();
   }
 
-  function blank(){return {kind:'tag',label_text:'',icon_text:'🏷️',icon_image_path:null,appearance:'gradient',color_start:'#2563EB',color_end:'#0EA5C6',text_color:'#FFFFFF',border_color:'#1E4FA7',gradient_angle:135,border_radius:8,border_width:1,aliases:[]};}
+  function blank(){return {kind:'tag',label_text:'',icon_text:'🏷️',icon_image_path:null,appearance:'gradient',color_start:'#2563EB',color_end:'#0EA5C6',gradient_colors:['#2563EB','#0EA5C6'],text_color:'#FFFFFF',border_color:'#1E4FA7',gradient_angle:135,border_radius:8,border_width:1,aliases:[]};}
   function current(){return tags.find(t=>t.id===editingId)||blank();}
 
   function render(){
@@ -106,23 +113,33 @@
       });
       clear?.addEventListener('click',()=>{pendingIconFile=null;pendingIconPreview='';form.dataset.removeIcon='1';if(file)file.value='';updatePreview(form);});
       const refType=form.elements.reference_type,refId=form.elements.reference_id;
-      const syncReferenceChoices=()=>{const type=refType?.value||'';if(!refId)return;[...refId.querySelectorAll('optgroup')].forEach(g=>{const gt=g.label==='Sélections'?'selection':'competition';g.hidden=!!type&&gt!==type;});if(type){const selected=refId.selectedOptions?.[0];if(selected?.dataset?.refType&&selected.dataset.refType!==type)refId.value='';}};
-      refType?.addEventListener('change',syncReferenceChoices);syncReferenceChoices();
+      const syncReferenceChoices=()=>{const type=refType?.value||'';if(!refId)return;[...refId.querySelectorAll('optgroup')].forEach(g=>{const gt=g.label==='Sélections'?'selection':'competition';g.hidden=!!type&&gt!==type;});if(type){const selected=refId.selectedOptions?.[0];if(selected?.dataset?.refType&&selected.dataset.refType!==type)refId.value='';}const box=form.querySelector('[data-new-competition]');if(box)box.hidden=!(type==='competition'&&!refId.value);};
+      refType?.addEventListener('change',syncReferenceChoices);refId?.addEventListener('change',syncReferenceChoices);syncReferenceChoices();
       $$('input,select',form).forEach(n=>n.addEventListener('input',()=>updatePreview(form)));updatePreview(form);
     }
   }
 
-  function currentReferenceLink(t){return referenceLinks.find(l=>l.tag_id===t.id&&(l.reference_type==='selection'||l.reference_type==='competition'))||null;}
+  function currentReferenceLinks(t){return referenceLinks.filter(l=>l.tag_id===t.id&&(l.reference_type==='selection'||l.reference_type==='competition'));}
+  function currentReferenceLink(t){return currentReferenceLinks(t)[0]||null;}
   function referenceEditorHtml(t){
-    const link=currentReferenceLink(t), selected=link?.reference_id||'', type=link?.reference_type||'', kind=link?.relation_kind||'membership';
+    const links=currentReferenceLinks(t);
+    if(editingId&&links.length){
+      const labels=links.map(l=>{
+        if(l.reference_type==='selection'){const tm=selectionTeams.find(x=>x.id===l.reference_id);return tm?`Sélection · ${tm.name}`:'';}
+        const cp=competitions.find(x=>x.id===l.reference_id);return cp?`Compétition · ${cp.name}${cp.edition?` · ${cp.edition}`:''}`:'';
+      }).filter(Boolean);
+      return `<fieldset class="b3k-tag-reference-box"><legend>Associations au référentiel</legend><div class="b3k-tag-ref-readonly">${labels.map(x=>`<span>${esc(x)}</span>`).join('')}</div><small>${links.length>1?'Ce tag est partagé par plusieurs entrées.':'Association existante.'} Modifier le texte, les couleurs ou l’icône conserve toutes les associations.</small></fieldset>`;
+    }
+    const link=currentReferenceLink(t), selected=link?.reference_id||'', type=link?.reference_type||t.reference_scope||'', kind=link?.relation_kind||'membership';
     const teamOpts=selectionTeams.map(tm=>`<option value="${esc(tm.id)}" data-ref-type="selection" ${selected===tm.id?'selected':''}>${esc(tm.name)}</option>`).join('');
     const compOpts=competitions.map(cp=>`<option value="${esc(cp.id)}" data-ref-type="competition" ${selected===cp.id?'selected':''}>${esc(cp.name)}${cp.edition?` · ${esc(cp.edition)}`:''}</option>`).join('');
-    return `<fieldset class="b3k-tag-reference-box"><legend>Association au référentiel</legend><div class="b3k-tag-grid three"><label>Référentiel<select name="reference_type"><option value="">Aucun</option><option value="selection" ${type==='selection'?'selected':''}>Sélections</option><option value="competition" ${type==='competition'?'selected':''}>Compétitions</option></select></label><label>Entrée<select name="reference_id"><option value="">Aucune entrée</option><optgroup label="Sélections">${teamOpts}</optgroup><optgroup label="Compétitions">${compOpts}</optgroup></select></label><label>Type de lien<select name="relation_kind"><option value="membership" ${kind==='membership'?'selected':''}>Appartenance</option><option value="status" ${kind==='status'?'selected':''}>Statut</option><option value="topic" ${kind==='topic'?'selected':''}>Sujet</option></select></label></div><small>Pour les tags de section et de compétition, le lien d'appartenance pilote directement l'affichage dans Matchs et Calendrier.</small></fieldset>`;
+    return `<fieldset class="b3k-tag-reference-box"><legend>Association au référentiel</legend><div class="b3k-tag-grid three"><label>Référentiel<select name="reference_type"><option value="">Aucun</option><option value="selection" ${type==='selection'?'selected':''}>Sélections</option><option value="competition" ${type==='competition'?'selected':''}>Compétitions</option></select></label><label>Entrée existante<select name="reference_id"><option value="">Aucune / créer une nouvelle entrée</option><optgroup label="Sélections">${teamOpts}</optgroup><optgroup label="Compétitions">${compOpts}</optgroup></select></label><label>Type de lien<select name="relation_kind"><option value="membership" ${kind==='membership'?'selected':''}>Appartenance</option><option value="status" ${kind==='status'?'selected':''}>Statut</option><option value="topic" ${kind==='topic'?'selected':''}>Sujet</option></select></label></div><div class="b3k-tag-new-competition" data-new-competition hidden><strong>Nouvelle entrée Compétitions</strong><div class="b3k-tag-grid two"><label>Nom de la compétition<input name="new_competition_name" maxlength="160" placeholder="Par défaut : le texte du tag"></label><label>Édition / saison<input name="new_competition_edition" maxlength="80" placeholder="Facultatif · ex. 2027"></label></div><small>Si aucune entrée existante n’est choisie, 3615 Bleus crée automatiquement cette nouvelle compétition et lui associe le tag.</small></div><small>Un nouveau tag peut donc soit rejoindre une entrée existante, soit créer lui-même la nouvelle entrée Compétitions.</small></fieldset>`;
   }
 
   function editorHtml(t){
+    const colors=gradientColors(t), color=(i,fallback)=>colors[i]||fallback;
     return `<form class="b3k-tag-editor" id="b3kTagForm">
-      <div class="b3k-tag-editor-title"><strong>${editingId?'Modifier le tag':'Créer un tag / une étiquette'}</strong><small>Texte, icône et rendu sont personnalisables.</small></div>
+      <div class="b3k-tag-editor-title"><strong>${editingId?'Modifier le tag':'Créer un tag / une étiquette'}</strong><small>Texte, icône et dégradé jusqu’à 5 couleurs sont personnalisables.</small></div>
       <div class="b3k-tag-preview-wrap"><span>APERÇU</span><div id="b3kTagPreview"></div></div>
       <div class="b3k-tag-grid two">
         <label>Type<select name="kind"><option value="tag" ${t.kind==='tag'?'selected':''}>Tag</option><option value="label" ${t.kind==='label'?'selected':''}>Étiquette</option></select></label>
@@ -141,12 +158,17 @@
       </div>
       <label class="b3k-tag-wide">Alias / mots-clés<input name="aliases" placeholder="ex : EDF, A, senior" value="${esc((t.aliases||[]).join(', '))}"></label>
       ${referenceEditorHtml(t)}
-      <div class="b3k-tag-color-grid">
-        <label>Couleur 1<input type="color" name="color_start" value="${esc(t.color_start||'#2563EB')}"></label>
-        <label>Couleur 2<input type="color" name="color_end" value="${esc(t.color_end||'#0EA5C6')}"></label>
-        <label>Texte<input type="color" name="text_color" value="${esc(t.text_color||'#FFFFFF')}"></label>
-        <label>Bordure<input type="color" name="border_color" value="${esc(t.border_color||'#1E4FA7')}"></label>
-      </div>
+      <fieldset class="b3k-tag-gradient-box"><legend>Couleurs du tag</legend><small>Les couleurs 1 et 2 sont toujours utilisées pour un dégradé. Active jusqu’à trois couleurs supplémentaires.</small>
+        <div class="b3k-tag-color-grid is-gradient-stops">
+          <label>Couleur 1<input type="color" name="color_1" value="${esc(color(0,'#2563EB'))}"></label>
+          <label>Couleur 2<input type="color" name="color_2" value="${esc(color(1,'#0EA5C6'))}"></label>
+          <label class="b3k-optional-color"><span>Couleur 3 <input type="checkbox" name="use_color_3" ${colors.length>=3?'checked':''}></span><input type="color" name="color_3" value="${esc(color(2,'#FFFFFF'))}"></label>
+          <label class="b3k-optional-color"><span>Couleur 4 <input type="checkbox" name="use_color_4" ${colors.length>=4?'checked':''}></span><input type="color" name="color_4" value="${esc(color(3,'#E63946'))}"></label>
+          <label class="b3k-optional-color"><span>Couleur 5 <input type="checkbox" name="use_color_5" ${colors.length>=5?'checked':''}></span><input type="color" name="color_5" value="${esc(color(4,'#082654'))}"></label>
+          <label>Texte<input type="color" name="text_color" value="${esc(t.text_color||'#FFFFFF')}"></label>
+          <label>Bordure<input type="color" name="border_color" value="${esc(t.border_color||'#1E4FA7')}"></label>
+        </div>
+      </fieldset>
       <div class="b3k-tag-grid three">
         <label>Angle<input type="number" name="gradient_angle" min="0" max="360" step="5" value="${Number(t.gradient_angle)||135}"></label>
         <label>Arrondi<input type="number" name="border_radius" min="2" max="24" value="${Number(t.border_radius)||8}"></label>
@@ -159,12 +181,15 @@
 
   function formPayload(form){
     const fd=new FormData(form), label=String(fd.get('label_text')||'').trim();
+    const colors=[String(fd.get('color_1')||'#2563EB'),String(fd.get('color_2')||'#0EA5C6')];
+    for(let i=3;i<=5;i++)if(fd.get(`use_color_${i}`)==='on')colors.push(String(fd.get(`color_${i}`)||'#2563EB'));
     return {
       kind:String(fd.get('kind')||'tag'),label_text:label,icon_text:String(fd.get('icon_text')||'🏷️').trim()||'🏷️',icon_image_path:current().icon_image_path||null,
-      appearance:String(fd.get('appearance')||'gradient'),color_start:String(fd.get('color_start')||'#2563EB'),color_end:String(fd.get('color_end')||'#0EA5C6'),
+      appearance:String(fd.get('appearance')||'gradient'),color_start:colors[0],color_end:colors[colors.length-1],gradient_colors:colors.slice(0,5),
       text_color:String(fd.get('text_color')||'#FFFFFF'),border_color:String(fd.get('border_color')||'#1E4FA7'),gradient_angle:Number(fd.get('gradient_angle')||135),
       border_radius:Number(fd.get('border_radius')||8),border_width:Number(fd.get('border_width')||1),aliases:String(fd.get('aliases')||'').split(',').map(x=>x.trim()).filter(Boolean),
-      reference_type:String(fd.get('reference_type')||''),reference_id:String(fd.get('reference_id')||''),relation_kind:String(fd.get('relation_kind')||'membership')
+      reference_type:String(fd.get('reference_type')||''),reference_id:String(fd.get('reference_id')||''),relation_kind:String(fd.get('relation_kind')||'membership'),
+      new_competition_name:String(fd.get('new_competition_name')||'').trim(),new_competition_edition:String(fd.get('new_competition_edition')||'').trim()
     };
   }
 
@@ -186,10 +211,11 @@
     if(c&&state().session?.user&&pendingIconFile){
       try{payload.icon_image_path=await uploadIcon(pendingIconFile,payload.label_text,editingId);}catch(err){return status(st,err.message||'Échec de l’import de l’icône.','error');}
     }
-    const refSpec={reference_type:payload.reference_type,reference_id:payload.reference_id,relation_kind:payload.relation_kind};
+    const refSpec={reference_type:payload.reference_type,reference_id:payload.reference_id,relation_kind:payload.relation_kind,new_competition_name:payload.new_competition_name,new_competition_edition:payload.new_competition_edition};
+    payload.reference_scope=refSpec.reference_type||current().reference_scope||null;
     if(refSpec.reference_type==='selection'&&refSpec.reference_id&&!selectionTeams.some(x=>String(x.id)===String(refSpec.reference_id)))return status(st,'Choisis une entrée du référentiel Sélections.','error');
     if(refSpec.reference_type==='competition'&&refSpec.reference_id&&!competitions.some(x=>String(x.id)===String(refSpec.reference_id)))return status(st,'Choisis une entrée du référentiel Compétitions.','error');
-    delete payload.reference_type;delete payload.reference_id;delete payload.relation_kind;
+    delete payload.reference_type;delete payload.reference_id;delete payload.relation_kind;delete payload.new_competition_name;delete payload.new_competition_edition;
     let savedTagId=editingId;
     if(c&&state().session?.user){
       if(editingId){
@@ -201,7 +227,16 @@
         if(error)return status(st,error.message.includes('duplicate')?'Ce texte est déjà utilisé par un tag.':error.message,'error');
         savedTagId=created?.id||null;
       }
-      if(savedTagId){
+      if(savedTagId&&!editingId){
+        if(refSpec.reference_type==='competition'&&!refSpec.reference_id){
+          const competitionName=(refSpec.new_competition_name||payload.label_text).trim();
+          if(competitionName){
+            const compPayload={name:competitionName,edition:refSpec.new_competition_edition||null,competition_type:'Sélection nationale',status:'active',tag_id:savedTagId,external_ids:{manual_tag_entry:true}};
+            const {data:newComp,error:compErr}=await c.from('competitions').insert(compPayload).select('id,name,edition,tag_id').single();
+            if(compErr){await c.from('tags').delete().eq('id',savedTagId).catch?.(()=>{});return status(st,'Création de la compétition · '+compErr.message,'error');}
+            refSpec.reference_id=newComp?.id||'';
+          }
+        }
         const oldLinks=referenceLinks.filter(l=>l.tag_id===savedTagId&&(l.reference_type==='selection'||l.reference_type==='competition'));
         for(const l of oldLinks){
           const {error:delErr}=await c.from('tag_reference_links').delete().eq('id',l.id);
@@ -225,7 +260,8 @@
     if(c&&state().session?.user&&old&&(removeIcon||pendingIconFile)&&old!==payload.icon_image_path){await c.storage.from('tag-icons').remove([old]).catch?.(()=>{});}
     editingId=null;pendingIconFile=null;pendingIconPreview='';await load();
     window.BLEUS3000_RELATIONAL_REFS?.invalidate?.();
-    window.BLEUS3000_CALENDAR?.refresh?.();
+    await window.BLEUS3000_RELATIONAL_REFS?.load?.();
+    await window.BLEUS3000_CALENDAR?.refresh?.();
   }
 
 

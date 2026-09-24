@@ -1,4 +1,4 @@
-/* Bleus 3000 — configuration publique du client web.
+/* 3615 Bleus — configuration publique du client web.
    Utiliser la clé Supabase publishable (ou legacy anon), jamais une clé secret/service_role. */
 window.BLEUS3000_CONFIG = {
   SUPABASE_URL: 'https://hwhydccoslslfqqhmirj.supabase.co',

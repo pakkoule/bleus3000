@@ -454,22 +454,20 @@ input,select,textarea{scroll-margin-block:96px}
   button:hover{transform:none!important}
 }
 
-/* V1.1.28 — identité visuelle Bleus 3000 */
+/* V1.1.37 — identité visuelle 3615 Bleus */
 .bleus-header-logo{
   display:block;
-  width:clamp(82px,9vw,112px);
+  width:clamp(126px,13vw,174px);
   height:auto;
-  aspect-ratio:1;
   object-fit:contain;
-  border-radius:50%;
-  filter:drop-shadow(0 3px 8px rgba(7,20,38,.14));
+  filter:drop-shadow(0 4px 10px rgba(7,20,38,.16));
 }
 @media(max-width:900px){
-  .bleus-header-logo{width:88px}
+  .bleus-header-logo{width:142px}
 }
 @media(max-width:720px){
-  .bleus-header-logo{width:84px}
+  .bleus-header-logo{width:124px}
 }
 @media(max-width:420px){
-  .bleus-header-logo{width:76px}
+  .bleus-header-logo{width:112px}
 }

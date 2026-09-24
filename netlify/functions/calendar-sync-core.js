@@ -1,4 +1,4 @@
-/* Bleus 3000 V1.1.36 — TheSportsDB calendar synchronizer + tags globaux */
+/* 3615 Bleus V1.1.39 — TheSportsDB + familles de compétitions partagées */
 const SPORTSDB='https://www.thesportsdb.com/api/v2/json';
 
 const BUILTIN_TEAM_IDS={
@@ -24,6 +24,21 @@ const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLo
 const arr=v=>(Array.isArray(v)?v:[v]).map(Number).filter(Number.isFinite).filter(Boolean);
 const unique=a=>[...new Set(a)];
 const cleanText=v=>String(v??'').trim();
+const isFriendlyCompetition=name=>{const n=norm(name);return n.includes('friendly')||n.includes('friendlies')||n.includes('amic');};
+const competitionFamilySpec=(name,selection={})=>{
+  const n=norm(name);
+  if(!n)return null;
+  if(n.includes('friendly')||n.includes('friendlies')||n.includes('amic'))return {slug:'match-amical',label:'Match Amical',icon:'⚽',aliases:['Amical','Match amical','Matchs amicaux','International Friendlies','International Friendly']};
+  if(n.includes('uefa nations league')||n.includes('ligue des nations'))return {slug:'ligue-des-nations',label:'Ligue des Nations',icon:'🏆',aliases:['UEFA Nations League','Ligue des Nations']};
+  if(n.includes('fifa womens u17 world cup')||n.includes('fifa women u17 world cup'))return {slug:'coupe-du-monde-u17-f',label:'Coupe du monde U17 F',icon:'🌍',aliases:['FIFA Womens U17 World Cup','Mondial U17 féminin']};
+  if(n.includes('fifa u 17 world cup')||n.includes('fifa u17 world cup'))return {slug:'coupe-du-monde-u17',label:'Coupe du monde U17',icon:'🌍',aliases:['FIFA U-17 World Cup','Mondial U17']};
+  if(n.includes('u21')||n.includes('under 21')){
+    if(n.includes('qualif')||n.includes('qualification')||n.includes('qualifying')||n==='uefa european under 21 championship')return {slug:'qualif-euro-u21',label:'Qualif EURO U21',icon:'🎯',aliases:['Qualification Euro U21','Qualifications Euro U21','UEFA U21 Championship Qualification','Qualification Coupe Europe']};
+    if(/^euro u21\b/.test(n)||n.includes('european under 21 championship'))return {slug:'euro-u21',label:'Euro U21',icon:'🏆',aliases:['Euro U21','UEFA European Under-21 Championship']};
+  }
+  return null;
+};
+const competitionKey=(name,gender,category)=>`${norm(name)}|${String(gender||'')}|${norm(category||'')}`;
 const toInt=v=>v===''||v==null||Number.isNaN(Number(v))?null:Number(v);
 const slug=v=>encodeURIComponent(String(v||'').trim().toLowerCase().replace(/\s+/g,'_'));
 const escFilter=v=>encodeURIComponent(String(v??''));
@@ -156,32 +171,37 @@ exports.runCalendarSync=async()=>{
   // Charge les référentiels une seule fois pour éviter des dizaines d'allers-retours Supabase.
   const [opponents,competitions,places,providerMatches,recentMatches]=await Promise.all([
     sb('/opponents?select=id,name&limit=5000').catch(()=>[]),
-    sb('/competitions?select=id,name,edition,external_ids,tag_id&limit=5000').catch(()=>[]),
+    sb('/competitions?select=id,name,edition,external_ids,tag_id,gender,selection_category&limit=5000').catch(()=>[]),
     sb('/places?select=id,name,city,country&limit=5000').catch(()=>[]),
     sb('/matches?provider=eq.thesportsdb&select=id,provider_fixture_id,data_state,manual_overrides,selection_team_id,match_date,opponent_id&limit=5000').catch(()=>[]),
     sb('/matches?select=id,selection_team_id,match_date,opponent_id,provider,provider_fixture_id,data_state,manual_overrides&order=match_date.desc&limit=5000').catch(()=>[])
   ]);
   const oppMap=new Map(opponents.map(x=>[norm(x.name),x]));
-  const compMap=new Map(competitions.map(x=>[norm(x.name),x]));
+  const compMap=new Map(competitions.map(x=>[competitionKey(x.name,x.gender,x.selection_category),x]));
   const placeMap=new Map(places.map(x=>[`${norm(x.name)}|${norm(x.city)}`,x]));
   const placeNameMap=new Map(places.map(x=>[norm(x.name),x]));
   const providerMatchMap=new Map(providerMatches.map(x=>[String(x.provider_fixture_id),x]));
 
   async function createOne(table,payload){const rows=await sb(`/${table}`,{method:'POST',body:JSON.stringify(payload)});return rows[0]||null;}
   async function opponentFor(name,externalId){const key=norm(name||'Adversaire à confirmer');if(oppMap.has(key))return oppMap.get(key);const row=await createOne('opponents',{name:name||'Adversaire à confirmer'});if(row)oppMap.set(key,row);return row;}
-  async function ensureCompetitionTag(comp){
+  async function ensureCompetitionTag(comp,selection={}){
     if(!comp)return comp;
-    if(comp.tag_id)return comp;
-    const tagSlug=`competition-${String(comp.id||'').replace(/-/g,'').slice(0,12)}`;
+    const family=competitionFamilySpec(comp.name,selection);
+    if(comp.tag_id&&!family)return comp;
+    const tagSlug=family?.slug||`competition-${String(comp.id||'').replace(/-/g,'').slice(0,12)}`;
     let tag=null;
     try{
       const found=await sb(`/tags?slug=eq.${escFilter(tagSlug)}&select=id,slug&limit=1`);
       tag=found[0]||null;
       if(!tag){
-        tag=await createOne('tags',{slug:tagSlug,kind:'tag',label_text:cleanText(comp.name).slice(0,40)||'Compétition',icon_text:'🏆',aliases:[cleanText(comp.name),cleanText(comp.edition)].filter(Boolean),appearance:'gradient',color_start:'#eef4fb',color_end:'#dce8f6',text_color:'#18304e',border_color:'#c5d4e6',gradient_angle:135,border_radius:16,border_width:1,created_by:null,is_active:true});
+        const label=family?.label||(cleanText(comp.name).slice(0,40)||'Compétition');
+        tag=await createOne('tags',{slug:tagSlug,kind:'tag',label_text:label,icon_text:family?.icon||'🏆',aliases:family?.aliases||[cleanText(comp.name),cleanText(comp.edition)].filter(Boolean),appearance:'gradient',color_start:'#eef4fb',color_end:'#dce8f6',gradient_colors:['#eef4fb','#dce8f6'],text_color:'#18304e',border_color:'#c5d4e6',gradient_angle:135,border_radius:16,border_width:1,created_by:null,is_active:true});
       }
       if(tag?.id){
-        await sb(`/competitions?id=eq.${comp.id}`,{method:'PATCH',body:JSON.stringify({tag_id:tag.id,updated_at:new Date().toISOString()})});
+        if(String(comp.tag_id||'')!==String(tag.id)){
+          await sb(`/competitions?id=eq.${comp.id}`,{method:'PATCH',body:JSON.stringify({tag_id:tag.id,updated_at:new Date().toISOString()})});
+          if(family){try{await sb(`/tag_reference_links?reference_type=eq.competition&reference_id=eq.${comp.id}&tag_id=neq.${tag.id}`,{method:'DELETE'});}catch{}}
+        }
         try{await createOne('tag_reference_links',{tag_id:tag.id,reference_type:'competition',reference_id:comp.id,relation_kind:'membership',created_by:null});}catch(err){if(!/duplicate key|23505/i.test(err.message))throw err;}
         comp.tag_id=tag.id;
       }
@@ -189,10 +209,10 @@ exports.runCalendarSync=async()=>{
     return comp;
   }
   async function competitionFor(e,selection){
-    const name=cleanText(e.strLeague)||'Match international',key=norm(name);
-    if(compMap.has(key))return ensureCompetitionTag(compMap.get(key));
+    const name=cleanText(e.strLeague)||'Match international',key=competitionKey(name,selection.gender,selection.category);
+    if(compMap.has(key))return ensureCompetitionTag(compMap.get(key),selection);
     const row=await createOne('competitions',{name,edition:cleanText(e.strSeason)||null,organizer:null,competition_type:null,gender:selection.gender,selection_category:selection.category,status:'active',external_ids:{thesportsdb_league_id:e.idLeague||null}});
-    if(row){compMap.set(key,row);await ensureCompetitionTag(row);}
+    if(row){compMap.set(key,row);await ensureCompetitionTag(row,selection);}
     return row;
   }
   async function placeFor(e){const name=cleanText(e.strVenue);if(!name)return null;const city=cleanText(e.strCity)||null,key=`${norm(name)}|${norm(city)}`;if(placeMap.has(key))return placeMap.get(key);if(placeNameMap.has(norm(name)))return placeNameMap.get(norm(name));const row=await createOne('places',{place_type:'stadium',name,city,country:cleanText(e.strCountry)||null});if(row){placeMap.set(key,row);placeNameMap.set(norm(name),row);}return row;}

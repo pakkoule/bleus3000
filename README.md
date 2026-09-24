@@ -1,4 +1,30 @@
-# Bleus 3000 V1.1.36
+# 3615 Bleus V1.1.40
+
+## V1.1.40 — Correctif Tags Compétitions → Calendrier
+
+- Les tags disposent maintenant d’une portée persistante (`selection`, `competition`, `general`).
+- Un nouveau tag de compétition est immédiatement visible dans **Calendrier → Ajouter un match → Tag de compétition**.
+- Le cache relationnel est rechargé après création/modification d’un tag : plus besoin d’attendre un nouveau chargement complet.
+- La création automatique d’une entrée Compétitions est conservée ; un échec ne laisse plus de tag orphelin.
+- Le tag **TOURNOI INTERNATIONAL DE LIMOGES** a été réparé et relié à son entrée Compétitions.
+
+Voir `FIX_TAG_CALENDAR_V1.1.40.md` et `MIGRATION_V1.1.40_TAG_SCOPE_CALENDAR.sql`.
+
+---
+
+# 3615 Bleus V1.1.38
+
+
+## V1.1.38 — Création calendrier + tags 5 couleurs
+
+- Nouveau bouton **+ Ajouter un match** dans le calendrier pour les éditeurs/admins.
+- Classement automatique : date passée → **Matchs passés** ; date future → **À venir**.
+- Création relationnelle des adversaires, compétitions et lieux si nécessaire.
+- Les matchs créés apparaissent aussi immédiatement dans le référentiel **Matchs**.
+- Les tags acceptent désormais des dégradés de **2 à 5 couleurs** avec aperçu en direct.
+- Migration : `MIGRATION_V1.1.38_CALENDAR_CREATE_TAG_GRADIENTS.sql` (déjà appliquée au Supabase de production).
+
+Voir `CALENDRIER_V1.1.38_CREATION_TAGS_5_COULEURS.md`.
 
 **Évolution principale : calendrier TheSportsDB + corrections éditoriales.** Un seul sync Netlify alimente les matchs futurs/récents, le live est affiché dans le calendrier, le référentiel Matchs est réparé et filtrable, et chaque champ API peut être corrigé manuellement sans bloquer la synchronisation des autres champs.
 

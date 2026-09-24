@@ -1,18 +1,18 @@
-# Bleus 3000 — V1.1.36
+# 3615 Bleus — V1.1.40
 
-## Tags globaux + drapeaux SVG
-- Le calendrier affiche désormais les vrais tags Bleus 3000 liés aux sélections : **INTERNATIONAL**, **ESPOIRS**, U20, U19, U18, U17, U16 et leurs équivalents féminins.
-- Les 14 sections disposent d'un tag global dans `public.tags` et d'une liaison `selection_teams.team_tag_id`.
-- Les 42 compétitions présentes au moment de la migration disposent désormais elles aussi d'un tag global modifiable.
-- Toute nouvelle compétition créée par `calendar-sync` reçoit automatiquement son tag de compétition.
-- Les tags globaux restent modifiables dans **Profil > Tags & étiquettes** et leurs changements se répercutent dans Matchs et Calendrier.
-- La fenêtre **Modifier le match** permet de surcharger, uniquement pour ce match, le tag de section et le tag de compétition via `matches.manual_overrides`.
-- L'option **Automatique** revient au tag global de la sélection / compétition ; **Revenir aux données source** supprime toutes les corrections manuelles du match.
-- Les drapeaux emoji du calendrier sont remplacés par des drapeaux **SVG ISO** avec résolution automatique des noms français/anglais et des catégories Uxx/féminines.
-- Le référentiel Matchs utilise également ces drapeaux SVG.
-- Migration Supabase `v1_1_36_tags_drapeaux` appliquée sur le projet Bleus 3000.
+## Correctif Tags Compétitions → Calendrier
+- Ajout d'une portée persistante `reference_scope` aux tags (`selection`, `competition`, `general`).
+- Un tag créé pour le référentiel **Compétitions** apparaît maintenant dans les listes de tags du calendrier, même si son association vient juste d'être créée.
+- Après sauvegarde d'un tag, le référentiel relationnel est invalidé puis rechargé immédiatement avant le rafraîchissement du calendrier.
+- En cas d'échec lors de la création automatique d'une nouvelle compétition, le tag nouvellement créé est nettoyé afin d'éviter un tag orphelin.
+- Le tag existant **TOURNOI INTERNATIONAL DE LIMOGES** a été réparé et rattaché à une vraie entrée Compétitions.
 
-## TheSportsDB
-- Un seul `calendar-sync` / un seul **Run now**.
-- Livescore via `/api/sportsdb-live`.
-- Les corrections manuelles restent prioritaires sur les données TheSportsDB, champ par champ.
+## Héritage V1.1.39
+- Familles de compétitions partagées : Match Amical, Euro U21, Qualif EURO U21, Coupe du monde U17, Coupe du monde U17 F, Ligue des Nations.
+- Association tag sélection → contexte statistique joueur automatique.
+- Référentiel Statistiques relationnel.
+- Accomplissements sans limite applicative.
+
+## Base de données
+La migration `v1_1_40_tag_reference_scope_calendar_link` est déjà appliquée au projet Supabase de production.
+Le fichier `MIGRATION_V1.1.40_TAG_SCOPE_CALENDAR.sql` documente la structure cible.

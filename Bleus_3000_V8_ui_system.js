@@ -1,4 +1,4 @@
-/* Bleus 3000 V1.1.1 — système UI léger */
+/* 3615 Bleus V1.1.1 — système UI léger */
 (() => {
   'use strict';
   const ICONS={

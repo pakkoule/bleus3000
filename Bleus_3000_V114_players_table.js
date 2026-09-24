@@ -1,4 +1,4 @@
-/* Bleus 3000 V1.1.24 — Base globale joueurs · moteur de recherche unifié */
+/* 3615 Bleus V1.1.24 — Base globale joueurs · moteur de recherche unifié */
 (() => {
   'use strict';
   const $=(s,p=document)=>p.querySelector(s), $$=(s,p=document)=>[...p.querySelectorAll(s)];
@@ -8,7 +8,7 @@
 
   const waitClient=()=>new Promise(resolve=>{let n=0;const tick=()=>{client=window.BLEUS3000_SUPABASE||null;if(client||n++>50)return resolve(client);setTimeout(tick,100)};tick();});
   const S=window.BLEUS3000_SEARCH;
-  if(!S)throw new Error('Moteur de recherche Bleus 3000 indisponible');
+  if(!S)throw new Error('Moteur de recherche 3615 Bleus indisponible');
   const norm=S.normalize;
   const nameVariants=(name,lastName='')=>[...new Set([...S.buildNameKeys(name),...S.buildNameKeys(lastName)].filter(Boolean))];
   function highlightName(name,query){
@@ -116,7 +116,7 @@
 
   function tagChipHtml(t){
     if(!t)return '';
-    const bg=t.appearance==='solid'?(t.color_start||'#2563EB'):`linear-gradient(${Number(t.gradient_angle||135)}deg,${t.color_start||'#2563EB'},${t.color_end||'#0EA5C6'})`;
+    const colors=Array.isArray(t.gradient_colors)&&t.gradient_colors.length?t.gradient_colors.filter(Boolean).slice(0,5):[t.color_start||'#2563EB',t.color_end||'#0EA5C6'];const bg=t.appearance==='solid'?colors[0]:`linear-gradient(${Number(t.gradient_angle||135)}deg,${colors.join(',')})`;
     let icon='';
     if(t.icon_image_path&&client){try{const u=client.storage.from('tag-icons').getPublicUrl(t.icon_image_path).data.publicUrl;icon=u?`<img src="${esc(u)}" alt="">`:'';}catch{}}
     if(!icon&&t.icon_text)icon=`<span>${esc(t.icon_text)}</span>`;

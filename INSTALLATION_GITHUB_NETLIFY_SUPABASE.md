@@ -90,3 +90,16 @@ Les variables `API_FOOTBALL_KEY` et `BLEUS_API_TEAM_MAP` des versions précéden
 La migration `v1_1_36_tags_drapeaux` est déjà appliquée sur le projet Supabase Bleus 3000.
 Aucune nouvelle variable Netlify n'est requise.
 Conserver : `THESPORTSDB_KEY`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`.
+
+## V1.1.38
+- Aucune nouvelle variable Netlify.
+- `public.tags.gradient_colors` stocke jusqu'à 5 couleurs par tag.
+- Migration `v1_1_38_tag_gradients_5_colors` déjà appliquée sur la base de production.
+- La création manuelle de matchs réutilise les politiques RLS existantes de `matches`, `opponents`, `competitions` et `places` ; elle est donc réservée aux rôles autorisés par `can_edit()`.
+
+
+## V1.1.40
+- Aucune nouvelle variable Netlify.
+- TheSportsDB reste configuré avec `THESPORTSDB_KEY`.
+- Les migrations V1.1.40 ont déjà été appliquées sur la base Supabase de production.
+- Après déploiement du package : aucun SQL à lancer.

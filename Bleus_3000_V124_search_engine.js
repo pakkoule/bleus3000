@@ -1,4 +1,4 @@
-/* Bleus 3000 V1.1.24 — moteur de recherche unifié, sans dépendance BDD */
+/* 3615 Bleus V1.1.24 — moteur de recherche unifié, sans dépendance BDD */
 (function(root){
   'use strict';
 

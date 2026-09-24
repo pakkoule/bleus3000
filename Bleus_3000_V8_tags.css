@@ -13,3 +13,10 @@
 .b3k-tag-reference-box legend{padding:0 6px;font-weight:900;color:#17365e;font-size:11px}
 .b3k-tag-reference-box>small{display:block;margin-top:6px;color:#6f8198;font-size:9px;line-height:1.4}
 .b3k-tag-ref-meta{display:block!important;margin-top:3px;color:#2d63a8!important;font-weight:800}
+
+/* V1.1.37 — associations multiples des tags */
+.b3k-tag-ref-readonly{display:flex;gap:5px;flex-wrap:wrap;margin:4px 0 6px}.b3k-tag-ref-readonly span{padding:4px 7px;border:1px solid #cfdced;border-radius:999px;background:#eef5ff;color:#315a8d;font-size:6.4px;font-weight:800}
+
+/* V1.1.38 — dégradés de tags jusqu’à 5 couleurs */
+.b3k-tag-gradient-box{margin:0;padding:9px 10px 10px;border:1px solid #d4dfed;border-radius:10px;background:#fbfdff}.b3k-tag-gradient-box legend{padding:0 5px;font-size:9px;font-weight:900;color:#31577f}.b3k-tag-gradient-box>small{display:block;margin-bottom:7px;font-size:7px;line-height:1.4;color:#8191a6}.b3k-tag-color-grid.is-gradient-stops{grid-template-columns:repeat(auto-fit,minmax(82px,1fr))}.b3k-optional-color>span{display:flex;align-items:center;justify-content:space-between;gap:4px}.b3k-optional-color>span input[type="checkbox"]{width:13px;height:13px;min-height:0;accent-color:#2563eb}.b3k-tag-color-grid.is-gradient-stops label{padding:6px;border:1px solid #e3eaf3;border-radius:8px;background:#fff}.b3k-tag-color-grid.is-gradient-stops input[type="color"]{height:38px}
+@media(max-width:520px){.b3k-tag-color-grid.is-gradient-stops{grid-template-columns:repeat(2,1fr)}}

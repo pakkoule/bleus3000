@@ -4,27 +4,29 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#071426">
-  <title>Bleus 3000 — V1.1.36</title>
+  <title>3615 Bleus — V1.1.40</title>
   <link rel="icon" href="favicon.ico" sizes="any">
   <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="bleus3000-icon-180.png">
+  <meta name="apple-mobile-web-app-title" content="3615 Bleus">
+  <link rel="apple-touch-icon" sizes="180x180" href="3615-bleus-icon-180.png">
   <link rel="manifest" href="site.webmanifest">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="Bleus_3000_V111_app.css?v=1.1.36">
+  <link rel="stylesheet" href="Bleus_3000_V111_app.css?v=1.1.40">
   <link rel="stylesheet" href="Bleus_3000_V8_account.css?v=1.1.21">
   <link rel="stylesheet" href="Bleus_3000_V8_social_profiles.css">
   <link rel="stylesheet" href="Bleus_3000_V8_member_wall.css">
   <link rel="stylesheet" href="Bleus_3000_V8_profile_shortcuts.css?v=1.1.21">
-  <link rel="stylesheet" href="Bleus_3000_V8_tags.css">
+  <link rel="stylesheet" href="Bleus_3000_V8_tags.css?v=1.1.40">
   <link rel="stylesheet" href="Bleus_3000_V8_achievements.css?v=1.1.19">
   <link rel="stylesheet" href="Bleus_3000_V8_ui_system.css">
   <link rel="stylesheet" href="Bleus_3000_V127_responsive.css?v=1.1.34">
-  <link rel="stylesheet" href="Bleus_3000_V130_calendar.css?v=1.1.36">
+  <link rel="stylesheet" href="Bleus_3000_V130_calendar.css?v=1.1.40">
+  <link rel="stylesheet" href="Bleus_3000_V139_statistics.css?v=1.1.40">
 </head>
 <body>
-  <header class="top-header" aria-label="Bleus 3000">
+  <header class="top-header" aria-label="3615 Bleus">
     <div class="header-left-tools" id="headerLeftTools">
       <div class="universal-search-shell" id="universalSearchShell" aria-label="Recherche universelle">
         <svg class="universal-search-icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 4.5 4.5"></path></svg>
@@ -64,12 +66,12 @@
           </div>
         </div>
     <div class="logo-wrap">
-      <img class="bleus-header-logo" src="bleus3000-logo.webp" alt="Bleus 3000" width="512" height="512">
+      <img class="bleus-header-logo" src="3615-bleus-logo.png" alt="3615 Bleus" width="1330" height="1235">
     </div>
   </header>
 
   <main class="page">
-    <section class="table-card" aria-label="Bleus 3000">
+    <section class="table-card" aria-label="3615 Bleus">
       <div class="table-wrap">
 
         <div class="c3k-space-indicator" id="bleusSpaceIndicator" aria-live="polite">
@@ -127,7 +129,7 @@
       </div>
     </section>
   </main>
-  <footer class="footer-note"><strong>BLEUS 3000 · V1.1.36</strong> · coque V9 restaurée · couche métier football français</footer>
+  <footer class="footer-note"><strong>3615 BLEUS · V1.1.40</strong> · référentiel des sélections françaises<br><a class="footer-legal-link" href="mentions-legales.html">Mentions légales · Confidentialité · Sources & crédits</a></footer>
 
   <!-- Bibliothèque / référentiels -->
   <div class="modal-backdrop" id="referenceModal" hidden>
@@ -171,7 +173,7 @@
     <section class="modal-dialog" role="dialog" aria-modal="true">
       <header class="modal-head"><div><h2>Fiche joueur</h2><p>Profil relationnel · forme récente · sources · archives</p></div><button class="modal-close" data-modal-close="playerModal" type="button">×</button></header>
       <div class="modal-body">
-        <div class="player-detail-head"><div class="player-initials-badge" id="playerInitials">MO</div><div><h3 id="playerName">Michael Olise</h3><p id="playerMeta">Bayern Munich · AD/MOC</p><div class="ref-tags"><span>🇫🇷 International</span><span>Performance club</span><span>Sources liées</span></div></div><div class="player-kpi"><strong id="playerIndex">92.4</strong><small>Bleus 3000 Index</small></div></div>
+        <div class="player-detail-head"><div class="player-initials-badge" id="playerInitials">MO</div><div><h3 id="playerName">Michael Olise</h3><p id="playerMeta">Bayern Munich · AD/MOC</p><div class="ref-tags"><span>🇫🇷 International</span><span>Performance club</span><span>Sources liées</span></div></div><div class="player-kpi"><strong id="playerIndex">92.4</strong><small>3615 Bleus Index</small></div></div>
         <div class="performance-toolbar"><button class="is-active" data-perf-limit="5" type="button">5 derniers matchs</button><button data-perf-limit="10" type="button">10 derniers matchs</button><span class="tag-badge" id="playerPerfSummary">Données à connecter</span></div>
         <div class="performance-list" id="performanceList"></div>
       </div>
@@ -203,17 +205,39 @@
   </div>
 
 
-  <!-- Calendrier Bleus 3000 -->
+  <!-- Calendrier 3615 Bleus -->
   <div class="modal-backdrop" id="calendarModal" hidden>
-    <section class="modal-dialog" style="width:min(850px,100%)" role="dialog" aria-modal="true" aria-label="Calendrier Bleus 3000">
+    <section class="modal-dialog" style="width:min(850px,100%)" role="dialog" aria-modal="true" aria-label="Calendrier 3615 Bleus">
       <header class="modal-head"><div><h2>Calendrier</h2><p>Matchs passés et à venir · toutes les sélections françaises</p></div><button class="modal-close" data-calendar-close type="button">×</button></header>
-      <div class="calendar-modal-tools"><div class="calendar-tabs"><button class="calendar-tab is-active" data-calendar-mode="upcoming" type="button">À venir</button><button class="calendar-tab" data-calendar-mode="past" type="button">Matchs passés</button></div><select class="calendar-filter" id="calendarTeamFilter"><option value="all">Toutes les sélections</option></select></div>
+      <div class="calendar-modal-tools"><div class="calendar-tabs"><button class="calendar-tab is-active" data-calendar-mode="upcoming" type="button">À venir</button><button class="calendar-tab" data-calendar-mode="past" type="button">Matchs passés</button></div><div class="calendar-modal-actions"><select class="calendar-filter" id="calendarTeamFilter"><option value="all">Toutes les sélections</option></select><button class="calendar-add-btn" id="calendarAddBtn" type="button" hidden>＋ Ajouter un match</button></div></div>
       <div class="calendar-modal-list calendar-list" id="calendarFullList"><div class="calendar-loading">Chargement…</div></div>
+    </section>
+  </div>
+
+  <div class="modal-backdrop" id="calendarCreateModal" hidden>
+    <section class="modal-dialog" style="width:min(600px,100%)" role="dialog" aria-modal="true" aria-labelledby="calendarCreateTitle">
+      <header class="modal-head"><div><h2 id="calendarCreateTitle">Ajouter un match</h2><p>Entrée manuelle 3615 Bleus · la date décide automatiquement si le match est passé ou à venir</p></div><button class="modal-close" data-calendar-create-close type="button">×</button></header>
+      <div class="modal-body">
+        <form id="calendarCreateForm" class="calendar-edit-grid">
+          <label>Date et heure<input id="calendarCreateDate" type="datetime-local" required></label>
+          <div class="calendar-edit-two"><label>Sélection<select id="calendarCreateSelection" required></select></label><label>France joue<select id="calendarCreateHomeAway"><option value="home">À domicile</option><option value="away">À l’extérieur</option></select></label></div>
+          <label>Adversaire<input id="calendarCreateOpponent" maxlength="120" required placeholder="Ex. Espagne U21"></label>
+          <div class="calendar-edit-two"><label>🏟 Stade<input id="calendarCreateVenue" maxlength="160" placeholder="Facultatif"></label><label>Ville<input id="calendarCreateCity" maxlength="120" placeholder="Facultatif"></label></div>
+          <label>Compétition<input id="calendarCreateCompetition" maxlength="180" list="calendarCompetitionList" placeholder="Ex. Match amical"><datalist id="calendarCompetitionList"></datalist></label>
+          <div class="calendar-edit-two"><label>Tag de section<select id="calendarCreateSelectionTag"><option value="">Automatique</option></select></label><label>Tag de compétition<select id="calendarCreateCompetitionTag"><option value="">Automatique</option></select></label></div>
+          <div class="calendar-edit-two"><label>Score France<input id="calendarCreateFranceScore" type="number" min="0" max="99" placeholder="Facultatif"></label><label>Score adversaire<input id="calendarCreateOpponentScore" type="number" min="0" max="99" placeholder="Facultatif"></label></div>
+          <label>📺 Diffusion<input id="calendarCreateBroadcast" maxlength="160" placeholder="Ex. TF1 · France 2 · FFFtv"></label>
+          <label>Diffusion internet · URL<input id="calendarCreateUrl" type="url" maxlength="500" placeholder="https://…"></label>
+          <div class="calendar-create-help">Une date déjà passée classe automatiquement l’entrée dans <strong>Matchs passés</strong>. Une date future l’ajoute à <strong>À venir</strong>. Si TheSportsDB retrouve ensuite ce match, l’identifiant fournisseur peut être rattaché sans écraser tes données manuelles.</div>
+          <div class="calendar-create-status" id="calendarCreateStatus" hidden></div>
+          <div class="calendar-edit-actions"><button class="secondary-btn" data-calendar-create-close type="button">Annuler</button><button class="primary-btn" type="submit">Créer le match</button></div>
+        </form>
+      </div>
     </section>
   </div>
   <div class="modal-backdrop" id="calendarEditModal" hidden>
     <section class="modal-dialog" style="width:min(520px,100%)" role="dialog" aria-modal="true">
-      <header class="modal-head"><div><h2>Modifier le match</h2><p>Correction éditoriale Bleus 3000 · une valeur corrigée n’est plus écrasée par l’API</p></div><button class="modal-close" data-modal-close="calendarEditModal" type="button">×</button></header>
+      <header class="modal-head"><div><h2>Modifier le match</h2><p>Correction éditoriale 3615 Bleus · une valeur corrigée n’est plus écrasée par l’API</p></div><button class="modal-close" data-modal-close="calendarEditModal" type="button">×</button></header>
       <div class="modal-body"><form id="calendarEditForm" class="calendar-edit-grid"><input id="calendarEditMatchId" type="hidden"><label>Date et heure<input id="calendarEditDate" type="datetime-local"></label><label>Adversaire<input id="calendarEditOpponent" maxlength="120"></label><div class="calendar-edit-two"><label>🏟 Stade<input id="calendarEditVenue" maxlength="160"></label><label>Ville<input id="calendarEditCity" maxlength="120"></label></div><label>Compétition<input id="calendarEditCompetition" maxlength="180"></label><div class="calendar-edit-two"><label>Tag de section<select id="calendarEditSelectionTag"><option value="">Automatique</option></select></label><label>Tag de compétition<select id="calendarEditCompetitionTag"><option value="">Automatique</option></select></label></div><div class="calendar-edit-two"><label>Score France<input id="calendarEditFranceScore" type="number" min="0" max="99"></label><label>Score adversaire<input id="calendarEditOpponentScore" type="number" min="0" max="99"></label></div><label>📺 Diffusion<input id="calendarEditBroadcast" maxlength="160" placeholder="Ex. TF1 · France 2 · FFFtv"></label><label>Diffusion internet · URL<input id="calendarEditUrl" type="url" maxlength="500" placeholder="https://…"></label><div class="calendar-edit-actions"><button class="secondary-btn" id="calendarEditReset" type="button">Revenir aux données source</button><button class="primary-btn" type="submit">Enregistrer</button></div></form></div>
     </section>
   </div>
@@ -222,18 +246,19 @@
   <script src="bleus_config.js"></script>
   <script src="Bleus_3000_V111_data.js"></script>
   <script src="Bleus_3000_V124_search_engine.js?v=1.1.24"></script>
-  <script src="Bleus_3000_V136_flags.js?v=1.1.36"></script>
-  <script src="Bleus_3000_V126_relational_refs.js?v=1.1.36"></script>
-  <script src="Bleus_3000_V111_app.js?v=1.1.27"></script>
+  <script src="Bleus_3000_V136_flags.js?v=1.1.40"></script>
+  <script src="Bleus_3000_V126_relational_refs.js?v=1.1.40"></script>
+  <script src="Bleus_3000_V111_app.js?v=1.1.40"></script>
   <script src="Bleus_3000_V8_ui_system.js"></script>
   <script src="Bleus_3000_V8_social_profiles.js"></script>
   <script src="Bleus_3000_V8_account.js?v=1.1.22"></script>
-  <script src="Bleus_3000_V119_selections.js?v=1.1.27"></script>
-  <script src="Bleus_3000_V114_players_table.js?v=1.1.27"></script>
+  <script src="Bleus_3000_V119_selections.js?v=1.1.40"></script>
+  <script src="Bleus_3000_V114_players_table.js?v=1.1.40"></script>
   <script src="Bleus_3000_V8_profile_shortcuts.js?v=1.1.21"></script>
-  <script src="Bleus_3000_V8_tags.js?v=1.1.36"></script>
-  <script src="Bleus_3000_V8_achievements.js?v=1.1.19"></script>
+  <script src="Bleus_3000_V8_tags.js?v=1.1.40"></script>
+  <script src="Bleus_3000_V8_achievements.js?v=1.1.40"></script>
   <script src="Bleus_3000_V8_member_wall.js"></script>
-  <script src="Bleus_3000_V130_calendar.js?v=1.1.36"></script>
+  <script src="Bleus_3000_V139_statistics.js?v=1.1.40"></script>
+  <script src="Bleus_3000_V130_calendar.js?v=1.1.40"></script>
 </body>
 </html>

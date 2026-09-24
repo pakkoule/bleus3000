@@ -338,6 +338,7 @@ create table if not exists public.tags (
   appearance text not null default 'gradient' check (appearance in ('solid','gradient')),
   color_start text not null default '#2563EB',
   color_end text not null default '#0EA5C6',
+  gradient_colors text[] not null default ARRAY['#2563EB','#0EA5C6']::text[] check (cardinality(gradient_colors) between 0 and 5),
   text_color text not null default '#FFFFFF',
   border_color text not null default '#1E4FA7',
   gradient_angle int not null default 135 check (gradient_angle between 0 and 360),

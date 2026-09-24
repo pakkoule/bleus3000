@@ -1,4 +1,4 @@
-/* Bleus 3000 V1.1.1 — raccourcis favoris du profil */
+/* 3615 Bleus V1.1.1 — raccourcis favoris du profil */
 (() => {
   'use strict';
   const options=[
