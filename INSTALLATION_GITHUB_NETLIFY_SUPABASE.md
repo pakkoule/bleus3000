@@ -122,3 +122,8 @@ Elle ne doit pas être planifiée : c'est un pilote manuel et non destructif.
 ## V1.1.44 — Import U23 féminines
 
 Aucune nouvelle variable Netlify et aucune migration SQL manuelle. Après le déploiement, lancer une seule fois `Functions → import-u23f → Run now`. La fonction utilise `SUPABASE_URL` et `SUPABASE_SECRET_KEY` déjà configurées.
+
+
+## V1.1.46 — Import Jeux Olympiques 2024
+
+Aucune nouvelle variable Netlify. `calendar-sync` lance automatiquement l'import France U23 / Paris 2024 si les six rencontres ne sont pas déjà présentes. Pour forcer un contrôle manuel, appeler `/.netlify/functions/import-olympique-u23`. La migration `MIGRATION_V1.1.46_JEUX_OLYMPIQUES_2024.sql` est déjà appliquée au projet Supabase courant.

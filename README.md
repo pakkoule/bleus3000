@@ -1,5 +1,13 @@
 # 3615 Bleus
 
+## V1.1.46 — Jeux Olympiques 2024 / OLYMPIQUE U23
+
+Cette version importe les 6 matchs de la France U23 aux Jeux Olympiques de Paris 2024 via TheSportsDB. Les rencontres sont conservées dans le référentiel technique `FRA-ESP-M`, mais affichent le tag de section **OLYMPIQUE U23**. La compétition **Jeux Olympiques 2024** et le tag compétition **JEUX OLYMPIQUES** sont ajoutés. Le prochain `calendar-sync` effectue automatiquement l'import si les 6 matchs ne sont pas déjà présents, puis l'opération devient idempotente.
+
+## V1.1.45 — Olympique U23
+
+La sélection masculine U23 reste techniquement rattachée au référentiel `FRA-ESP-M`, mais les rencontres des Jeux olympiques disposent désormais du tag de section distinct **OLYMPIQUE U23**. Les rencontres U21 conservent **ESPOIRS**. Le sync TheSportsDB et le pilote historique appliquent automatiquement ce tag aux événements U23 dont la compétition est olympique.
+
 ## V1.1.44 — France U23 / Espoirs féminines
 
 Import du classeur fourni `Bleus3000_Espoirs_Feminines_U23_2014_2026_V1.xlsx` : 72 matchs, 133 joueuses, 25 lignes de statistiques carrière vérifiées FFF, 152 observations joueuse-match, 22 buts détaillés et 4 périodes de sélectionneur. Le tag existant `ESPOIRS F` est réutilisé. L'import se lance une seule fois via la fonction Netlify `import-u23f`. Voir `U23_FEMININES_V1.1.44_IMPORT.md`.
