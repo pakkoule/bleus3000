@@ -1,3 +1,7 @@
+# Bleus 3000 V1.1.29
+
+Ajout du référentiel **France U17 Masculin 2004–2026** (376 joueurs), avec continuité des profils globaux, tag U17 Masculin existant et contexte GENERAL. Voir `MIGRATION_V1.1.29_U17_MASCULIN.sql`.
+
 # Bleus 3000 V1.1.22
 
 Correctif de démarrage Supabase : validation de la session persistée avant exposition du client aux modules, refresh automatique des JWT temporellement invalides, et retour en mode public si une session locale est irrécupérable.
@@ -109,3 +113,34 @@ Le moteur de recherche a été réécrit côté frontend uniquement. Aucun chang
 ## V1.1.25 — Accomplissements dans les fiches joueur
 
 Le mode modification d’une tuile joueur possède désormais un sélecteur d’accomplissement, un bouton `+ Ajouter`, un champ numérique facultatif et un retrait individuel. Les choix proviennent du catalogue d’accomplissements affiliés au référentiel Sélections.
+
+## V1.1.26 — Espoirs relationnels
+- 318 joueurs France Espoirs/U21 reliés aux identités joueurs existantes.
+- Tag ESPOIRS réutilisé et cliquable sur les tuiles joueur.
+- Tag GENERAL virtuel : somme des statistiques de toutes les sélections liées au joueur.
+- Sélecteur de contexte dans l’éditeur joueur pour modifier la ligne statistique d’une sélection précise.
+- 226 matchs Espoirs sous forme de tuiles relationnelles.
+- 8 sélectionneurs, 33 arbitres principaux et 77 autres officiels dans Personnel & Officiels.
+- 809 observations joueur-match et 25 buts documentés conservés en base.
+
+## V1.1.26 — Référentiel Espoirs relationnel
+
+Le référentiel France Espoirs masculin 2004–2026 est intégré au même graphe d'identités que les autres sélections. Un joueur présent en A et en Espoirs conserve un seul `players.id` et plusieurs lignes `player_selection_stats`.
+
+Les tags de sélection sur les tuiles sont cliquables et changent le contexte statistique sans créer de doublon de fiche. `GENERAL` additionne les statistiques connues de toutes les sélections liées au joueur et reste une vue calculée non éditable.
+
+Les onglets Matchs et Personnel & Officiels utilisent désormais les premières données relationnelles Espoirs importées depuis le classeur V4. La source XLSX de l'import est conservée dans `data/`.
+
+
+## V1.1.27 — Responsive iPhone / iPad
+
+- Nouvelle couche `Bleus_3000_V127_responsive.css` chargée en dernier.
+- Correction du zoom Safari/iOS sur les champs dont la taille de police historique était inférieure à 16 px.
+- Header réorganisé sur tablette et mobile pour éviter les superpositions entre logo, recherche, compte et barre d’outils.
+- Modales et panneaux compte adaptés aux safe areas et à la hauteur dynamique du clavier mobile.
+- Tableaux joueurs conservés complets avec défilement horizontal tactile et colonne joueur figée.
+- Référentiels, sélections, filtres, éditeurs, outils XI/Five, mur des membres et présence optimisés pour le tactile.
+- Aucun blocage du zoom manuel : l’accessibilité navigateur est conservée.
+
+## V1.1.30 — Calendrier
+Le calendrier est alimenté par `public.matches` afin de ne jamais dupliquer le référentiel Matchs. L'accueil montre les prochains matchs et l'icône calendrier ouvre la liste complète. La synchronisation API-Football est fournie dans `netlify/functions/calendar-sync.js` et reste inactive tant que ses variables serveur et le mapping des IDs d'équipes ne sont pas configurés. Voir `CALENDRIER_V1.1.30.md`.

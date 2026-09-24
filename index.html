@@ -2,13 +2,17 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#071426">
-  <title>Bleus 3000 — V1.1.17</title>
+  <title>Bleus 3000 — V1.1.30</title>
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="bleus3000-icon-180.png">
+  <link rel="manifest" href="site.webmanifest">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="Bleus_3000_V111_app.css?v=1.1.25">
+  <link rel="stylesheet" href="Bleus_3000_V111_app.css?v=1.1.27">
   <link rel="stylesheet" href="Bleus_3000_V8_account.css?v=1.1.21">
   <link rel="stylesheet" href="Bleus_3000_V8_social_profiles.css">
   <link rel="stylesheet" href="Bleus_3000_V8_member_wall.css">
@@ -16,6 +20,8 @@
   <link rel="stylesheet" href="Bleus_3000_V8_tags.css">
   <link rel="stylesheet" href="Bleus_3000_V8_achievements.css?v=1.1.19">
   <link rel="stylesheet" href="Bleus_3000_V8_ui_system.css">
+  <link rel="stylesheet" href="Bleus_3000_V127_responsive.css?v=1.1.30">
+  <link rel="stylesheet" href="Bleus_3000_V130_calendar.css?v=1.1.30">
 </head>
 <body>
   <header class="top-header" aria-label="Bleus 3000">
@@ -31,6 +37,7 @@
           <div class="toolbar-primary-actions">
             <button class="card-ghost-btn" id="quoteHistoryButton" type="button" title="Historique" aria-label="Historique"><svg viewBox="0 0 24 24"><path d="M4.5 8.5A8 8 0 1 1 4 13"></path><path d="M4.5 4.5v4h4"></path><path d="M12 8v4l2.8 1.8"></path></svg><span class="quote-history-count">0</span></button>
             <button class="card-ghost-btn" id="favoritesOnlyBtn" type="button" title="Favoris" aria-label="Favoris"><svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"></path></svg><span class="favorites-count-badge" hidden>0</span></button>
+            <button class="card-ghost-btn" id="calendarToolbarBtn" type="button" title="Calendrier" aria-label="Calendrier"><svg viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="15" rx="2"></rect><path d="M7.5 3.5v4M16.5 3.5v4M3.5 9.5h17M7 13h.01M12 13h.01M17 13h.01M7 17h.01M12 17h.01"></path></svg></button>
             <button class="card-ghost-btn toolbar-group-toggle" data-toolbar-menu="calculators" id="toolbarCalculatorsBtn" type="button" title="Outils de composition" aria-label="Outils de composition"><svg viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="2"></rect><path d="M8 7h8M8 11h2M12 11h2M16 11h.01M8 15h2M12 15h2M16 15h.01M8 18h6"></path></svg></button>
             <button class="card-ghost-btn toolbar-group-toggle" data-toolbar-menu="references" id="toolbarReferencesBtn" type="button" title="Référentiels" aria-label="Référentiels"><svg viewBox="0 0 24 24"><path d="M4 5.5c2.8-.8 5.4-.2 8 1.5v12c-2.6-1.7-5.2-2.3-8-1.5z"></path><path d="M20 5.5c-2.8-.8-5.4-.2-8 1.5v12c2.6-1.7 5.2-2.3 8-1.5z"></path><path d="M12 7v12"></path></svg></button>
             <button class="card-ghost-btn toolbar-group-toggle" data-toolbar-menu="display" id="toolbarDisplayBtn" type="button" title="Affichage" aria-label="Affichage"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 12h3M11 12h9M4 17h8M16 17h4"></path><circle cx="16" cy="7" r="2"></circle><circle cx="9" cy="12" r="2"></circle><circle cx="14" cy="17" r="2"></circle></svg></button>
@@ -57,11 +64,7 @@
           </div>
         </div>
     <div class="logo-wrap">
-      <div class="bleus-wordmark">
-        <strong>BLEUS <span>3000</span></strong>
-        <small>Talents · Sélections · Archives</small>
-        <div class="bleus-tricolor" aria-hidden="true"><i></i><i></i><i></i></div>
-      </div>
+      <img class="bleus-header-logo" src="bleus3000-logo.webp" alt="Bleus 3000" width="512" height="512">
     </div>
   </header>
 
@@ -75,6 +78,14 @@
         </div>
 
 
+
+        <section class="calendar-home" aria-label="Prochains matchs">
+          <header class="calendar-home-head">
+            <div class="calendar-home-title"><span class="calendar-home-icon">📅</span><div><strong>Prochains matchs</strong><small>Calendrier toutes sélections · mise à jour relationnelle</small></div></div>
+            <button class="calendar-open-all" id="calendarOpenAll" type="button">Voir tout le calendrier</button>
+          </header>
+          <div class="calendar-list" id="calendarHomeList"><div class="calendar-loading">Chargement du calendrier…</div></div>
+        </section>
 
         <section class="players-database-shell" aria-label="Base globale des joueurs et joueuses">
           <header class="players-db-heading">
@@ -116,7 +127,7 @@
       </div>
     </section>
   </main>
-  <footer class="footer-note"><strong>BLEUS 3000 · V1.1.17</strong> · coque V9 restaurée · couche métier football français</footer>
+  <footer class="footer-note"><strong>BLEUS 3000 · V1.1.29</strong> · coque V9 restaurée · couche métier football français</footer>
 
   <!-- Bibliothèque / référentiels -->
   <div class="modal-backdrop" id="referenceModal" hidden>
@@ -191,19 +202,37 @@
     </section>
   </div>
 
+
+  <!-- Calendrier Bleus 3000 -->
+  <div class="modal-backdrop" id="calendarModal" hidden>
+    <section class="modal-dialog" style="width:min(850px,100%)" role="dialog" aria-modal="true" aria-label="Calendrier Bleus 3000">
+      <header class="modal-head"><div><h2>Calendrier</h2><p>Matchs passés et à venir · toutes les sélections françaises</p></div><button class="modal-close" data-calendar-close type="button">×</button></header>
+      <div class="calendar-modal-tools"><div class="calendar-tabs"><button class="calendar-tab is-active" data-calendar-mode="upcoming" type="button">À venir</button><button class="calendar-tab" data-calendar-mode="past" type="button">Matchs passés</button></div><select class="calendar-filter" id="calendarTeamFilter"><option value="all">Toutes les sélections</option></select></div>
+      <div class="calendar-modal-list calendar-list" id="calendarFullList"><div class="calendar-loading">Chargement…</div></div>
+    </section>
+  </div>
+  <div class="modal-backdrop" id="calendarEditModal" hidden>
+    <section class="modal-dialog" style="width:min(520px,100%)" role="dialog" aria-modal="true">
+      <header class="modal-head"><div><h2>Diffusion du match</h2><p>Correction éditoriale Bleus 3000</p></div><button class="modal-close" data-modal-close="calendarEditModal" type="button">×</button></header>
+      <div class="modal-body"><form id="calendarEditForm" class="calendar-edit-grid"><input id="calendarEditMatchId" type="hidden"><label>📺 Diffusion<input id="calendarEditBroadcast" maxlength="160" placeholder="Ex. TF1 · France 2 · FFFtv"></label><label>Diffusion internet · URL<input id="calendarEditUrl" type="url" maxlength="500" placeholder="https://…"></label><button class="primary-btn" type="submit">Enregistrer</button></form></div>
+    </section>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="bleus_config.js"></script>
   <script src="Bleus_3000_V111_data.js"></script>
   <script src="Bleus_3000_V124_search_engine.js?v=1.1.24"></script>
-  <script src="Bleus_3000_V111_app.js?v=1.1.24"></script>
+  <script src="Bleus_3000_V126_relational_refs.js?v=1.1.27"></script>
+  <script src="Bleus_3000_V111_app.js?v=1.1.27"></script>
   <script src="Bleus_3000_V8_ui_system.js"></script>
   <script src="Bleus_3000_V8_social_profiles.js"></script>
   <script src="Bleus_3000_V8_account.js?v=1.1.22"></script>
-  <script src="Bleus_3000_V119_selections.js?v=1.1.25"></script>
-  <script src="Bleus_3000_V114_players_table.js?v=1.1.24"></script>
+  <script src="Bleus_3000_V119_selections.js?v=1.1.27"></script>
+  <script src="Bleus_3000_V114_players_table.js?v=1.1.27"></script>
   <script src="Bleus_3000_V8_profile_shortcuts.js?v=1.1.21"></script>
   <script src="Bleus_3000_V8_tags.js?v=1.1.16"></script>
   <script src="Bleus_3000_V8_achievements.js?v=1.1.19"></script>
   <script src="Bleus_3000_V8_member_wall.js"></script>
+  <script src="Bleus_3000_V130_calendar.js?v=1.1.30"></script>
 </body>
 </html>

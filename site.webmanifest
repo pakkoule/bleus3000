@@ -1,0 +1,12 @@
+{
+  "name": "Bleus 3000",
+  "short_name": "Bleus 3000",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#071426",
+  "theme_color": "#071426",
+  "icons": [
+    {"src":"bleus3000-icon-192.png","sizes":"192x192","type":"image/png"},
+    {"src":"bleus3000-icon-512.png","sizes":"512x512","type":"image/png"}
+  ]
+}

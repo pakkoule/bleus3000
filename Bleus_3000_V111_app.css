@@ -302,3 +302,31 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   .selection-achievement-value-label{grid-column:2!important}
   .selection-achievement-remove{grid-column:3;grid-row:1}
 }
+
+/* V1.1.26 — contextes de sélection et référentiels relationnels */
+.selection-context-tag{appearance:none;border:0;background:transparent;padding:0;margin:0 4px 4px 0;cursor:pointer;border-radius:10px;vertical-align:middle;transition:transform .12s ease,box-shadow .12s ease}
+.selection-context-tag:hover{transform:translateY(-1px)}
+.selection-context-tag.is-active{box-shadow:0 0 0 2px #2f6dff,0 2px 8px rgba(47,109,255,.18)}
+.selection-context-tag .tag-chip,.selection-context-tag .selection-main-tag{pointer-events:none}
+#selectionEditorContextLabel{grid-column:1/-1;background:#f4f8ff;border:1px solid #c8dcff;border-radius:12px;padding:10px}
+#selectionEditorContextLabel select{margin-top:6px}
+#selectionEditorContextLabel small{display:block;margin-top:5px;color:#5b7090}
+.relational-subtabs{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+.relational-subtabs button{border:1px solid #b9d3ff;background:#fff;color:#173b75;font:700 12px/1.1 Poppins,sans-serif;padding:8px 12px;border-radius:10px;cursor:pointer}
+.relational-subtabs button.is-active{background:#153f90;color:#fff;border-color:#153f90}
+.relational-ref-tile{min-height:0}
+.relational-ref-head{display:flex;align-items:center;gap:12px}
+.relational-ref-head h3{margin:0;color:#143463;font-size:16px}
+.relational-ref-head .subtitle{font-size:11px;color:#6680a6;margin-top:2px}
+.relational-ref-icon{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(145deg,#eaf3ff,#d4e7ff);border:1px solid #bdd6ff;font-size:26px;flex:0 0 auto}
+.relational-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:10px}
+.relational-facts span,.relational-status{border:1px solid #d8e6fa;background:#f8fbff;border-radius:9px;padding:7px 9px;font-size:11px;color:#38577e}
+.relational-status{margin-top:9px}
+.relational-wide-stat{grid-column:span 2}
+@media(max-width:760px){.relational-facts{grid-template-columns:1fr}}
+
+/* V1.1.26 · Référentiels relationnels Espoirs */
+.rel-ref-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;width:100%}
+.rel-ref-tile{min-width:0;border:1px solid #bdd5f4;border-radius:16px;background:#fff;padding:14px;box-shadow:0 5px 16px rgba(13,56,112,.07);display:flex;flex-direction:column;gap:11px}
+.rel-ref-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.rel-ref-head h3{margin:2px 0 3px;color:#17385f;font-size:17px;line-height:1.25}.rel-ref-head small,.rel-ref-head .subtitle{color:#6884a8;font-size:12px;font-weight:700}.rel-score{display:inline-flex;min-width:52px;justify-content:center;padding:3px 7px;border-radius:8px;background:#edf5ff;color:#17385f;font-weight:900}.rel-score.is-win,.rel-result.is-win{background:#e7f8ef;color:#177447}.rel-score.is-draw,.rel-result.is-draw{background:#edf3fb;color:#496786}.rel-score.is-loss,.rel-result.is-loss{background:#fff0f2;color:#b4233b}.rel-result{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:#eef5ff;color:#1e5fb9;font-weight:1000}.rel-facts{display:flex;flex-wrap:wrap;gap:6px 10px;color:#4b678c;font-size:12px}.rel-facts span{background:#f5f9ff;border:1px solid #dae8fa;border-radius:8px;padding:5px 7px}.rel-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto}.rel-tag-fallback{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border:1px solid #123b8f;border-radius:10px;background:#2563eb;color:#fff;font-weight:900;font-size:10px}.rel-person-tile{position:relative;padding-left:76px;min-height:150px}.rel-person-avatar{position:absolute;left:14px;top:14px;width:50px;height:50px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,#123b8f,#2f6dff);color:#fff;font-weight:1000;font-size:17px;border:2px solid #d7e8ff}.rel-stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.rel-stat-grid.one{grid-template-columns:minmax(120px,190px)}.rel-stat-grid span{display:grid;gap:2px;padding:7px;border:1px solid #d7e6f8;border-radius:9px;background:#f8fbff}.rel-stat-grid small{font-size:10px;color:#6d87a8;font-weight:800}.rel-stat-grid strong{font-size:16px;color:#17385f}.selection-context-tag{font:inherit}.selection-context-tag.is-active{outline:2px solid #2f6dff;outline-offset:1px}.selection-context-tag:focus-visible{outline:2px solid #59b9ff;outline-offset:2px}
+@media(max-width:850px){.rel-ref-grid{grid-template-columns:1fr}.rel-person-tile{padding-left:14px;padding-top:76px}.rel-person-avatar{top:14px}}

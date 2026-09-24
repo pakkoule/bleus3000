@@ -1,0 +1,475 @@
+/* Bleus 3000 V1.1.27 — Responsive iPhone / iPad / tactile
+   Couche finale volontairement chargée après les styles historiques afin de
+   normaliser le responsive sans modifier le comportement desktop existant. */
+
+:root{
+  --b3k-safe-top: env(safe-area-inset-top, 0px);
+  --b3k-safe-right: env(safe-area-inset-right, 0px);
+  --b3k-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --b3k-safe-left: env(safe-area-inset-left, 0px);
+}
+
+html{
+  width:100%;
+  min-height:100%;
+  overflow-x:hidden;
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+}
+body{
+  width:100%;
+  min-height:100vh;
+  min-height:100dvh;
+  overflow-x:hidden;
+}
+img,video,canvas{max-width:100%;height:auto}
+input,select,textarea,button{max-width:100%}
+button,a,input,select,textarea,[role="button"]{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+input,select,textarea{scroll-margin-block:96px}
+
+/* iOS Safari zoome au focus sur les champs < 16px. On conserve la densité
+   desktop, mais on impose 16px dès que l'interface devient tablette/mobile. */
+@media (max-width:1180px){
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+  select,
+  textarea{
+    font-size:16px!important;
+    line-height:1.25!important;
+  }
+}
+
+/* ---------- Tablette / iPad ---------- */
+@media (max-width:1024px){
+  body{
+    padding:
+      max(10px,var(--b3k-safe-top))
+      max(10px,var(--b3k-safe-right))
+      max(12px,var(--b3k-safe-bottom))
+      max(10px,var(--b3k-safe-left));
+  }
+
+  .page,.top-header,.footer-note{width:100%!important;max-width:none!important}
+  .page,.table-card,.table-wrap,.players-database-shell,.header-left-tools{min-width:0}
+
+  /* Header sans chevauchement : logo + outils puis recherche/compte sur toute la largeur. */
+  .top-header{
+    margin:0 auto 12px!important;
+    min-height:0!important;
+    padding:12px!important;
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) auto!important;
+    grid-template-areas:
+      "logo tools"
+      "left left"!important;
+    gap:10px 12px!important;
+    align-items:center!important;
+    overflow:visible!important;
+  }
+  .logo-wrap{grid-area:logo!important;justify-content:flex-start!important;min-width:0}
+  .bleus-wordmark{align-items:flex-start!important;text-align:left!important;transform:none!important;min-width:0}
+  .bleus-wordmark strong{font-size:clamp(25px,3.3vw,31px)!important}
+  .bleus-wordmark small{font-size:8px!important;letter-spacing:.2em!important}
+
+  .header-left-tools{
+    grid-area:left!important;
+    position:relative!important;
+    inset:auto!important;
+    width:100%!important;
+    max-width:none!important;
+    gap:7px!important;
+    order:initial!important;
+  }
+  .header-left-tools .universal-search-shell,
+  .header-left-tools .c3k-top-left-rail,
+  .header-left-tools .c3k-v8-account-shell{
+    width:100%!important;
+    max-width:none!important;
+    margin:0!important;
+  }
+  .header-left-tools .universal-search-shell{min-height:48px!important;padding:7px 10px!important}
+  .header-left-tools .universal-search-results{
+    left:0!important;
+    right:0!important;
+    width:100%!important;
+    max-width:100%!important;
+    max-height:min(520px,55dvh)!important;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+  }
+  .universal-search-shortcut{display:none!important}
+
+  .top-header>.card-ghost-controls{
+    grid-area:tools!important;
+    position:relative!important;
+    inset:auto!important;
+    width:auto!important;
+    justify-self:end!important;
+    align-self:start!important;
+    z-index:1200!important;
+  }
+  .toolbar-primary-actions{max-width:100%;overflow-x:auto;overscroll-behavior-inline:contain;-webkit-overflow-scrolling:touch}
+  .card-ghost-btn{width:42px!important;height:42px!important;min-width:42px!important;min-height:42px!important}
+  .card-ghost-btn svg{width:19px!important;height:19px!important}
+  .top-header>.card-ghost-controls .toolbar-drop-panel{
+    top:calc(100% + 7px)!important;
+    right:0!important;
+    left:auto!important;
+    width:min(300px,calc(100vw - 32px))!important;
+    min-width:0!important;
+    max-height:min(520px,65dvh)!important;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+  }
+  .toolbar-drop-panel button{min-height:44px!important;padding:10px!important;font-size:13px!important}
+
+  .header-left-tools .c3k-member-wall-panel{
+    position:relative!important;
+    inset:auto!important;
+    width:100%!important;
+    max-width:none!important;
+    max-height:min(420px,55dvh)!important;
+    margin-top:5px!important;
+    -webkit-overflow-scrolling:touch;
+  }
+  .header-left-tools .c3k-member-wall-toggle{min-height:44px!important;height:auto!important;font-size:12px!important}
+  .c3k-member-wall-compose textarea{min-height:96px!important}
+
+  .top-header>.card-ghost-controls .c3k-profile-shortcuts{
+    top:calc(100% + 7px)!important;
+    right:0!important;
+    width:min(300px,calc(100vw - 32px))!important;
+  }
+  .top-header>.card-ghost-controls .c3k-profile-shortcut{min-height:64px!important;height:auto!important}
+
+  /* Sur tablette, on laisse le document défiler : pas de double scroll vertical. */
+  .table-wrap{
+    min-height:0!important;
+    max-height:none!important;
+    overflow:visible!important;
+    padding:12px!important;
+  }
+  .c3k-space-indicator{display:none!important}
+
+  .players-db-table-wrap,
+  .tool-pitch-scroll,
+  .selection-category-tabs,
+  .reference-tabs,
+  .players-db-pagination-top,
+  .players-db-pagination-bottom{
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior-inline:contain;
+  }
+  .players-db-table-wrap{overflow-x:auto!important;overflow-y:visible!important}
+  .players-db-table{min-width:940px!important}
+  .players-db-table thead th:first-child{
+    position:sticky;
+    left:0;
+    z-index:5;
+    box-shadow:1px 0 0 #d5dbe4;
+  }
+  .players-db-table tbody td:first-child{
+    position:sticky;
+    left:0;
+    z-index:2;
+    box-shadow:1px 0 0 #d5dbe4;
+  }
+  .players-db-table tbody tr:nth-child(odd) td:first-child{background:#f2f2f1}
+  .players-db-table tbody tr:nth-child(even) td:first-child{background:#e8e8e6}
+  .players-db-table tbody tr:hover td:first-child{background:#e3edfc}
+  .players-db-filters th:first-child{background:#fbfbfa!important}
+  .players-db-filters input,.players-db-filters select{height:46px!important}
+  .players-db-reset{width:46px!important;height:46px!important;min-width:46px!important}
+  .players-db-page-btn{min-width:40px!important;height:40px!important;font-size:12px!important}
+
+  .modal-dialog{max-width:calc(100vw - 24px)!important;max-height:min(92dvh,980px)!important}
+  .modal-body,.c3k-v8-panel,.c3k-presence-pop{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+  .modal-toolbar input,.modal-toolbar select{min-height:44px!important;height:auto!important}
+  .modal-toolbar input{min-width:min(220px,100%)!important}
+  .settings-row select{min-height:44px!important;height:auto!important}
+  .selection-filter-bar select{min-height:44px!important;height:auto!important}
+  .c3k-v8-form input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+  .c3k-v8-form select,
+  .c3k-v8-form textarea,
+  .selection-editor-fields input,
+  .selection-editor-fields select,
+  .selection-editor-fields textarea,
+  .c3k-tag-grid input,
+  .c3k-tag-grid select,
+  .b3k-ach-editor input,
+  .c3k-shortcut-pref-grid select,
+  .c3k-profile-social-editor select[name="presence_status"]{min-height:44px!important;height:auto!important}
+
+  .primary-btn,.secondary-btn,.danger-btn,.c3k-v8-primary,.c3k-v8-secondary,.c3k-v8-danger,.c3k-v8-ghost{min-height:42px!important;font-size:12px!important;padding:8px 12px!important}
+  .modal-close{width:42px!important;height:42px!important;min-width:42px!important;min-height:42px!important}
+
+  .reference-tabs{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+  .ref-list{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .list-builder-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+
+/* ---------- iPhone / petits écrans ---------- */
+@media (max-width:640px){
+  body{
+    padding:
+      max(6px,var(--b3k-safe-top))
+      max(6px,var(--b3k-safe-right))
+      max(10px,var(--b3k-safe-bottom))
+      max(6px,var(--b3k-safe-left))!important;
+  }
+
+  .top-header{
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-areas:
+      "tools"
+      "logo"
+      "left"!important;
+    gap:9px!important;
+    padding:9px!important;
+    border-radius:12px!important;
+  }
+  .top-header>.card-ghost-controls{width:100%!important;justify-self:stretch!important;display:flex!important;justify-content:flex-end!important}
+  .toolbar-primary-actions{width:auto!important;max-width:100%!important}
+  .card-ghost-btn{width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important}
+  .logo-wrap{justify-content:center!important}
+  .bleus-wordmark{align-items:center!important;text-align:center!important}
+  .bleus-wordmark strong{font-size:26px!important}
+  .bleus-wordmark small{font-size:7px!important;letter-spacing:.17em!important}
+  .bleus-tricolor{margin-top:5px!important}
+
+  .header-left-tools .universal-search-shell{min-height:50px!important}
+  .universal-search-icon{width:19px!important;height:19px!important}
+  .header-left-tools .universal-search-results{position:absolute!important;top:calc(100% + 6px)!important;max-height:55dvh!important}
+  .universal-search-result{min-height:48px!important;padding:9px!important}
+  .universal-search-result-title{font-size:13px!important}
+  .universal-search-result-meta{font-size:11px!important}
+  .universal-search-section-title{font-size:10px!important}
+
+  .table-card{border-width:2px!important;border-radius:9px!important}
+  .table-wrap{padding:8px!important}
+  .players-db-heading{padding:12px!important;flex-direction:column!important;align-items:stretch!important}
+  .players-db-heading strong{font-size:16px!important}
+  .players-db-heading small{font-size:12px!important;max-width:none!important}
+  .players-db-count{align-self:flex-start!important;font-size:11px!important;min-height:30px!important}
+  .players-db-table{min-width:900px!important}
+  .players-db-table thead th{font-size:12px!important}
+  .players-db-table tbody td{font-size:12px!important}
+  .players-db-player-name{font-size:13px!important}
+  .players-db-player-meta{font-size:10px!important}
+  .players-db-position{font-size:12px!important}
+  .players-db-team-tag{font-size:10px!important;min-height:28px!important}
+  .players-db-action{width:38px!important;height:38px!important;min-width:38px!important;min-height:38px!important}
+  .players-db-pagination-top,.players-db-pagination-bottom{justify-content:flex-start!important;overflow-x:auto!important;padding-inline:5px!important}
+
+  /* Modales en bottom sheet : clavier iOS + hauteur dynamique. */
+  .modal-backdrop{
+    align-items:flex-end!important;
+    justify-content:center!important;
+    padding:0!important;
+    padding-top:var(--b3k-safe-top)!important;
+  }
+  .modal-dialog{
+    width:100%!important;
+    max-width:100%!important;
+    max-height:calc(100dvh - var(--b3k-safe-top))!important;
+    border-left:0!important;
+    border-right:0!important;
+    border-bottom:0!important;
+    border-radius:18px 18px 0 0!important;
+  }
+  .modal-head{
+    position:sticky!important;
+    top:0!important;
+    z-index:8!important;
+    padding:11px 12px!important;
+  }
+  .modal-head h2{font-size:16px!important}
+  .modal-head p{font-size:11px!important;line-height:1.35!important}
+  .modal-body{
+    padding:12px 12px calc(14px + var(--b3k-safe-bottom))!important;
+    overflow-y:auto!important;
+  }
+  .modal-toolbar{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;align-items:stretch!important}
+  .modal-toolbar input,.modal-toolbar select{grid-column:1/-1!important;width:100%!important;min-width:0!important}
+  .modal-toolbar .tag-badge{justify-self:start!important;align-self:center!important;font-size:11px!important}
+  .modal-toolbar .primary-btn{justify-self:end!important}
+
+  .reference-tabs{
+    display:flex!important;
+    overflow-x:auto!important;
+    gap:7px!important;
+    padding-bottom:8px!important;
+    scroll-snap-type:x proximity;
+  }
+  .reference-tab{
+    flex:0 0 min(160px,44vw)!important;
+    min-height:78px!important;
+    scroll-snap-align:start;
+  }
+  .reference-tab strong{font-size:12px!important}
+  .reference-tab small{font-size:10px!important;line-height:1.3!important}
+  .ref-list{grid-template-columns:minmax(0,1fr)!important}
+  .ref-tile{padding:12px!important;border-radius:12px!important}
+  .ref-tile h3{font-size:15px!important}
+  .ref-tile .subtitle{font-size:11px!important;line-height:1.35!important}
+  .ref-tags span{font-size:10px!important;padding:4px 7px!important}
+  .ref-facts span{font-size:12px!important;line-height:1.35!important}
+  .source-btn{font-size:11px!important;min-height:34px!important}
+  .contrib-label{font-size:9px!important;min-height:22px!important}
+  .tile-action{width:38px!important;height:38px!important;min-width:38px!important;min-height:38px!important}
+
+  .selection-category-tabs{gap:6px!important;padding-bottom:8px!important;scroll-snap-type:x proximity}
+  .selection-category-tab{min-height:44px!important;font-size:12px!important;scroll-snap-align:start}
+  .selection-grid{grid-template-columns:minmax(0,1fr)!important}
+  .selection-player-tile{padding:11px!important}
+  .selection-player-head{gap:10px!important}
+  .selection-photo-frame{width:72px!important;height:72px!important}
+  .selection-player-title h3{font-size:15px!important;padding-right:68px}
+  .selection-dob,.international-number{font-size:10px!important}
+  .selection-tile-actions button{width:36px!important;height:36px!important;min-width:36px!important;min-height:36px!important}
+  .selection-linked-fields{grid-template-columns:minmax(0,1fr)!important}
+  .selection-filter-bar{grid-template-columns:minmax(0,1fr)!important}
+  .selection-filter-bar label{font-size:10px!important}
+  .selection-sort-direction,.selection-filter-reset{min-height:44px!important;height:auto!important;font-size:12px!important}
+  .selection-editor-form{grid-template-columns:minmax(0,1fr)!important;gap:12px!important}
+  .selection-editor-photo{align-items:center!important}
+  .selection-editor-fields{grid-template-columns:minmax(0,1fr)!important}
+  .selection-editor-stat-fields{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .selection-editor-fields>label{grid-column:1!important;font-size:12px!important}
+  .selection-photo-frame.is-large{width:130px!important;height:130px!important}
+
+  .player-detail-head{grid-template-columns:56px minmax(0,1fr)!important;align-items:start!important}
+  .player-initials-badge{width:56px!important;height:56px!important;font-size:20px!important}
+  .player-detail-head h3{font-size:16px!important}
+  .player-detail-head p{font-size:11px!important}
+  .player-kpi{grid-column:1/-1!important;text-align:left!important;display:flex!important;align-items:baseline!important;gap:7px!important}
+  .player-kpi strong{font-size:20px!important}
+  .player-kpi small{font-size:10px!important}
+  .performance-toolbar{overflow-x:auto!important;padding-bottom:3px!important}
+  .performance-toolbar button{min-height:40px!important;flex:0 0 auto!important;font-size:11px!important}
+  .performance-card{grid-template-columns:minmax(0,1fr)!important}
+  .performance-date,.performance-main small,.performance-score small{font-size:10px!important}
+  .performance-main strong,.performance-score strong{font-size:13px!important}
+  .performance-score{text-align:left!important}
+
+  .source-row{grid-template-columns:34px minmax(0,1fr)!important}
+  .source-row>span{grid-column:2!important;font-size:10px!important}
+  .source-row strong{font-size:12px!important}
+  .source-row small{font-size:10px!important;line-height:1.35!important}
+
+  .list-builder-grid{grid-template-columns:minmax(0,1fr)!important}
+  .list-group{padding:10px!important}
+  .list-group h4{font-size:13px!important}
+  .list-group select{min-height:44px!important;height:auto!important}
+  .tool-pitch-scroll{overflow-x:auto!important;margin-inline:-4px;padding:0 4px 5px}
+  .pitch{min-width:650px!important}
+  .player-slot select{min-height:44px!important;height:auto!important}
+  .tool-actions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+  .tool-title-input{grid-column:1/-1!important;width:100%!important;min-width:0!important;min-height:46px!important;height:auto!important}
+  .tool-actions button{min-height:44px!important}
+
+  .settings-row{display:grid!important;grid-template-columns:minmax(0,1fr)!important;align-items:stretch!important}
+  .settings-row span{font-size:12px!important}
+  .settings-row select{width:100%!important}
+
+  /* Panneaux compte / présence adaptés au clavier et aux safe areas. */
+  .c3k-v8-panel-backdrop{place-items:end center!important;padding:0!important;padding-top:var(--b3k-safe-top)!important}
+  .c3k-v8-panel{
+    width:100%!important;
+    max-width:100%!important;
+    max-height:calc(100dvh - var(--b3k-safe-top))!important;
+    border-radius:18px 18px 0 0!important;
+    border-left:0!important;
+    border-right:0!important;
+    border-bottom:0!important;
+  }
+  .c3k-v8-panel-head{padding:12px!important}
+  .c3k-v8-panel-body{padding:12px 12px calc(14px + var(--b3k-safe-bottom))!important}
+  .c3k-v8-form textarea{min-height:104px!important}
+  .c3k-v8-form input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),.c3k-v8-form select{min-height:44px!important}
+  .c3k-v8-close{width:42px!important;height:42px!important;min-width:42px!important;min-height:42px!important}
+  .c3k-v8-account-actions,.c3k-v8-account-actions.has-notify{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 42px!important}
+  .c3k-v8-account-actions:not(.has-notify){grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important}
+  .header-left-tools .c3k-v8-account-btn,
+  .header-left-tools .c3k-v8-signup-shortcut,
+  .header-left-tools .c3k-v8-notify-btn,
+  .header-left-tools .c3k-v8-presence{min-height:42px!important;height:auto!important;font-size:11px!important}
+  .c3k-v8-report-launch{left:max(10px,var(--b3k-safe-left))!important;bottom:max(10px,var(--b3k-safe-bottom))!important;width:44px!important;height:44px!important}
+  .c3k-v8-report-pop{left:max(8px,var(--b3k-safe-left))!important;right:max(8px,var(--b3k-safe-right))!important;bottom:calc(62px + var(--b3k-safe-bottom))!important;width:auto!important;max-height:65dvh!important;overflow:auto!important}
+  .c3k-v8-report-kinds button{min-height:42px!important;font-size:11px!important}
+
+  .c3k-presence-pop{
+    left:max(8px,var(--b3k-safe-left))!important;
+    right:max(8px,var(--b3k-safe-right))!important;
+    bottom:max(8px,var(--b3k-safe-bottom))!important;
+    top:auto!important;
+    width:auto!important;
+    max-height:70dvh!important;
+  }
+
+  .c3k-member-postit{grid-template-columns:64px minmax(0,1fr)!important}
+  .c3k-member-postit-author strong{font-size:10px!important}
+  .c3k-member-postit-message{font-size:12px!important}
+  .c3k-member-postit-meta{font-size:9px!important}
+  .c3k-member-wall-toolbar small,.c3k-member-wall-toolbar button{font-size:10px!important}
+  .c3k-member-wall-compose-row{align-items:stretch!important}
+  .c3k-member-wall-compose-row button{min-height:40px!important;font-size:11px!important}
+
+  .b3k-tag-grid.two,.b3k-tag-grid.three,.b3k-tag-color-grid{grid-template-columns:minmax(0,1fr)!important}
+  .b3k-tag-grid label,.b3k-tag-wide,.b3k-tag-color-grid label{font-size:11px!important}
+  .b3k-tag-row{grid-template-columns:minmax(0,1fr) auto!important}
+  .b3k-tag-icon-upload{grid-template-columns:minmax(0,1fr)!important}
+  .b3k-tag-icon-upload>*{grid-column:1!important}
+  .b3k-tag-file-btn{min-height:42px!important;font-size:11px!important}
+
+  .footer-note{font-size:9px!important;line-height:1.4!important;padding-inline:6px}
+}
+
+/* Très petits iPhone : empêche les barres d'actions de déborder. */
+@media (max-width:390px){
+  .top-header{padding-inline:7px!important}
+  .toolbar-primary-actions{gap:3px!important;padding:4px!important}
+  .card-ghost-btn{width:40px!important;height:40px!important;min-width:40px!important;min-height:40px!important}
+  .bleus-wordmark strong{font-size:24px!important}
+  .bleus-wordmark small{font-size:6.5px!important}
+  .selection-editor-stat-fields{grid-template-columns:minmax(0,1fr)!important}
+  .tool-actions{grid-template-columns:minmax(0,1fr)!important}
+  .modal-toolbar{grid-template-columns:minmax(0,1fr)!important}
+  .modal-toolbar>*{grid-column:1!important;justify-self:stretch!important}
+  .modal-toolbar .tag-badge{justify-self:start!important}
+}
+
+/* iPhone en paysage : privilégie l'espace vertical et les panneaux scrollables. */
+@media (max-height:560px) and (orientation:landscape) and (max-width:1024px){
+  .top-header{grid-template-columns:minmax(0,1fr) auto!important;grid-template-areas:"logo tools" "left left"!important}
+  .bleus-wordmark small,.bleus-tricolor{display:none!important}
+  .modal-backdrop{align-items:flex-end!important;padding:0!important}
+  .modal-dialog,.c3k-v8-panel{width:100%!important;max-width:100%!important;max-height:100dvh!important;border-radius:16px 16px 0 0!important}
+  .c3k-v8-panel-backdrop{place-items:end center!important;padding:0!important}
+  .header-left-tools .universal-search-results,
+  .top-header>.card-ghost-controls .toolbar-drop-panel{max-height:58dvh!important}
+}
+
+/* Sur appareils sans hover, évite les translations qui donnent un effet de saut au tap. */
+@media (hover:none){
+  button:hover{transform:none!important}
+}
+
+/* V1.1.28 — identité visuelle Bleus 3000 */
+.bleus-header-logo{
+  display:block;
+  width:clamp(82px,9vw,112px);
+  height:auto;
+  aspect-ratio:1;
+  object-fit:contain;
+  border-radius:50%;
+  filter:drop-shadow(0 3px 8px rgba(7,20,38,.14));
+}
+@media(max-width:900px){
+  .bleus-header-logo{width:88px}
+}
+@media(max-width:720px){
+  .bleus-header-logo{width:84px}
+}
+@media(max-width:420px){
+  .bleus-header-logo{width:76px}
+}
