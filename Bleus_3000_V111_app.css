@@ -568,3 +568,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 #referenceModal .modal-toolbar{margin-top:0}
 #referenceModal .modal-toolbar #referenceSearch{flex:1 1 320px;min-width:220px}
 .competition-family-filter-bar,.jersey-filter-bar{align-items:end}
+
+/* V1.1.61.16 — feuille de match live */
+.match-sheet-provider-unmatched{margin-top:10px;padding:9px;border:1px dashed #b7cae4;border-radius:10px;background:#f8fbff}.match-sheet-provider-unmatched>small{display:block;margin-top:6px;color:#71859e;font-size:6px;line-height:1.45}.match-sheet-player.is-provider-unmatched>em{font-style:normal;font-size:5.5px;font-weight:900;color:#fff;background:#315fc9;border-radius:999px;padding:3px 5px}.calendar-home-sheet-btn.is-ready{background:#e8f4ff;border-color:#70a7eb;color:#0c4d9a}

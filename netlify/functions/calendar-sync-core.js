@@ -1,9 +1,9 @@
-/* 3615 Bleus V1.1.46 — TheSportsDB + familles + OLYMPIQUE U23 + import JO 2024 */
+/* 3615 Bleus V1.1.48 — synchronisation TheSportsDB de production */
 const SPORTSDB='https://www.thesportsdb.com/api/v2/json';
 
 const BUILTIN_TEAM_IDS={
   'FRA-A-M':[133913],
-  'FRA-ESP-M':[136843,143161], // U21 + U23 partagent le référentiel; les JO U23 utilisent un tag d’affichage dédié
+  'FRA-ESP-M':[136843,143161], // U21 + U23 partagent le référentiel Espoirs ; les JO sont identifiés par leur compétition
   'FRA-U20-M':[152249],
   'FRA-U19-M':[149863],
   'FRA-U17-M':[149609],
@@ -26,12 +26,12 @@ const unique=a=>[...new Set(a)];
 const cleanText=v=>String(v??'').trim();
 const countryOnlyName=v=>cleanText(v).replace(/\s+(Women\s+)?U(16|17|18|19|20|21|23)$/i,'').replace(/\s+(Women|Woman|Female|Féminine|Feminine|Espoirs)$/i,'').trim();
 const isFriendlyCompetition=name=>{const n=norm(name);return n.includes('friendly')||n.includes('friendlies')||n.includes('amic');};
-const isOlympicU23Event=(e,side)=>Number(side?.franceId)===143161 && norm(e?.strLeague).includes('olympic');
 const competitionFamilySpec=(name,selection={})=>{
   const n=norm(name);
   if(!n)return null;
   if(n.includes('friendly')||n.includes('friendlies')||n.includes('amic'))return {slug:'match-amical',label:'Match Amical',icon:'⚽',aliases:['Amical','Match amical','Matchs amicaux','International Friendlies','International Friendly']};
   if(n.includes('uefa nations league')||n.includes('ligue des nations'))return {slug:'ligue-des-nations',label:'Ligue des Nations',icon:'🏆',aliases:['UEFA Nations League','Ligue des Nations']};
+  if(n.includes('olympic')||n.includes('jeux olympiques'))return {slug:'jeux-olympiques',label:'JEUX OLYMPIQUES',icon:'🥇',aliases:['Jeux Olympiques','Olympics Soccer','Olympic Games','JO']};
   if(n.includes('fifa womens u17 world cup')||n.includes('fifa women u17 world cup'))return {slug:'coupe-du-monde-u17-f',label:'Coupe du monde U17 F',icon:'🌍',aliases:['FIFA Womens U17 World Cup','Mondial U17 féminin']};
   if(n.includes('fifa u 17 world cup')||n.includes('fifa u17 world cup'))return {slug:'coupe-du-monde-u17',label:'Coupe du monde U17',icon:'🌍',aliases:['FIFA U-17 World Cup','Mondial U17']};
   if(n.includes('u21')||n.includes('under 21')){
@@ -171,15 +171,13 @@ exports.runCalendarSync=async()=>{
   const eventRows=[...eventMap.values()].filter(({e,teamIds})=>franceSide(e,teamIds));
 
   // Charge les référentiels une seule fois pour éviter des dizaines d'allers-retours Supabase.
-  const [opponents,competitions,places,providerMatches,recentMatches,olympicTagRows]=await Promise.all([
+  const [opponents,competitions,places,providerMatches,recentMatches]=await Promise.all([
     sb('/opponents?select=id,name&limit=5000').catch(()=>[]),
     sb('/competitions?select=id,name,edition,external_ids,tag_id,gender,selection_category&limit=5000').catch(()=>[]),
     sb('/places?select=id,name,city,country&limit=5000').catch(()=>[]),
     sb('/matches?provider=eq.thesportsdb&select=id,provider_fixture_id,data_state,manual_overrides,selection_team_id,match_date,opponent_id&limit=5000').catch(()=>[]),
-    sb('/matches?select=id,selection_team_id,match_date,opponent_id,provider,provider_fixture_id,data_state,manual_overrides&order=match_date.desc&limit=5000').catch(()=>[]),
-    sb('/tags?slug=eq.olympique-u23&select=id,slug,label_text&limit=1').catch(()=>[])
+    sb('/matches?select=id,selection_team_id,match_date,opponent_id,provider,provider_fixture_id,data_state,manual_overrides&order=match_date.desc&limit=5000').catch(()=>[])
   ]);
-  const olympicTagId=olympicTagRows[0]?.id||null;
   const oppMap=new Map(opponents.map(x=>[norm(x.name),x]));
   const compMap=new Map(competitions.map(x=>[competitionKey(x.name,x.gender,x.selection_category),x]));
   const placeMap=new Map(places.map(x=>[`${norm(x.name)}|${norm(x.city)}`,x]));
@@ -265,9 +263,6 @@ exports.runCalendarSync=async()=>{
         if(candidate){
           if(candidate.data_state==='locked'){skippedLocked++;continue;}
           const linkPatch=metadataOnly(e,side);
-          if(olympicTagId&&isOlympicU23Event(e,side)&&!candidate.manual_overrides?.selection_tag_id){
-            linkPatch.manual_overrides={...(candidate.manual_overrides||{}),selection_tag_id:olympicTagId};
-          }
           await sb(`/matches?id=eq.${candidate.id}`,{method:'PATCH',body:JSON.stringify(linkPatch)});
           attached++;attachedExisting=true;existing={...candidate,...linkPatch,provider:'thesportsdb',provider_fixture_id:String(e.idEvent)};
           providerMatchMap.set(String(e.idEvent),existing);
@@ -282,9 +277,6 @@ exports.runCalendarSync=async()=>{
         // Les lignes historiques/éditoriales sont conservées telles quelles ; seul le lien fournisseur est ajouté.
         if(!attachedExisting){
           const verifiedPatch=metadataOnly(e,side);
-          if(olympicTagId&&isOlympicU23Event(e,side)&&!existing.manual_overrides?.selection_tag_id){
-            verifiedPatch.manual_overrides={...(existing.manual_overrides||{}),selection_tag_id:olympicTagId};
-          }
           await sb(`/matches?id=eq.${existing.id}`,{method:'PATCH',body:JSON.stringify(verifiedPatch)});
         }
         preservedVerified++;
@@ -304,14 +296,10 @@ exports.runCalendarSync=async()=>{
         status:statusFrom(e,dateIso),phase:cleanText(e.strGroup)|| (e.intRound!=null?`Tour ${e.intRound}`:null),spectators:toInt(e.intSpectators),
         ...metadataOnly(e,side)
       };
-      const olympicOverride=olympicTagId&&isOlympicU23Event(e,side)&&!existing?.manual_overrides?.selection_tag_id
-        ?{...(existing?.manual_overrides||{}),selection_tag_id:olympicTagId}
-        :null;
-      if(olympicOverride)body.manual_overrides=olympicOverride;
       if(existing){
         await sb(`/matches?id=eq.${existing.id}`,{method:'PATCH',body:JSON.stringify(body)});updated++;
       }else{
-        const rows=await sb('/matches',{method:'POST',body:JSON.stringify({...body,data_state:'api',manual_overrides:olympicOverride||{}})});
+        const rows=await sb('/matches',{method:'POST',body:JSON.stringify({...body,data_state:'api',manual_overrides:{}})});
         if(rows[0])providerMatchMap.set(String(e.idEvent),rows[0]);imported++;
       }
       if(Date.parse(dateIso)>=Date.now()-6*60*60*1000)futureProviderEvents.push({id:String(e.idEvent),dateIso});

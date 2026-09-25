@@ -32,7 +32,7 @@ Le baseline ne contient pas les données de production (joueurs, matchs, photos,
 
 `bleus_config.js` ne doit contenir que les informations publiques nécessaires au navigateur. Ne jamais y placer `SUPABASE_SECRET_KEY`, une clé `service_role` ou `THESPORTSDB_KEY`.
 
-## V1.1.61.15 — baseline consolidé
+## V1.1.61.16 — baseline consolidé
 
 - suppression des 36 fichiers `MIGRATION_*.sql` de la racine ;
 - suppression de l’ancien `supabase_setup.sql` ;
@@ -40,3 +40,8 @@ Le baseline ne contient pas les données de production (joueurs, matchs, photos,
 - conservation de `SUPABASE_FIRST_ADMIN.sql` ;
 - aucun changement appliqué à la base de production ;
 - centrage renforcé du logo Équipementier dans les tuiles Maillots.
+
+
+## V1.1.61.16 — Synchronisation live des feuilles de match
+
+Aucune migration Supabase supplémentaire. Le déploiement Netlify ajoute `/api/match-sheet-sync` et un cron toutes les 3 minutes. Les variables `THESPORTSDB_KEY` (ou `SPORTSDB_KEY`), `SUPABASE_URL` et `SUPABASE_SECRET_KEY` / `SUPABASE_SERVICE_ROLE_KEY` doivent rester configurées. Le moteur utilise les endpoints TheSportsDB V2 `lookup/event`, `lookup/event_lineup` et `lookup/event_timeline`.

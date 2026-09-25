@@ -1,3 +1,14 @@
+## V1.1.61.16 — Synchronisation Match / Calendrier / Feuille de match
+
+- Nouveau endpoint Netlify `match-sheet-sync` : synchronise les matchs TheSportsDB proches ou en direct toutes les 3 minutes.
+- Le même `match_id` alimente désormais score/statut, tuile Calendrier, tuile Match et feuille de match.
+- Import automatique des compositions via `event_lineup` et des faits de jeu via `event_timeline` lorsque le fournisseur les publie.
+- Correspondance des joueurs avec la base Bleus 3000 ; mémorisation de l'identifiant TheSportsDB après correspondance exacte.
+- Les joueurs fournisseur non reliés sont conservés et affichés dans la feuille au lieu d'être perdus.
+- Les feuilles éditoriales manuelles sont marquées `manual` et ne sont pas écrasées par la composition fournisseur.
+- L'ouverture d'une feuille depuis le calendrier force également une synchronisation live en parallèle.
+- Aucun changement de schéma Supabase requis pour cette version.
+
 ## V1.1.61.15 — BASELINE / CLEANUP SQL
 
 - Les 36 migrations SQL historiques ont été consolidées dans `SUPABASE_BASELINE.sql`.
