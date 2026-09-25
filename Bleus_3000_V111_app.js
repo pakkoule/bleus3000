@@ -5,35 +5,19 @@
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const S=window.BLEUS3000_SEARCH;
   if(!S)throw new Error('Moteur de recherche 3615 Bleus indisponible');
-  const norm=S.normalize;
   const fuzzyEntityScore=(query,values)=>S.scoreAny(query,values);
-  const icons={
-    search:'⌕', history:'↶', star:'★', tools:'⌘', book:'▤', display:'☷',
-    user:'👤', list:'📋', ball:'⚽', trophy:'🏆', globe:'🌍', users:'👥', shirt:'👕', chart:'📊', pin:'📍', book2:'📚',
-    calendar:'📅', binoculars:'◉', source:'🔗', edit:'✎', add:'＋', close:'×', football:'⚽'
-  };
   const localRefKey='bleus3000.reference.custom.v1';
   let refState={key:'selections',query:''};
+  const staticFacetState={};
   let activeSearchIndex=-1, activeSearchItems=[];
   let currentPlayer=null, performanceLimit=5;
 
-  function svgIcon(name){
-    const p={
-      search:'<circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 4.5 4.5"></path>',
-      history:'<path d="M4.5 8.5A8 8 0 1 1 4 13"></path><path d="M4.5 4.5v4h4"></path><path d="M12 8v4l2.8 1.8"></path>',
-      star:'<path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"></path>',
-      tools:'<rect x="5" y="3.5" width="14" height="17" rx="2"></rect><path d="M8 7h8M8 11h2M12 11h2M16 11h.01M8 15h2M12 15h2M16 15h.01M8 18h6"></path>',
-      book:'<path d="M4 5.5c2.8-.8 5.4-.2 8 1.5v12c-2.6-1.7-5.2-2.3-8-1.5z"></path><path d="M20 5.5c-2.8-.8-5.4-.2-8 1.5v12c2.6-1.7 5.2-2.3 8-1.5z"></path><path d="M12 7v12"></path>',
-      display:'<path d="M4 7h10M18 7h2M4 12h3M11 12h9M4 17h8M16 17h4"></path><circle cx="16" cy="7" r="2"></circle><circle cx="9" cy="12" r="2"></circle><circle cx="14" cy="17" r="2"></circle>'
-    }[name]||'<circle cx="12" cy="12" r="8"></circle>';
-    return `<svg aria-hidden="true" viewBox="0 0 24 24">${p}</svg>`;
-  }
 
-  function refEmoji(key){return ({selections:'👤',convocations:'📋',matchs:'⚽',competitions:'🏆',adversaires:'🌍',personnel:'👥',equipements:'👕',statistiques:'📊',lieux:'📍',bibliographie:'📚'})[key]||'▦';}
+  function refEmoji(key){return ({selections:'👤',staff:'👔',matchs:'⚽',competitions:'🏆',adversaires:'🌍',arbitres:'🟨',maillots:'👕',statistiques:'📊',lieux:'🏟️'})[key]||'▦';}
 
   function renderDashboard(){
     // V1.1.14 : l'accueil est désormais occupé par la base globale des joueurs.
-    // Les anciens blocs Ladder / Calendrier / Prochain Bleu / Convocations / Bibliothèque
+    // Les anciens blocs Ladder / Calendrier / Prochain Bleu / Bibliothèque
     // sont conservés dans les données mais ne sont plus rendus ici.
     bindDashboardButtons();
   }
@@ -51,39 +35,38 @@
       e.stopPropagation();const key=btn.dataset.toolbarMenu;$$('.toolbar-drop-panel').forEach(p=>{const own=p.dataset.toolbarPanel===key;p.hidden=own?!p.hidden:true;});$$('.toolbar-group-toggle').forEach(x=>x.classList.toggle('is-active',x===btn&&!$(`[data-toolbar-panel="${key}"]`).hidden));
     }));
     document.addEventListener('click',e=>{if(!e.target.closest('.card-ghost-controls')){$$('.toolbar-drop-panel').forEach(p=>p.hidden=true);$$('.toolbar-group-toggle').forEach(x=>x.classList.remove('is-active'));}});
-    $('#favoritesOnlyBtn')?.addEventListener('click',()=>alert('Les favoris seront synchronisés au compte 3615 Bleus dès connexion au nouveau Supabase.'));
+    $('#favoritesOnlyBtn')?.addEventListener('click',()=>window.BLEUS3000_PLAYERS_DB?.toggleFavoritesOnly?.());
     $('#quoteHistoryButton')?.addEventListener('click',()=>alert('Historique 3615 Bleus : cette zone reprendra l’historique des compositions, listes et modifications sauvegardées.'));
     $$('[data-tool-open]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.toolOpen;$$('.toolbar-drop-panel').forEach(p=>p.hidden=true);openTool(k);}));
     $$('[data-reference-open]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.referenceOpen;$$('.toolbar-drop-panel').forEach(p=>p.hidden=true);openReferences(k);}));
-    $$('[data-setting-open]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.settingOpen;if(k==='settings')openModal('displaySettingsModal');}));
-    $('#workspaceWidth')?.addEventListener('change',e=>{const v=e.target.value;document.querySelectorAll('.page,.top-header,.footer-note').forEach(n=>n.style.width=v==='wide'?'min(1420px,100%)':v==='compact'?'min(980px,100%)':'min(1180px,100%)');localStorage.setItem('bleus3000.workspace.width.v1',v);});
-    $('#densitySetting')?.addEventListener('change',e=>{document.body.classList.toggle('compact-density',e.target.value==='compact');localStorage.setItem('bleus3000.density.v1',e.target.value);});
-  }
-
-  function loadSettings(){
-    const w=localStorage.getItem('bleus3000.workspace.width.v1')||'standard',d=localStorage.getItem('bleus3000.density.v1')||'normal';
-    if($('#workspaceWidth')){$('#workspaceWidth').value=w;$('#workspaceWidth').dispatchEvent(new Event('change'));}
-    if($('#densitySetting')){$('#densitySetting').value=d;$('#densitySetting').dispatchEvent(new Event('change'));}
   }
 
   function customRefs(){try{return JSON.parse(localStorage.getItem(localRefKey)||'{}')||{};}catch{return {};}}
   function entriesFor(key){const base=(D.referenceEntries?.[key]||[]);const custom=customRefs()[key]||[];return [...custom,...base];}
+  const facetConfigs={};
+  function facetValues(row,facet){const raw=facet.values(row);return (Array.isArray(raw)?raw:[raw]).map(x=>String(x||'').trim()).filter(Boolean);}
+  function hideReferenceFacetBar(){const bar=$('#referenceFacetFilters');if(bar){bar.hidden=true;bar.innerHTML='';bar.onchange=null;}}
+  function renderStaticFacetBar(key,rows){
+    const bar=$('#referenceFacetFilters'),cfg=facetConfigs[key];if(!bar||!cfg?.length){hideReferenceFacetBar();return rows;}
+    const st=staticFacetState[key]||(staticFacetState[key]={});
+    const opt=(v,l,sel)=>`<option value="${esc(v)}" ${String(v)===String(sel)?'selected':''}>${esc(l)}</option>`;
+    bar.hidden=false;bar.innerHTML=cfg.map(f=>{const vals=[...new Set(rows.flatMap(r=>facetValues(r,f)))].sort((a,b)=>a.localeCompare(b,'fr',{sensitivity:'base'}));const current=st[f.key]||'all';if(current!=='all'&&!vals.includes(current))st[f.key]='all';return `<label>${esc(f.label)}<select data-static-filter="${esc(f.key)}">${opt('all','Tous',st[f.key]||'all')}${vals.map(v=>opt(v,v,st[f.key]||'all')).join('')}</select></label>`;}).join('')+`<button type="button" class="reference-filter-reset" id="referenceFilterReset">Réinitialiser</button>`;
+    bar.onchange=e=>{const k=e.target.dataset.staticFilter;if(!k)return;st[k]=e.target.value;renderReferenceEntries();};
+    $('#referenceFilterReset')?.addEventListener('click',()=>{staticFacetState[key]={};renderReferenceEntries();});
+    return rows.filter(row=>cfg.every(f=>{const val=st[f.key]||'all';return val==='all'||facetValues(row,f).includes(val);}));
+  }
 
   function openReferences(key='selections'){
-    refState.key=key;refState.query='';$('#referenceSearch').value='';renderReferenceTabs();renderReferenceEntries();openModal('referenceModal');
-    window.dispatchEvent(new CustomEvent('bleus:space',{detail:{label:'Bibliothèque · '+(D.references.find(x=>x.key===key)?.title||'Référentiels')}}));
-  }
-  function renderReferenceTabs(){
-    $('#referenceTabs').innerHTML=(D.references||[]).map(r=>`<button type="button" class="reference-tab ${r.key===refState.key?'is-active':''}" data-ref-tab="${esc(r.key)}"><span class="rt-icon">${refEmoji(r.key)}</span><strong>${esc(r.title)}</strong><small>${esc(r.count)} · ${esc(r.tags.slice(0,2).join(' · '))}</small></button>`).join('');
-    $$('[data-ref-tab]').forEach(b=>b.addEventListener('click',()=>{refState.key=b.dataset.refTab;renderReferenceTabs();renderReferenceEntries();}));
+    refState.key=key;refState.query='';const rs=$('#referenceSearch');if(rs){rs.value='';rs.placeholder=`Rechercher dans ${D.references.find(x=>x.key===key)?.title||'ce référentiel'}…`;rs.hidden=false;}hideReferenceFacetBar();renderReferenceEntries();openModal('referenceModal');
   }
   function renderReferenceEntries(){
-    const addBtn=$('#addReferenceEntry');if(addBtn)addBtn.hidden=false;
+    const addBtn=$('#addReferenceEntry');if(addBtn)addBtn.hidden=false;hideReferenceFacetBar();const matchBar=$('#matchReferenceFilters');if(matchBar)matchBar.hidden=true;
     if(refState.key==='selections'&&window.BLEUS3000_SELECTIONS){window.BLEUS3000_SELECTIONS.render(refState.query);return;}
-    if((refState.key==='matchs'||refState.key==='competitions'||refState.key==='personnel')&&window.BLEUS3000_RELATIONAL_REFS){window.BLEUS3000_RELATIONAL_REFS.render(refState.key,refState.query);return;}
+    if((refState.key==='matchs'||refState.key==='competitions'||refState.key==='adversaires'||refState.key==='staff'||refState.key==='arbitres'||refState.key==='lieux')&&window.BLEUS3000_RELATIONAL_REFS){window.BLEUS3000_RELATIONAL_REFS.render(refState.key,refState.query);return;}
     if(refState.key==='statistiques'&&window.BLEUS3000_STATISTICS){window.BLEUS3000_STATISTICS.render(refState.query);return;}
+    if(refState.key==='maillots'&&window.BLEUS3000_JERSEYS){window.BLEUS3000_JERSEYS.render(refState.query);return;}
     const cat=$('#selectionCategoryTabs');if(cat)cat.hidden=true;const sf=$('#selectionFilterBar');if(sf)sf.hidden=true;const add=$('#addReferenceEntry');if(add)add.hidden=false;
-    const q=refState.query.trim().toLowerCase();const rows=entriesFor(refState.key).filter(x=>!q||JSON.stringify(x).toLowerCase().includes(q));
+    const q=refState.query.trim().toLowerCase();const allRows=entriesFor(refState.key);let rows=allRows.filter(x=>!q||JSON.stringify(x).toLowerCase().includes(q));rows=renderStaticFacetBar(refState.key,rows);
     const ref=D.references.find(x=>x.key===refState.key);$('#referenceModalTitle').textContent=ref?.title||'Référentiel';$('#referenceModalSub').textContent=ref?.description||'';$('#referenceCount').textContent=`${rows.length} tuile${rows.length>1?'s':''}`;
     $('#referenceEntries').innerHTML=rows.length?rows.map(row=>`<article class="ref-tile" data-ref-id="${esc(row.id)}"><div class="ref-tile-head"><div><h3>${esc(row.title)}</h3><div class="subtitle">${esc(row.subtitle||'')}</div></div><div class="tile-actions">${row.playerId?`<button class="tile-action" type="button" data-open-player="${esc(row.playerId)}" title="Ouvrir la fiche joueur">↗</button>`:''}${row.custom?`<button class="tile-action" type="button" data-delete-custom="${esc(row.id)}" title="Supprimer">×</button>`:''}</div></div><div class="ref-tags">${(row.tags||[]).map(t=>`<span>${esc(t)}</span>`).join('')}</div><div class="ref-facts">${(row.facts||[]).map(f=>`<span>• ${esc(f)}</span>`).join('')}</div><div class="ref-tile-foot"><button class="source-btn" type="button" data-sources="${esc(row.id)}">🔗 Sources ${(row.sources||[]).length}</button><div class="contributors">${(row.contributors||[]).map(c=>`<span class="contrib-label">${esc(c)}</span>`).join('')}</div></div></article>`).join(''):'<div class="universal-search-empty">Aucune tuile ne correspond à la recherche.</div>';
     $$('[data-sources]').forEach(b=>b.addEventListener('click',()=>showSources(rows.find(x=>x.id===b.dataset.sources))));
@@ -97,6 +80,7 @@
   function openReferenceEditor(){
     if(refState.key==='selections'&&window.BLEUS3000_SELECTIONS){window.BLEUS3000_SELECTIONS.openNewPlayer();return;}
     if(refState.key==='matchs'&&window.BLEUS3000_CALENDAR?.openCreate){window.BLEUS3000_CALENDAR.openCreate();return;}
+    if(refState.key==='maillots'&&window.BLEUS3000_JERSEYS){window.BLEUS3000_JERSEYS.openNew();return;}
     const ref=D.references.find(x=>x.key===refState.key);$('#editorRefName').textContent=ref?.title||refState.key;$('#refEditorForm').reset();openModal('referenceEditorModal');
   }
   function saveReferenceEditor(e){
@@ -104,7 +88,7 @@
   }
 
   function openPlayer(id){
-    const p=D.players.find(x=>x.id===id);if(!p)return;currentPlayer=p;performanceLimit=5;$('#playerName').textContent=p.name;$('#playerMeta').textContent=`${p.club} · ${p.position} · ${p.team==='A'?'Équipe de France A':p.team}`;$('#playerIndex').textContent=p.index.toFixed(1);$('#playerInitials').textContent=p.name.split(' ').map(x=>x[0]).join('').slice(0,2);renderPerformances();openModal('playerModal');window.dispatchEvent(new CustomEvent('bleus:space',{detail:{label:'Joueur · '+p.name}}));
+    const p=D.players.find(x=>x.id===id);if(!p)return;currentPlayer=p;performanceLimit=5;$('#playerName').textContent=p.name;$('#playerMeta').textContent=`${p.club} · ${p.position} · ${p.team==='A'?'Équipe de France A':p.team}`;$('#playerIndex').textContent=p.index.toFixed(1);$('#playerInitials').textContent=p.name.split(' ').map(x=>x[0]).join('').slice(0,2);renderPerformances();openModal('playerModal');
   }
   function renderPerformances(){
     const p=currentPlayer;if(!p)return;$$('[data-perf-limit]').forEach(b=>b.classList.toggle('is-active',Number(b.dataset.perfLimit)===performanceLimit));const perf=(p.performances||[]).slice(0,performanceLimit);$('#performanceList').innerHTML=perf.length?perf.map(x=>`<article class="performance-card"><div class="performance-date">${esc(x.date)}<br><span class="tag-badge">${esc(x.competition)}</span></div><div class="performance-main"><strong>${esc(x.home)} ${esc(x.score)} ${esc(x.away)}</strong><small>${x.minutes} minutes · ${x.starter?'Titulaire':'Remplaçant'} · contre ${esc(x.opponent)}</small><div class="performance-stats">${x.goals?`⚽ ${x.goals} but${x.goals>1?'s':''}`:'0 but'} · ${x.assists?`🅰 ${x.assists} passe${x.assists>1?'s':''} décisive${x.assists>1?'s':''}`:'0 passe décisive'}</div></div><div class="performance-score"><strong>${x.minutes}'</strong><small>Temps de jeu</small><span class="rating-pill">★ ${x.rating.toFixed(1)}</span></div></article>`).join(''):'<div class="universal-search-empty">Les performances club seront alimentées par le fournisseur statistique.</div>';
@@ -113,9 +97,10 @@
 
   function playerOptions(){const reg=window.BLEUS3000_PLAYER_REGISTRY||[];const list=reg.length?reg:(D.players||[]).map(p=>({name:p.name,position:p.position,international_number:null}));return `<option value="">— Choisir —</option>${list.map(p=>`<option value="${esc(p.name||p.display_name)}">${esc(p.name||p.display_name)}${p.international_number?` · n°${p.international_number}`:p.position?` · ${esc(p.position)}`:''}</option>`).join('')}`;}
   function openTool(kind){
-    if(kind==='xi'||kind==='five'){const title=kind==='xi'?'Créateur de Onze':'Créateur de Five';$('#teamToolTitle').textContent=title;$('#teamToolSub').textContent=kind==='xi'?'Composition 11 joueurs · terrain plein':'Composition 5 joueurs · terrain réduit';buildPitch(kind);$('#teamToolModal').dataset.kind=kind;openModal('teamToolModal');}
-    if(kind==='list'){buildListTool();openModal('listToolModal');}
-    window.dispatchEvent(new CustomEvent('bleus:space',{detail:{label:'Outils · '+(kind==='xi'?'Onze':kind==='five'?'Five':'Liste de sélectionneur')}}));
+    if((kind==='xi'||kind==='five')&&window.BLEUS3000_TEAM_TOOLS?.open){window.BLEUS3000_TEAM_TOOLS.open(kind);}
+    else if(kind==='xi'||kind==='five'){const title=kind==='xi'?'Créateur de Onze':'Créateur de Five';$('#teamToolTitle').textContent=title;$('#teamToolSub').textContent=kind==='xi'?'Composition 11 joueurs · terrain plein':'Composition 5 joueurs · terrain réduit';buildPitch(kind);$('#teamToolModal').dataset.kind=kind;openModal('teamToolModal');}
+    if(kind==='list'&&window.BLEUS3000_SELECTION_LIST?.open){window.BLEUS3000_SELECTION_LIST.open();}
+    else if(kind==='list'){buildListTool();openModal('listToolModal');}
   }
   function buildPitch(kind){
     const n=kind==='xi'?11:5;const coords=kind==='xi'?[[3,5],[2,4],[3,4],[4,4],[5,4],[2,3],[4,3],[3,2],[2,1],[4,1],[3,1]]:[[3,5],[2,3],[4,3],[2,1],[4,1]];
@@ -141,7 +126,7 @@
       if(score<=.48){seenPlayers.add(p.id);out.push({type:'Joueurs',icon:'👤',title:p.name||p.display_name,meta:`${(p.selection_names||[]).slice(0,3).join(' · ')||'Sélections'}${(p.positions||[]).length?' · '+p.positions.join(' / '):p.position?' · '+p.position:''}`,score,action:()=>{const db=window.BLEUS3000_PLAYERS_DB;if(db?.openPlayer)return db.openPlayer(p.id);openReferences('selections');setTimeout(()=>{const inp=$('#referenceSearch');if(inp){inp.value=p.name||p.display_name;inp.dispatchEvent(new Event('input',{bubbles:true}));}},100);}});}
     }
     for(const r of (D.references||[])){const score=fuzzyEntityScore(q,[r.title,r.description,...(r.tags||[])]);if(score<=.48)out.push({type:'Référentiels',icon:refEmoji(r.key),title:r.title,meta:r.description,score:score+.08,action:()=>openReferences(r.key)});}
-    for(const [k,rows] of Object.entries(D.referenceEntries||{})){if(['selections','matchs','personnel'].includes(k))continue;for(const r of rows){const score=fuzzyEntityScore(q,[r.title,r.subtitle,...(r.tags||[]),...(r.facts||[])]);if(score<=.48)out.push({type:D.references.find(x=>x.key===k)?.title||'Archives',icon:refEmoji(k),title:r.title,meta:r.subtitle||'',score:score+.12,action:()=>{openReferences(k);setTimeout(()=>{const input=$('#referenceSearch');if(input){input.value=r.title;input.dispatchEvent(new Event('input',{bubbles:true}));}},60);}});}}
+    for(const [k,rows] of Object.entries(D.referenceEntries||{})){if(['selections','matchs','competitions','adversaires','staff','arbitres','lieux'].includes(k))continue;for(const r of rows){const score=fuzzyEntityScore(q,[r.title,r.subtitle,...(r.tags||[]),...(r.facts||[])]);if(score<=.48)out.push({type:D.references.find(x=>x.key===k)?.title||'Archives',icon:refEmoji(k),title:r.title,meta:r.subtitle||'',score:score+.12,action:()=>{openReferences(k);setTimeout(()=>{const input=$('#referenceSearch');if(input){input.value=r.title;input.dispatchEvent(new Event('input',{bubbles:true}));}},60);}});}}
     if(window.BLEUS3000_RELATIONAL_REFS?.search)out.push(...window.BLEUS3000_RELATIONAL_REFS.search(q));
     for(const x of (D.calendar||[])){const score=fuzzyEntityScore(q,[x.title,x.subtitle,x.date,x.tag]);if(score<=.48)out.push({type:'Calendrier',icon:'📅',title:x.title,meta:`${x.date} · ${x.subtitle}`,score:score+.15,action:()=>alert(`${x.date}\n${x.title}\n${x.subtitle}`)});}
     return out.sort((a,b)=>(a.score??9)-(b.score??9)||String(a.title).localeCompare(String(b.title),'fr',{sensitivity:'base'})).slice(0,35);
@@ -155,17 +140,13 @@
     $$('.modal-backdrop').forEach(m=>m.addEventListener('pointerdown',e=>{if(e.target===m)closeModal(m.id);}));$$('[data-modal-close]').forEach(b=>b.addEventListener('click',()=>closeModal(b.dataset.modalClose)));
     $('#referenceSearch').addEventListener('input',e=>{refState.query=e.target.value.toLowerCase();renderReferenceEntries();});$('#addReferenceEntry').addEventListener('click',openReferenceEditor);$('#refEditorForm').addEventListener('submit',saveReferenceEditor);
     $$('[data-perf-limit]').forEach(b=>b.addEventListener('click',()=>{performanceLimit=Number(b.dataset.perfLimit);renderPerformances();}));
-    $('#saveTeamTool').addEventListener('click',()=>saveToolLocally($('#teamToolModal').dataset.kind||'xi'));$('#exportTeamPng').addEventListener('click',()=>exportTool($('#teamToolModal').dataset.kind||'xi','png'));$('#exportTeamJpg').addEventListener('click',()=>exportTool($('#teamToolModal').dataset.kind||'xi','jpg'));
-    $('#saveListTool').addEventListener('click',()=>saveToolLocally('list'));$('#exportListPng').addEventListener('click',()=>exportTool('list','png'));$('#exportListJpg').addEventListener('click',()=>exportTool('list','jpg'));
-    $('#openAllReferences')?.addEventListener('click',()=>openReferences('selections'));$('#openCalendar')?.addEventListener('click',()=>alert('Le calendrier complet sera alimenté par les échéances liées aux convocations, matchs et compétitions.'));$('#openLadder')?.addEventListener('click',()=>alert('Le Ladder complet reprendra le même moteur de classement avec filtres par poste, période et sexe.'));$('#openNextBlue')?.addEventListener('click',()=>alert('Prochain Bleu ? est réservé aux joueurs jamais appelés en A et classés sur des critères objectifs de forme et temps de jeu.'));
+    if(!window.BLEUS3000_SELECTION_LIST){$('#saveListTool')?.addEventListener('click',()=>saveToolLocally('list'));$('#exportListPng')?.addEventListener('click',()=>exportTool('list','png'));$('#exportListJpg')?.addEventListener('click',()=>exportTool('list','jpg'));}
+
     document.addEventListener('keydown',e=>{if(e.key==='Escape'){const top=$$('.modal-backdrop:not([hidden])').at(-1);if(top)closeModal(top.id);}});
   }
 
-  function initSpaceIndicator(){
-    const el=$('#bleusSpaceIndicator');window.addEventListener('bleus:space',e=>{if(el)el.querySelector('span:last-child').textContent=e.detail?.label||'Accueil · Veille France';});
-  }
 
   window.BLEUS3000_APP={openReferences,openTool,openModal,closeModal};
-  function init(){renderDashboard();setupToolbar();setupSearch();setupEvents();loadSettings();initSpaceIndicator();document.body.classList.add('js-ready');}
+  function init(){renderDashboard();setupToolbar();setupSearch();setupEvents();document.body.classList.add('js-ready');}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();

@@ -1,129 +1,42 @@
+# 3615 Bleus — GitHub / Netlify / Supabase
 
-## V1.1.41
+## Déploiement courant
 
-Aucune nouvelle variable Netlify. Conserver `THESPORTSDB_KEY`, `SUPABASE_URL` et `SUPABASE_SECRET_KEY`. La migration production des chaînes de diffusion est déjà appliquée.
+Le projet Supabase de production `bleus3000` est déjà migré. Pour une mise à jour normale du site :
 
-# Mise en ligne de Bleus 3000 V1.1.35
+1. remplacer le contenu du dépôt GitHub par le package complet ;
+2. laisser Netlify redéployer ;
+3. conserver les variables Netlify existantes (`THESPORTSDB_KEY`, `SUPABASE_SECRET_KEY`, `SUPABASE_URL`) ;
+4. ne pas exécuter `SUPABASE_BASELINE.sql` sur la base de production existante.
 
-## Ordre conseillé
+`calendar-sync` reste planifié toutes les 6 heures et peut être lancé manuellement depuis Netlify si nécessaire.
 
-1. GitHub : créer le dépôt Bleus 3000 et y envoyer le contenu du package.
-2. Netlify : importer ce dépôt et effectuer un premier déploiement.
-3. Supabase : créer un nouveau projet totalement séparé de Cotation 3000.
-4. Supabase : exécuter `supabase_setup.sql`.
-5. Configurer `bleus_config.js` avec le nouveau Project URL, la clé publique/anon et l'URL Netlify de production.
-6. Commit/push de `bleus_config.js` vers GitHub ; Netlify redéploiera automatiquement.
-7. Supabase Auth : définir le Site URL sur l'URL Netlify de production et ajouter la même URL dans les Redirect URLs.
-8. Créer ton compte depuis Bleus 3000 puis confirmer l'adresse e-mail.
-9. Dans Supabase SQL Editor, remplacer `TON_EMAIL_ICI` dans `SUPABASE_FIRST_ADMIN.sql` par ton e-mail et exécuter la requête.
-10. Te déconnecter/reconnecter : le profil doit afficher le rôle SUPERADMIN.
+## Nouveau projet Supabase
 
-## GitHub
+Le package ne contient plus les migrations historiques individuelles. Elles ont été consolidées dans un fichier unique :
 
-Créer un dépôt vide, par exemple `bleus-3000`. Pour éviter les conflits lors du premier envoi, ne pré-remplis pas le dépôt avec un autre README ou une autre arborescence si tu comptes envoyer directement le package complet.
+- `SUPABASE_BASELINE.sql` — schéma cumulatif Bleus 3000 (tables, fonctions, RLS, policies, buckets et données bootstrap prévues par les migrations historiques) ;
+- `SUPABASE_FIRST_ADMIN.sql` — aide pour attribuer le rôle SUPERADMIN au premier compte si nécessaire.
 
-Le contenu du dossier `Bleus_3000_V1.1.2_HEADER_CLEAN_GITHUB_READY` doit se retrouver à la racine du dépôt : `index.html`, `netlify.toml`, `bleus_config.js`, les fichiers JS/CSS, `supabase_setup.sql` et le dossier `netlify/functions`.
+Pour une nouvelle instance Supabase :
 
-## Netlify
+1. créer un projet Supabase neuf ;
+2. exécuter `SUPABASE_BASELINE.sql` une seule fois dans SQL Editor ;
+3. configurer `bleus_config.js` avec l’URL et la clé publique/publishable ;
+4. créer/valider le premier compte ;
+5. exécuter `SUPABASE_FIRST_ADMIN.sql` si l’attribution du premier SUPERADMIN doit être faite manuellement.
 
-Depuis Netlify, choisir Add new project > Import an existing project, sélectionner GitHub puis le dépôt Bleus 3000. Le fichier `netlify.toml` fourni définit déjà le publish directory (`.`) et les Netlify Functions.
+Le baseline ne contient pas les données de production (joueurs, matchs, photos, etc.). Ces données doivent être importées/restaurées séparément si une reconstruction complète du contenu est nécessaire.
 
-Après le premier déploiement, note l'URL de production, par exemple `https://bleus-3000.netlify.app`.
+## Sécurité
 
-## Supabase
+`bleus_config.js` ne doit contenir que les informations publiques nécessaires au navigateur. Ne jamais y placer `SUPABASE_SECRET_KEY`, une clé `service_role` ou `THESPORTSDB_KEY`.
 
-Créer un projet neuf. Dans SQL Editor, ouvrir `supabase_setup.sql`, copier son contenu et exécuter le script complet.
+## V1.1.61.15 — baseline consolidé
 
-Dans le panneau **Connect** de Supabase (ou dans **Settings > API Keys** pour la clé), récupérer :
-- Project URL -> `SUPABASE_URL`
-- clé **publishable** (`sb_publishable_...`) -> `SUPABASE_ANON_KEY`
-
-Le nom `SUPABASE_ANON_KEY` est conservé dans Bleus 3000 pour compatibilité avec le code, mais une nouvelle installation peut utiliser la clé publishable moderne.
-
-Modifier ensuite `bleus_config.js` :
-
-```js
-window.BLEUS3000_CONFIG = {
-  SUPABASE_URL: 'https://TON-PROJET.supabase.co',
-  SUPABASE_ANON_KEY: 'TA_CLE_PUBLIQUE',
-  PRODUCTION_URL: 'https://TON-SITE.netlify.app',
-  SPORTSDB_LIVE_PROXY: '/api/sportsdb-live'
-};
-```
-
-Ces valeurs sont destinées au client web. N'ajoute jamais de clé **secret**, `service_role` ou toute autre clé à privilèges élevés dans ce fichier.
-
-## Auth Supabase
-
-Dans Authentication > URL Configuration :
-- Site URL = URL Netlify de production
-- Redirect URLs = au minimum cette même URL ; ajouter les URLs de preview uniquement si tu veux tester l'authentification sur des previews Netlify.
-
-Conserver Confirm Email activé si tu veux que chaque utilisateur confirme son compte par e-mail.
-
-## Premier SUPERADMIN
-
-Une fois le site connecté à Supabase :
-1. Ouvrir Bleus 3000.
-2. Créer ton compte avec ton adresse e-mail.
-3. Cliquer sur le lien de confirmation reçu par e-mail.
-4. Vérifier que le compte peut se connecter.
-5. Dans Supabase SQL Editor, ouvrir `SUPABASE_FIRST_ADMIN.sql`.
-6. Remplacer `TON_EMAIL_ICI` par ton adresse exacte.
-7. Exécuter le SQL.
-8. Te déconnecter puis te reconnecter au site.
-
-Le compte sera alors `SUPERADMIN`. Ensuite, le registre administrateur peut attribuer les autres rôles depuis l'interface.
-
-## Calendrier TheSportsDB — V1.1.35
-
-1. Exécuter `MIGRATION_V1.1.35_THESPORTSDB_CALENDRIER.sql` uniquement sur une installation neuve ou si la migration n’a pas encore été appliquée. Sur le projet Bleus 3000 actuel, elle est déjà appliquée.
-2. Dans **Netlify > Project configuration > Environment variables**, créer :
-   - `THESPORTSDB_KEY` → cocher **Contains secret values** ;
-   - `SUPABASE_SECRET_KEY` → cocher **Contains secret values** ;
-   - `SUPABASE_URL` → ne pas marquer secret ;
-   - facultatif : `BLEUS_SPORTSDB_TEAM_MAP` → mapping JSON non secret.
-3. Faire un nouveau deploy Netlify.
-4. Dans **Functions > calendar-sync**, lancer une seule fois **Run now** pour le premier import.
-5. Le cron fourni relance ensuite le sync toutes les 6 heures.
-
-`THESPORTSDB_KEY` doit rester exclusivement côté Netlify. Elle ne doit jamais être ajoutée à `bleus_config.js`, GitHub ou au code du navigateur.
-
-Les variables `API_FOOTBALL_KEY` et `BLEUS_API_TEAM_MAP` des versions précédentes peuvent être supprimées : elles ne sont plus lues.
-
-## V1.1.36
-La migration `v1_1_36_tags_drapeaux` est déjà appliquée sur le projet Supabase Bleus 3000.
-Aucune nouvelle variable Netlify n'est requise.
-Conserver : `THESPORTSDB_KEY`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`.
-
-## V1.1.38
-- Aucune nouvelle variable Netlify.
-- `public.tags.gradient_colors` stocke jusqu'à 5 couleurs par tag.
-- Migration `v1_1_38_tag_gradients_5_colors` déjà appliquée sur la base de production.
-- La création manuelle de matchs réutilise les politiques RLS existantes de `matches`, `opponents`, `competitions` et `places` ; elle est donc réservée aux rôles autorisés par `can_edit()`.
-
-
-## V1.1.40
-- Aucune nouvelle variable Netlify.
-- TheSportsDB reste configuré avec `THESPORTSDB_KEY`.
-- Les migrations V1.1.40 ont déjà été appliquées sur la base Supabase de production.
-- Après déploiement du package : aucun SQL à lancer.
-
-## V1.1.43 — cadre de diffusion et accueil
-La migration `v1_1_42_calendar_feature_frames` est déjà appliquée sur le projet Supabase courant. Elle ajoute `matches.feature_frame_mode` et la table `calendar_feature_styles`. Aucune nouvelle variable Netlify n'est requise.
-
-
-## V1.1.43 — test historique Espoirs
-
-Après déploiement, ouvrir Netlify → Functions → `history-espoirs` → **Run now**.
-La fonction réutilise `THESPORTSDB_KEY`, `SUPABASE_URL` et `SUPABASE_SECRET_KEY`. Aucun secret supplémentaire.
-Elle ne doit pas être planifiée : c'est un pilote manuel et non destructif.
-
-## V1.1.44 — Import U23 féminines
-
-Aucune nouvelle variable Netlify et aucune migration SQL manuelle. Après le déploiement, lancer une seule fois `Functions → import-u23f → Run now`. La fonction utilise `SUPABASE_URL` et `SUPABASE_SECRET_KEY` déjà configurées.
-
-
-## V1.1.46 — Import Jeux Olympiques 2024
-
-Aucune nouvelle variable Netlify. `calendar-sync` lance automatiquement l'import France U23 / Paris 2024 si les six rencontres ne sont pas déjà présentes. Pour forcer un contrôle manuel, appeler `/.netlify/functions/import-olympique-u23`. La migration `MIGRATION_V1.1.46_JEUX_OLYMPIQUES_2024.sql` est déjà appliquée au projet Supabase courant.
+- suppression des 36 fichiers `MIGRATION_*.sql` de la racine ;
+- suppression de l’ancien `supabase_setup.sql` ;
+- remplacement par `SUPABASE_BASELINE.sql` ;
+- conservation de `SUPABASE_FIRST_ADMIN.sql` ;
+- aucun changement appliqué à la base de production ;
+- centrage renforcé du logo Équipementier dans les tuiles Maillots.

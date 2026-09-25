@@ -1,15 +1,8 @@
-/* 3615 Bleus V1.1.2 — profils sociaux sans image de profil : étiquettes + présence */
+/* 3615 Bleus V1.1.61.14 — profils sociaux sans image de profil : étiquettes + présence */
 (() => {
   'use strict';
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const memberLabels=new Map();
-  const labelPresets=[
-    {name:'Bleu',appearance:'gradient',color_start:'#E7F0FF',color_end:'#2563EB',gradient_angle:135},
-    {name:'Cyan',appearance:'gradient',color_start:'#E5FBFF',color_end:'#0EA5C6',gradient_angle:135},
-    {name:'Nuit',appearance:'gradient',color_start:'#24436A',color_end:'#071426',gradient_angle:135},
-    {name:'Tricolore',appearance:'gradient',color_start:'#1D4ED8',color_end:'#EF4444',gradient_angle:135}
-  ];
-  const iconPresets=['★','⚽','🇫🇷','📚','📊','🏆','✦','●'];
   const roleName=r=>({user:'USER',contributor:'CONTRIBUTOR',editor:'EDITOR',admin:'ADMIN',superadmin:'SUPERADMIN',guest:'VISITEUR'}[r]||String(r||'USER').toUpperCase());
   const presenceLabel=s=>({online:'En ligne',away:'Absent',dnd:'Ne pas déranger',offline:'Hors ligne'}[s]||'En ligne');
   function defaultMemberLabel(role){return {label_text:roleName(role),icon_text:role==='superadmin'?'★':'',appearance:'gradient',color_start:role==='superadmin'?'#E7F0FF':'#DDEAFF',color_end:role==='superadmin'?'#2563EB':'#5B8DCC',gradient_angle:135};}
@@ -40,6 +33,6 @@
     });
   }
   function init(){bindPresence();refreshMemberLabels();}
-  window.C3K_SOCIAL_PROFILE={memberLabelPresets:labelPresets,memberLabelIconPresets:iconPresets,roleBadgeHtml,memberLabelBadgeHtml,defaultMemberLabel,profileIdentityHtml,enhanceProfileEditor,refreshMemberLabels,getMemberLabel,setMemberLabel,refreshPresence:()=>{}};
+  window.C3K_SOCIAL_PROFILE={roleBadgeHtml,memberLabelBadgeHtml,defaultMemberLabel,profileIdentityHtml,enhanceProfileEditor,refreshMemberLabels,getMemberLabel,setMemberLabel};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();

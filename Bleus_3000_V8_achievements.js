@@ -11,7 +11,7 @@
   const canEdit=()=>['contributor','admin','superadmin'].includes(role());
   const refs=[
     ['selection','Sélections'],['callup','Convocations'],['match','Matchs'],['competition','Compétitions'],['opponent','Adversaires'],
-    ['personnel','Personnel & Officiels'],['equipment','Équipements'],['statistics','Statistiques'],['place','Lieux'],['bibliography','Bibliographie & Médias']
+    ['personnel','Staff / Arbitres'],['equipment','Maillots'],['statistics','Statistiques'],['place','Stades']
   ];
   let items=[],scopes=[],editingId=null,pendingIconBlob=null,pendingPreview='';
 

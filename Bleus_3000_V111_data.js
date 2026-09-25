@@ -31,28 +31,21 @@ window.BLEUS3000_DATA = {
     {id:'cal4',date:'14 octobre 2026',kind:'Liste',title:'Annonce de la prochaine liste',subtitle:'Équipe de France A Masculine',tag:'Convocation'},
     {id:'cal5',date:'20 octobre 2026',kind:'Rassemblement',title:'Début du rassemblement',subtitle:'Clairefontaine',tag:'A Masculine'}
   ],
-  callups: [
-    {id:'c1',title:'Équipe de France A Masculine',date:'Septembre 2026',competition:'Ligue des Nations',gender:'M',category:'A',count:25,sourceCount:3,contributors:['Rapli LH']},
-    {id:'c2',title:'Équipe de France A Féminine',date:'Septembre 2026',competition:'Qualifications',gender:'F',category:'A',count:23,sourceCount:2,contributors:['Alex']},
-    {id:'c3',title:'Équipe de France Espoirs',date:'Octobre 2026',competition:'Euro Espoirs',gender:'M',category:'Espoirs',count:23,sourceCount:2,contributors:['Data Team']}
-  ],
   references: [
     {key:'selections',title:'Sélections',icon:'user',tags:['Masculin','Féminin','A','Jeunes'],count:'14 catégories',description:'Joueurs et joueuses reliés aux différentes sélections françaises.'},
-    {key:'convocations',title:'Convocations',icon:'list',tags:['A','Espoirs','U20…','M/F'],count:'Archives',description:'Toutes les listes, forfaits, remplaçants et premières convocations.'},
+    {key:'staff',title:'Staff',icon:'users',tags:['Sélectionneurs','M/F','Toutes catégories'],count:'Personnes',description:'Sélectionneurs reliés aux matchs des différentes sélections françaises.'},
     {key:'matchs',title:'Matchs',icon:'ball',tags:['Officiel','Amical','M/F'],count:'Historique',description:'Rencontres des sélections françaises et feuilles de match.'},
     {key:'competitions',title:'Compétitions',icon:'trophy',tags:['Mondial','Euro','Ligue des Nations'],count:'Éditions',description:'Compétitions, éditions, formats et parcours des Bleus.'},
     {key:'adversaires',title:'Adversaires',icon:'globe',tags:['Pays','Sélections'],count:'Monde',description:'Toutes les sélections rencontrées par la France.'},
-    {key:'personnel',title:'Personnel & Officiels',icon:'users',tags:['Sélectionneur','Coach','Arbitre'],count:'Personnes',description:'Staffs, délégués et officiels associés aux rencontres.'},
-    {key:'equipements',title:'Équipements',icon:'shirt',tags:['Domicile','Extérieur','Gardien'],count:'Collections',description:'Maillots, tenues et équipements liés aux sélections.'},
+    {key:'arbitres',title:'Arbitres',icon:'users',tags:['Arbitre principal','Matchs','M/F'],count:'Personnes',description:'Arbitres principaux reliés aux matchs ; assistants et VAR exclus.'},
+    {key:'maillots',title:'Maillots',icon:'shirt',tags:['Domicile','Extérieur','Gardien'],count:'Collections',description:'Maillots des sélections françaises · photos · équipes et compétitions affiliées.'},
     {key:'statistiques',title:'Statistiques',icon:'chart',tags:['Records','Sélections','Buts'],count:'Données',description:'Records et classements calculés depuis les autres référentiels.'},
-    {key:'lieux',title:'Lieux',icon:'pin',tags:['Ville','Pays','Stade','Lieu emblématique'],count:'Cartographie',description:'Stades, villes, pays et lieux comme Clairefontaine.'},
-    {key:'bibliographie',title:'Bibliographie & Médias',icon:'book',tags:['Livre','DVD','Reportage','Podcast'],count:'Médias',description:'Ouvrages et médias liés aux sélections françaises.'}
+    {key:'lieux',title:'Stades',icon:'pin',tags:['Stades','Matchs','M/F'],count:'Stades',description:'Stades reliés aux matchs des sélections françaises.'}
   ],
   referenceEntries: {
     selections:[],
-    convocations:[
-      {id:'rc1',title:'A Masculine · Septembre 2026',subtitle:'Ligue des Nations',tags:['Masculin','A'],facts:['25 joueurs','Liste initiale + remplacements'],sources:['FFF'],contributors:['Rapli LH']},
-      {id:'rc2',title:'A Féminine · Septembre 2026',subtitle:'Qualifications',tags:['Féminin','A'],facts:['23 joueuses','Liste initiale'],sources:['FFF'],contributors:['Alex']}
+    staff:[
+      {id:'rst1',title:'Didier Deschamps',subtitle:'Sélectionneur · France A Masculine',tags:['Sélectionneur','A Masculine'],facts:['Matchs dirigés reliés automatiquement','Bilan calculé depuis les rencontres'],sources:['FFF'],contributors:['Rapli LH']}
     ],
     matchs:[
       {id:'rm1',title:'France - Italie',subtitle:'Ligue des Nations · 2 octobre 2026',tags:['A Masculine','Officiel'],facts:['Stade : à renseigner','Compétition liée'],sources:['FFF','UEFA'],contributors:['Data Team']},
@@ -66,25 +59,19 @@ window.BLEUS3000_DATA = {
       {id:'ra1',title:'Allemagne',subtitle:'UEFA · Europe',tags:['Adversaire','UEFA'],facts:['Tous les France-Allemagne reliés','Bilan calculé automatiquement'],sources:['FFF','UEFA'],contributors:['Rapli LH']},
       {id:'ra2',title:'Brésil',subtitle:'CONMEBOL · Amérique du Sud',tags:['Adversaire','CONMEBOL'],facts:['Confrontations historiques','Buteurs reliés'],sources:['FFF','FIFA'],contributors:['Alex']}
     ],
-    personnel:[
-      {id:'rp1',title:'Didier Deschamps',subtitle:'Sélectionneur · France A Masculine',tags:['Sélectionneur'],facts:['Mandat relié aux matchs','Convocations reliées'],sources:['FFF'],contributors:['Rapli LH']},
-      {id:'rp2',title:'Szymon Marciniak',subtitle:'Arbitre · Pologne',tags:['Arbitre','Officiel'],facts:['Matchs de la France arbitrés','Compétitions associées'],sources:['UEFA','FIFA'],contributors:['Data Team']}
+    arbitres:[
+      {id:'rar1',title:'Szymon Marciniak',subtitle:'Arbitre principal · Pologne',tags:['Arbitre principal'],facts:['Matchs de la France arbitrés','Assistants et VAR exclus'],sources:['UEFA','FIFA'],contributors:['Data Team']}
     ],
-    equipements:[
-      {id:'re1',title:'France domicile 2026',subtitle:'Maillot · Équipe de France A',tags:['Domicile','Nike'],facts:['Saison : 2026','Matchs portés reliés'],sources:['Nike','FFF'],contributors:['Rapli LH']},
-      {id:'re2',title:'France extérieur 2026',subtitle:'Maillot · Équipe de France A',tags:['Extérieur','Nike'],facts:['Saison : 2026','Photos à ajouter'],sources:['Nike'],contributors:['Alex']}
+    maillots:[
+      {id:'jersey-seed-2026-home',title:'France domicile 2026',usage_type:'domicile',gender_scope:'Mixte',season_label:'2026',year_start:2026,year_end:2026,manufacturer:'Nike',manufacturer_reference:'À renseigner',template_name:'À renseigner',primary_color:'Bleu',secondary_color:'Bleu nuit',accent_colors:['Blanc','Rouge'],collar_type:'À renseigner',sleeve_type:'Manches courtes',pattern_description:'Fiche modèle préparée pour documenter le design, les détails de fabrication et les variantes.',stars_count:2,number_font:'À renseigner',player_name_font:'À renseigner',version_type:'Match',technology:'À renseigner',notes_short:'Photo principale et photos de détails à ajouter.',source_urls:['FFF','Nike'],contributors:['Rapli LH'],team_relations:[{id:'seed-team-a-m',name:'France A Masculine'}],competition_relations:[]},
+      {id:'jersey-seed-2026-away',title:'France extérieur 2026',usage_type:'exterieur',gender_scope:'Mixte',season_label:'2026',year_start:2026,year_end:2026,manufacturer:'Nike',manufacturer_reference:'À renseigner',template_name:'À renseigner',primary_color:'Blanc',secondary_color:'Bleu',accent_colors:['Rouge'],collar_type:'À renseigner',sleeve_type:'Manches courtes',pattern_description:'Fiche modèle préparée pour accueillir plusieurs photos, y compris face, dos et détails.',stars_count:2,number_font:'À renseigner',player_name_font:'À renseigner',version_type:'Match',technology:'À renseigner',notes_short:'Galerie photo à compléter.',source_urls:['Nike'],contributors:['Rapli LH'],team_relations:[{id:'seed-team-a-m',name:'France A Masculine'}],competition_relations:[]}
     ],
     statistiques:[
       {id:'rs1',title:'Sélections · A Masculine',subtitle:'Classement historique',tags:['Record','Sélections'],facts:['Calculé depuis les apparitions','Mise à jour relationnelle'],sources:['FFF','Matchs 3615 Bleus'],contributors:['Data Team']},
       {id:'rs2',title:'Buteurs · A Féminine',subtitle:'Classement historique',tags:['Record','Buts'],facts:['Calculé depuis les matchs','Filtres par période'],sources:['FFF'],contributors:['Alex']}
     ],
     lieux:[
-      {id:'rl1',title:'Centre national du football',subtitle:'Clairefontaine-en-Yvelines · France',tags:['Lieu emblématique','Rassemblement'],facts:['Clairefontaine','Événements et convocations liés'],sources:['FFF'],contributors:['Rapli LH']},
       {id:'rl2',title:'Stade de France',subtitle:'Saint-Denis · France',tags:['Stade','France'],facts:['Matchs des Bleus liés','Capacité à sourcer'],sources:['Stade de France','FFF'],contributors:['Data Team']}
-    ],
-    bibliographie:[
-      {id:'rb1',title:'Les Bleus · ouvrage de référence',subtitle:'Livre · exemple de structure',tags:['Livre','Archive'],facts:['Auteur / éditeur / année','Liens vers joueurs, matchs et compétitions'],sources:['Notice bibliographique'],contributors:['Rapli LH']},
-      {id:'rb2',title:'Documentaire France 1998',subtitle:'Documentaire · exemple de structure',tags:['Documentaire','1998'],facts:['Durée / diffuseur','Objets 3615 Bleus associés'],sources:['Diffuseur'],contributors:['Alex']}
     ]
   }
 };

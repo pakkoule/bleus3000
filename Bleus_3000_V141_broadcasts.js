@@ -1,4 +1,4 @@
-/* 3615 Bleus V1.1.41 — chaînes de diffusion + logos */
+/* 3615 Bleus V1.1.48 — chaînes de diffusion + logos + menus calendrier */
 (()=>{
   'use strict';
   const $=(s,p=document)=>p.querySelector(s), $$=(s,p=document)=>[...p.querySelectorAll(s)];
@@ -21,6 +21,7 @@
     if(be)console.warn('Chaînes',be);if(te)console.warn('Tags chaînes',te);
     channels=b||[];tags=new Map((t||[]).map(x=>[x.id,x]));render();
     window.dispatchEvent(new CustomEvent('bleus:broadcasts-ready',{detail:{channels,tags:[...tags.values()]}}));
+    return channels;
   }
   function open(){editingId=null;pendingFile=null;pendingPreview='';const body=$('#c3kV8PanelBody');if(body)body.innerHTML='<div class="c3k-v8-muted">Chargement des chaînes…</div>';load();}
   function rowHtml(b){const t=tags.get(b.tag_id);return `<article class="broadcast-manager-row"><div class="broadcast-manager-logo">${logoHtml(b,t)}</div><div><strong>${esc(b.name)}</strong><small>${esc((b.aliases||[]).join(' · ')||b.slug)}</small></div>${canEdit()?`<button type="button" data-broadcast-edit="${esc(b.id)}">Modifier</button>`:''}</article>`;}

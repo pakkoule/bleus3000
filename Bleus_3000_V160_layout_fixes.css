@@ -1,0 +1,90 @@
+
+/* 3615 Bleus V1.1.60 — correctifs visuels et flocages globaux */
+:root{--b3k-flock-sm:24px;--b3k-flock-md:32px;--b3k-flock-lg:44px}
+.b3k-flock-number{display:inline-flex;align-items:flex-end;gap:2px;min-height:1em}
+.b3k-flock-number.b3k-size-sm .b3k-flock-digit{height:var(--b3k-flock-sm)}
+.b3k-flock-number.b3k-size-md .b3k-flock-digit{height:var(--b3k-flock-md)}
+.b3k-flock-number.b3k-size-lg .b3k-flock-digit{height:var(--b3k-flock-lg)}
+.b3k-flock-digit{display:block;width:auto;object-fit:contain;image-rendering:auto}
+.team-number-style-preview{display:flex;align-items:center;justify-content:flex-start;min-height:54px;padding:6px 0}
+body.b3k-ref-maillots #referenceEntries{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))!important;gap:16px!important;align-items:start!important}
+body.b3k-ref-maillots #referenceEntries > *{width:auto!important;max-width:none!important;min-width:0!important;align-self:start!important}
+body.b3k-ref-maillots #referenceEntries > * img{max-width:100%;height:auto;object-fit:contain}
+body.b3k-ref-maillots #referenceEntries > * [class*='photo'],
+body.b3k-ref-maillots #referenceEntries > * [class*='image'],
+body.b3k-ref-maillots #referenceEntries > * figure{max-height:240px;overflow:hidden}
+body.b3k-ref-maillots #referenceEntries > * [class*='facts'],
+body.b3k-ref-maillots #referenceEntries > * [class*='meta'],
+body.b3k-ref-maillots #referenceEntries > * [class*='tags']{display:flex;flex-wrap:wrap;gap:8px}
+body.b3k-ref-maillots #referenceEntries > * [class*='fact'],
+body.b3k-ref-maillots #referenceEntries > * [class*='chip'],
+body.b3k-ref-maillots #referenceEntries > * [class*='tag']{max-width:100%;white-space:normal!important;word-break:break-word}
+body.b3k-ref-statistiques #referenceEntries{display:block!important}
+body.b3k-ref-statistiques #referenceEntries > *{width:100%!important;max-width:none!important;min-width:0!important;margin-inline:0!important}
+body.b3k-ref-statistiques #referenceEntries > * [class*='shell'],
+body.b3k-ref-statistiques #referenceEntries > * [class*='grid'],
+body.b3k-ref-statistiques #referenceEntries > * [class*='layout'],
+body.b3k-ref-statistiques #referenceEntries > * [class*='panel']{max-width:none!important;width:100%!important}
+body.b3k-ref-statistiques #referenceEntries > * [class*='tabs']{overflow:auto hidden;scrollbar-width:thin}
+body.b3k-ref-statistiques #referenceEntries > * [class*='hero'],
+body.b3k-ref-statistiques #referenceEntries > * [class*='intro']{max-width:none!important;width:100%!important}
+@media (max-width: 860px){
+  body.b3k-ref-maillots #referenceEntries{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))!important}
+}
+
+/* V1.1.60.1 — préférence de flocage centralisée dans Profil > Personnalisation */
+.c3k-flockage-style-card.is-real-png{display:flex;align-items:center;gap:14px;padding:10px 12px;border:1px solid #d5e2f2;border-radius:11px;background:linear-gradient(180deg,#fbfdff,#f1f6fd)}
+.c3k-flockage-real-number{display:flex;align-items:flex-end;justify-content:center;gap:1px;min-width:82px;height:74px;padding:7px 10px;border-radius:9px;background:#123b8f}
+.c3k-flockage-real-number img{display:block;height:60px;width:auto;max-width:42px;object-fit:contain}
+.c3k-flockage-style-meta{display:grid;gap:3px}.c3k-flockage-style-meta strong{font-size:8px;color:#17385f}.c3k-flockage-style-meta span{font-size:6.5px;color:#7187a2}
+.team-player-visual.is-jersey .team-jersey-num{position:absolute!important;top:22px!important;left:50%!important;transform:translateX(-50%);display:flex!important;align-items:flex-end;justify-content:center;gap:0;height:25px;max-width:72%;z-index:2}
+.team-player-visual.is-jersey .team-jersey-num .team-flock-digit{display:block;height:100%;width:auto;max-width:19px;object-fit:contain}
+
+/* V1.1.60.2 — les modules spécialisés doivent occuper toute la grille du référentiel */
+.ref-list > .jersey-reference-grid,
+#referenceEntries > .jersey-reference-grid{
+  grid-column:1 / -1 !important;
+  width:100% !important;
+  min-width:0 !important;
+}
+.ref-list > .stats-v2,
+#referenceEntries > .stats-v2{
+  grid-column:1 / -1 !important;
+  width:100% !important;
+  min-width:0 !important;
+}
+
+/* Maillots : trois vraies cartes sur desktop, sans écrasement vertical */
+#referenceEntries > .jersey-reference-grid{
+  grid-template-columns:repeat(3,minmax(250px,1fr)) !important;
+  align-items:start !important;
+}
+#referenceEntries .jersey-tile{
+  width:100% !important;
+  max-width:none !important;
+}
+#referenceEntries .jersey-info-grid{
+  grid-template-columns:repeat(2,minmax(110px,1fr)) !important;
+}
+#referenceEntries .jersey-info strong{
+  overflow-wrap:normal !important;
+  word-break:normal !important;
+  hyphens:auto;
+}
+
+/* Statistiques : le dashboard utilise toute la largeur disponible */
+#referenceEntries > .stats-v2{
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) !important;
+}
+#referenceEntries > .stats-v2 > *{
+  min-width:0;
+  width:100%;
+}
+
+@media(max-width:980px){
+  #referenceEntries > .jersey-reference-grid{grid-template-columns:repeat(2,minmax(240px,1fr)) !important}
+}
+@media(max-width:720px){
+  #referenceEntries > .jersey-reference-grid{grid-template-columns:minmax(0,1fr) !important}
+}

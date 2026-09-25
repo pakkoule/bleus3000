@@ -1,231 +1,192 @@
-# 3615 Bleus
+## V1.1.61.15 — BASELINE / CLEANUP SQL
+
+- Les 36 migrations SQL historiques ont été consolidées dans `SUPABASE_BASELINE.sql`.
+- `supabase_setup.sql` a été retiré ; `SUPABASE_FIRST_ADMIN.sql` est conservé.
+- Aucun changement Supabase n’est requis sur la production existante.
+- Le logo Équipementier est désormais centré horizontalement et verticalement dans sa case Maillot.
+
+> Les noms `MIGRATION_*.sql` éventuellement cités dans l’historique ci-dessous sont des noms historiques ; leurs contenus sont désormais intégrés au baseline unique.
+
+## V1.1.61.14 — CLEANUP sûr
+
+- Nettoyage limité aux éléments audités comme supprimables à 100 %, sans modification de schéma Supabase ni suppression de données.
+- Suppression de l’ancien module Statistiques V1.1.39, remplacé par le module V157 actif.
+- Suppression de 4 pages de test/prévisualisation et des 10 anciens chiffres PNG France 98 désormais remplacés par `flocages_assets`.
+- Retrait de code JS sans consommateur : anciens bindings Onze/Five, indicateur d’espace, helpers joueurs inutilisés, constantes inutilisées et tableau statique `callups`.
+- Retrait des styles résiduels du Mur des membres, des anciens raccourcis profil et des anciens modes Largeur/Densité.
+- Aucun élément classé « à voir » lors de l’audit n’a été supprimé.
+- Aucune migration Supabase nécessaire.
+
+## V1.1.61.13
+
+- Nouveau menu Profil → **Équipementiers** inspiré des Chaînes de diffusion : création/modification, alias, site web et import de logo.
+- Nouveau référentiel Supabase `equipment_manufacturers`, tags `reference_scope=equipment`, liens `tag_reference_links` et relation `jerseys.manufacturer_id`.
+- Les anciens libellés d’équipementier sont repris automatiquement ; le champ texte `manufacturer` reste synchronisé pour compatibilité.
+- Les tuiles Maillots affichent désormais l’équipementier relationnel et son logo ; l’édition d’un maillot utilise un **menu déroulant** d’équipementiers.
+- Refonte complète de la **Liste du sélectionneur** : choix de compétition, groupes Gardien → Défense → Milieu → Attaquant, quantités ajustables au total et par poste, recherche nominative avec photo/initiales et blocage des doublons.
+- Nouveau rendu graphique de la liste avec header 3615 Bleus + logo, compétition associée, intitulés de postes en gras et noms de joueurs en graisse normale.
+- Sauvegarde des listes dans `user_compositions` avec `composition_type=selection_list`, bibliothèque « Mes listes » et export PNG/JPG.
+- Aucun changement Supabase supplémentaire pour cette version : correctif front uniquement sur l’affichage compact des équipementiers.
+
+## V1.1.61.11
+
+- Suppression complète du système de **raccourcis favoris du profil** (interface, préférences et assets front associés).
+- Suppression des contrôles **Largeur & densité** et de leur modale.
+- Le bandeau de rappel des autres référentiels en haut des blocs est supprimé : chaque bloc s’ouvre désormais comme un espace autonome.
+- Le champ de recherche du référentiel reste systématiquement présent, avec un libellé adapté au bloc ouvert.
+- Filtres relationnels enrichis : Matchs (stade, sélectionneur, état de feuille), Compétitions (type + section), Maillots (sélection + compétition liées).
+- Ajout d’une **recherche texte dans le calendrier complet**.
+- Sur les tuiles du calendrier d’accueil, le **lieu est affiché à droite de la date**.
+- L’**Éphéméride est fermée par défaut** au chargement.
+- La modale **Modifier le match** est élargie et organisée sur deux colonnes sur desktop pour afficher tous les champs et boutons sans débordement horizontal.
+- Aucune nouvelle migration Supabase nécessaire pour cette version.
+
+## V1.1.61.10
+
+- Accueil : header « Prochains matchs » compact sur une seule ligne avec bouton « Tout le calendrier » réduit.
+- Pagination des 4 prochains matchs déplacée dans le header du calendrier.
+- Suppression de la pagination basse de la Base joueurs ; la pagination haute reste la seule navigation de cette table.
+- Alignement vertical des blocs Base joueurs / Prochains matchs : leurs bordures inférieures tombent au même niveau sur desktop.
+- Aucune migration Supabase supplémentaire.
+
+## V1.1.61.9
+
+- Accueil : **4 prochains matchs par page** au lieu de 5.
+- Pagination du bloc Prochains matchs réactivée pour parcourir la suite du programme sans ouvrir le calendrier complet.
+- Ajout d’une action **↑ Épingler** sur les tuiles de match pour les éditeurs/admins : un seul match peut être placé en tête, et il y reste tant qu’il n’est pas terminé.
+- Persistance Supabase avec désépinglage automatique sur statut `FT / FINISHED / COMPLETED…`.
+- Migration `MIGRATION_V1.1.61.9_HOME_CALENDAR_PIN.sql` appliquée au projet `bleus3000`.
+
+## V1.1.61.8
+
+- Accueil : les **5 prochains matchs** sont affichés sous forme de tuiles compactes avec drapeaux, diffusion, tags, accès à la feuille de match, tuile Match et roue d’édition.
+- Base joueurs : lignes légèrement réduites, sélection au clic et **favoris joueurs** synchronisés au profil, limités à 10 et remontés en tête de liste.
+- Suppression du **Mur des membres** de l’interface.
+- Ajout d’une **Éphéméride** dans le rail de gauche : anniversaires de joueurs et anniversaires de matchs du jour, avec liens vers les fiches correspondantes.
+- Migration Supabase `MIGRATION_V1.1.61.8_PLAYER_FAVORITES.sql` appliquée.
+
+## V1.1.61.7
+
+- Nouveau niveau **Familles de compétitions** : une seule tuile pour les déclinaisons d’une même compétition selon les sélections.
+- EURO, Qualifications EURO, Coupe du monde, Qualifications Coupe du monde, Jeux Olympiques, Ligue des Nations, Tournoi de France et Mondial de Montaigu sont regroupés.
+- Les **tags de section** sur la tuile mère filtrent directement les éditions de la sélection concernée.
+- Les phases finales et les qualifications restent volontairement séparées.
+
+## V1.1.61.6
+
+- L'enregistrement d'une fiche joueur n'ouvre plus le référentiel **Statistiques** en arrière-plan : son cache est seulement invalidé et sera recalculé à sa prochaine ouverture.
+- Les **tags de poste cliquables** sont maintenant affichés directement sur la ligne `Postes ·` de la tuile joueur.
+- Les tags de poste sont retirés de la rangée de tags générale en bas de la tuile pour éviter le doublon.
+- L'ordre des tags privilégie le poste principal puis les postes secondaires de la fiche, avant les éventuels postes historiques issus des feuilles de match.
+- Aucun changement Supabase supplémentaire par rapport à V1.1.61.5.
+
+## V1.1.61.5
+
+- Correction du bloc **Accomplissements** sur les tuiles joueurs : retour à la ligne des icônes et suppression du débordement horizontal.
+- Texte des pastilles de quantité (`×1`, `×41`, etc.) forcé en blanc pour un contraste correct.
+- Les cases **Postes** de l'éditeur joueur sont maintenant reliées au référentiel canonique et aux tags de poste.
+- À l'enregistrement, les anciens tags de poste ne sont plus conservés aveuglément : ils sont recalculés depuis la fiche joueur et les feuilles de match.
+- Trigger Supabase ajouté sur `players.primary_position / secondary_positions` pour garantir la synchronisation même hors de cette modale.
+
+## V1.1.61.4
+
+- Correctif définitif anti-**canvas tainted** sur les exports Onze/Five.
+- Toutes les images HTTP(S), y compris les URL apparemment locales pouvant rediriger vers Supabase/CDN, passent désormais par `fetch(CORS) -> Blob local`.
+- Chaque image est testée dans un mini-canvas isolé avec `getImageData()` avant d’être autorisée dans le canvas d’export.
+- Une image refusée est remplacée par son fallback avant le premier `drawImage()` sur le canvas final.
+- Aucune migration Supabase supplémentaire.
+
+## V1.1.61.3
+
+- Correction définitive du **canvas tainted** sur les exports PNG/JPG Onze/Five.
+- Les images externes (photos joueurs, drapeaux SVG) ne sont plus dessinées directement : elles passent obligatoirement par `fetch` CORS puis un Blob local.
+- Si une source distante refuse CORS, elle est ignorée au profit du fallback (initiales / drapeau emoji), sans bloquer tout le fichier.
+- Aucun changement Supabase.
 
-## V1.1.46 — Jeux Olympiques 2024 / OLYMPIQUE U23
+## V1.1.61.2
 
-Cette version importe les 6 matchs de la France U23 aux Jeux Olympiques de Paris 2024 via TheSportsDB. Les rencontres sont conservées dans le référentiel technique `FRA-ESP-M`, mais affichent le tag de section **OLYMPIQUE U23**. La compétition **Jeux Olympiques 2024** et le tag compétition **JEUX OLYMPIQUES** sont ajoutés. Le prochain `calendar-sync` effectue automatiquement l'import si les 6 matchs ne sont pas déjà présents, puis l'opération devient idempotente.
+- Correctif du rendu **PNG/JPG** des outils Onze / Five : rechargement robuste des assets graphiques (logo, brassard, maillot, chiffres de flocage).
+- Réintégration des **drapeaux** dans l’export lorsque la composition est liée à un match.
+- Fallback de sécurité : si un asset de flocage ne charge pas, le numéro reste dessiné en texte pour éviter les emplacements vides.
 
-## V1.1.45 — Olympique U23
+## V1.1.61.1
 
-La sélection masculine U23 reste techniquement rattachée au référentiel `FRA-ESP-M`, mais les rencontres des Jeux olympiques disposent désormais du tag de section distinct **OLYMPIQUE U23**. Les rencontres U21 conservent **ESPOIRS**. Le sync TheSportsDB et le pilote historique appliquent automatiquement ce tag aux événements U23 dont la compétition est olympique.
+- Correctif d’affichage du référentiel **Compétitions** : le catalogue occupe désormais toute la largeur de la fenêtre au lieu d’être comprimé dans la première colonne de `.ref-list`.
+- Responsive conservé : 2 colonnes sur écran large, 1 colonne sur petit écran.
+- Cache-busting CSS/JS actualisé pour éviter de conserver l’ancien rendu après déploiement.
 
-## V1.1.44 — France U23 / Espoirs féminines
+## V1.1.61.0
+- Maillot associé affiché directement sur chaque tuile de match.
+- Sélecteur de maillot des feuilles de match piloté par les associations **sélection + compétition** ; le nom affiché est le nom de la tuile Maillot.
+- Correction du plan de superposition de l’éditeur de feuille de match.
+- Nouveau référentiel relationnel de **22 postes** : normalisation des anciens libellés précis, synchronisation automatique des tags joueurs depuis les feuilles de match, et clic sur un tag poste pour retrouver les matchs joués à ce poste.
+- Nouveau catalogue canonique de **53 compétitions principales / 557 éditions** avec alias fusionnés, tags d’entités, sous-tags d’éditions et listing des matchs par boutons `+`.
+- Simplification de l’éditeur Maillot : conservation des champs utiles, relations équipes/compétitions, photos, notes et sources.
+- Onze / Five : drapeaux dans le choix de match et nouveau rendu **Numéros personnalisés** (badge rond bleu, numéro 0–99, flocage choisi dans le profil).
+- Suppression complète de l’extracteur de fichiers FFF, de son interface et de sa Netlify Function.
+- Migration Supabase : `MIGRATION_V1.1.61_RELATIONS_POSTES_COMPETITIONS.sql`.
 
-Import du classeur fourni `Bleus3000_Espoirs_Feminines_U23_2014_2026_V1.xlsx` : 72 matchs, 133 joueuses, 25 lignes de statistiques carrière vérifiées FFF, 152 observations joueuse-match, 22 buts détaillés et 4 périodes de sélectionneur. Le tag existant `ESPOIRS F` est réutilisé. L'import se lance une seule fois via la fonction Netlify `import-u23f`. Voir `U23_FEMININES_V1.1.44_IMPORT.md`.
+## V1.1.60.4
+- Correctif du bouton **Modifier la feuille de match**.
+- L’éditeur s’ouvre désormais indépendamment du chargement du module Maillots ; le sélecteur de maillot est chargé après ouverture.
+- Le clic recharge la feuille depuis Supabase si son état local est incomplet et affiche une erreur explicite en cas d’échec.
 
-## V1.1.43 — Calendrier paginé, affiches mises en avant, UI allégée
-- `VS` remplace l'absence de score sur les rencontres futures.
-- Calendrier accueil paginé (4 rencontres/page).
-- Cadre de diffusion personnalisable et automatique sur France A M/F, avec override par match.
-- Base joueurs à 10 lignes/page sur l'accueil.
-- Raccourcis icône uniquement, accomplissements avec infobulle, descriptions et titularisations retirées.
-- Origine fournisseur et attribution du modificateur retirées de l'affichage.
-- Indicateur supérieur supprimé et vague rouge ajoutée au header.
+## V1.1.60.3
+- Simplification des tuiles **Maillots** : photo, année, équipementier, tags équipes, séparation, tags compétitions uniquement.
+- Ajout du bouton **+** : la tuile se déplie pour afficher les matchs réellement liés au maillot.
+- Clic sur un tag équipe : ouverture du panneau en filtrant les matchs sur cette sélection française.
+- Création du lien relationnel **Maillot ↔ Feuille de match** via `match_jerseys`.
+- Ajout d’un sélecteur **Maillot utilisé par la France** dans l’éditeur de feuille de match.
+- La feuille de match affiche ensuite le maillot associé et la tuile Maillot retrouve réciproquement les matchs concernés.
+- Nouvelle migration `MIGRATION_V1.1.60.3_MAILLOTS_MATCHS.sql`.
 
-## V1.1.41 — Diffusions, ergonomie joueur et historique TheSportsDB
+## V1.1.60.2
+- Correction définitive de la largeur des modules **Maillots** et **Statistiques** : leurs conteneurs spécialisés occupent désormais toutes les colonnes de `#referenceEntries`.
+- Les cartes Maillots conservent une largeur minimale lisible et passent de 3 à 2 puis 1 colonne selon la largeur disponible.
 
-Cette version ajoute un gestionnaire de chaînes de diffusion dans le menu profil, des entités et tags de diffusion avec logos, un calendrier plus compact et des noms de pays sans suffixe de section. La sauvegarde de la fiche joueur reste ouverte afin d'enchaîner les contextes de sélection. Les indicateurs visuels « manuel » ont été retirés.
+## V1.1.60.1
+- Suppression des anciens flocages simulés (polices, ombres et contours CSS).
+- Les seuls styles proposés sont désormais les PNG réellement découpés depuis `flocages.zip`.
+- Le choix du style est centralisé dans **Profil → Personnalisation** ; le sélecteur a été retiré de Onze / Five.
+- La préférence s’applique aux **Onze / Five** et aux **numéros affichés sur les tuiles joueurs**.
+- Les anciens identifiants de styles sont automatiquement remappés vers les nouveaux assets lorsqu’une préférence historique existe.
 
-TheSportsDB peut être exploité pour enrichir l'historique via ses calendriers précédents et ses calendriers de saison. L'import historique doit rester progressif et respecter les lignes `verified` / `locked`.
+## V1.1.60
+- Correctifs visuels ciblés sur **Maillots** et **Statistiques**.
+- Ajout des flocages découpés chiffre par chiffre dans `flocages_assets/`.
+- Moteur de flocage global : le style choisi peut être réutilisé sur l’ensemble du site.
+- Préparation des numéros portés par sélection via `match_appearances.shirt_number`.
+- Préparation de la liaison feuille de match ↔ maillot via `match_appearances.jersey_id`.
+- Migration : `MIGRATION_V1.1.60_NUMEROS_FLOCAGES.sql`.
 
+# 3615 Bleus — V1.1.57
 
-## V1.1.40 — Correctif Tags Compétitions → Calendrier
+Package GitHub-ready complet pour **3615 Bleus**.
 
-- Les tags disposent maintenant d’une portée persistante (`selection`, `competition`, `general`).
-- Un nouveau tag de compétition est immédiatement visible dans **Calendrier → Ajouter un match → Tag de compétition**.
-- Le cache relationnel est rechargé après création/modification d’un tag : plus besoin d’attendre un nouveau chargement complet.
-- La création automatique d’une entrée Compétitions est conservée ; un échec ne laisse plus de tag orphelin.
-- Le tag **TOURNOI INTERNATIONAL DE LIMOGES** a été réparé et relié à son entrée Compétitions.
+## V1.1.57 · Statistiques V2
 
-Voir `FIX_TAG_CALENDAR_V1.1.40.md` et `MIGRATION_V1.1.40_TAG_SCOPE_CALENDAR.sql`.
+Le référentiel **Statistiques** passe en V2 avec cinq vues :
 
----
+- **Parcours Bleu** : U17 → U18 → U19 → U20 → Espoirs → A, volumes et taux de conservation ;
+- **Générations** : année de naissance, parcours individuel, niveau maximal atteint et conservation entre catégories ;
+- **Connexions** : coéquipiers les plus fréquents et module duos offensifs ;
+- **Bilans** : décennie, sélection, sélectionneur, stade, arbitre principal, compétition et adversaire ;
+- **Records** : buteurs, sélections et capitanat.
 
-# 3615 Bleus V1.1.38
+Tous les résultats relationnels sont interactifs : les joueurs ouvrent leur tuile et les détails de bilan/duos permettent d'ouvrir les matchs concernés.
 
+Les indicateurs sont calculés à partir des tables existantes (`player_selection_stats`, `matches`, `match_appearances`, `match_goal_events`, `match_officials`, etc.). Aucune nouvelle table n'est nécessaire.
 
-## V1.1.38 — Création calendrier + tags 5 couleurs
+## Versions précédentes conservées
 
-- Nouveau bouton **+ Ajouter un match** dans le calendrier pour les éditeurs/admins.
-- Classement automatique : date passée → **Matchs passés** ; date future → **À venir**.
-- Création relationnelle des adversaires, compétitions et lieux si nécessaire.
-- Les matchs créés apparaissent aussi immédiatement dans le référentiel **Matchs**.
-- Les tags acceptent désormais des dégradés de **2 à 5 couleurs** avec aperçu en direct.
-- Migration : `MIGRATION_V1.1.38_CALENDAR_CREATE_TAG_GRADIENTS.sql` (déjà appliquée au Supabase de production).
+- V1.1.56 : référentiel U18 Féminines, 105 joueuses reliées au tag U18 F ;
+- V1.1.55 : styles de flocage Onze / Five ;
+- toutes les migrations et fonctionnalités antérieures restent présentes dans le package.
 
-Voir `CALENDRIER_V1.1.38_CREATION_TAGS_5_COULEURS.md`.
+## Migration
 
-**Évolution principale : calendrier TheSportsDB + corrections éditoriales.** Un seul sync Netlify alimente les matchs futurs/récents, le live est affiché dans le calendrier, le référentiel Matchs est réparé et filtrable, et chaque champ API peut être corrigé manuellement sans bloquer la synchronisation des autres champs.
+Aucune migration Supabase V1.1.57 n'est requise.
 
-Ajout du référentiel **France U17 Masculin 2004–2026** (376 joueurs), avec continuité des profils globaux, tag U17 Masculin existant et contexte GENERAL. Voir `MIGRATION_V1.1.29_U17_MASCULIN.sql`.
 
-# Bleus 3000 V1.1.22
-
-Correctif de démarrage Supabase : validation de la session persistée avant exposition du client aux modules, refresh automatique des JWT temporellement invalides, et retour en mode public si une session locale est irrécupérable.
-
-# Bleus 3000 — V1.1.5
-
-
-## V1.1.21 — recherche et base joueurs
-
-La base globale de l’accueil dispose désormais d’un filtre par numéro porté, d’un accès direct à la tuile joueur par UUID, d’un surlignage des noms trouvés et d’une recherche plus tolérante aux fautes de frappe. La recherche universelle ne mélange plus les anciens joueurs de démonstration avec le registre Supabase : un joueur réel n’est proposé qu’une seule fois. Les derniers restes beige/marron/doré de Cotation 3000 ont également été remplacés par la palette Bleus 3000.
-
-Fork UI/UX de Cotation 3000 V9 adapté à Bleus 3000.
-
-Cette version ajoute :
-- overlays du header toujours devant le contenu ;
-- favoris à droite sous la toolbar ;
-- gestion complète des Tags & étiquettes dans le profil ;
-- stockage relationnel Supabase des tags et préparation des futures liaisons entre tuiles.
-
-La configuration de production reste `https://bleus3000.netlify.app/` avec le projet Supabase dédié Bleus 3000.
-
-
-### V1.1.5 — Icônes personnalisées des tags
-- Import PNG/JPG/WebP dans l’éditeur de tags.
-- Recadrage proportionnel dans un carré transparent 128×128 sans déformation.
-- Conversion WebP côté navigateur avant envoi pour limiter le poids.
-- Stockage dans le bucket Supabase `tag-icons`.
-- Emoji conservé en fallback si aucune image personnalisée n’est définie.
-
-## V1.1.6 — Référentiel Sélections
-Le premier référentiel réel est désormais `Sélections`. Les données France A Masculin sont stockées dans Supabase et non dans un JSON frontend. Les autres catégories sont créées mais restent vides jusqu'à leur alimentation. Les fiches joueurs sont relationnelles et destinées à être réutilisées dans les convocations, matchs, compétitions et outils de composition.
-
-
-## Correctif V1.1.7
-- Les 949 joueurs France A Masculin utilisent le tag utilisateur existant `INTERNATIONAL` (alias `FRANCE A M`).
-- Aucun tag France A n'est recréé automatiquement.
-- Le rendu personnalisé du tag (icône image, couleurs, bordure) est repris sur les tuiles.
-
-
-## V1.1.9 — Numéros de maillot visuels
-- Sélecteur de numéro dans l’éditeur joueur, avec bouton `+ Ajouter`.
-- Plusieurs numéros peuvent être associés à un joueur sans saisie manuelle par virgules.
-- Chaque numéro est affiché sur un dos de maillot avec les chiffres graphiques France 1998 fournis pour le projet.
-- Les numéros restent stockés individuellement dans `player_jersey_numbers`.
-
-
-## V1.1.11
-Le référentiel Sélections affiche désormais deux tuiles joueur par ligne sur les écrans de plus de 760 px.
-
-
-## V1.1.11
-Le référentiel Sélections ajoute des tris croissant/décroissant, un filtre par numéro porté, un filtre par tag et affiche toutes les étiquettes Supabase liées à chaque joueur.
-
-
-## V1.1.12 — Joueurs convoqués sans cape
-Dans le référentiel Sélections, une ligne joueur/sélection peut désormais être marquée `Convocation seulement`. La tuile affiche alors `Convocation` dans la zone d'ordre d'apparition au lieu d'un numéro international. Lors de la première cape, il suffit de passer le statut à `International` et de renseigner le numéro d'apparition.
-
-
-## V1.1.13
-Correctif grille Sélections : 2 tuiles réellement pleine largeur par ligne sur desktop et réparation du bouton ✎ de modification.
-
-
-## V1.1.14 — Base joueurs globale
-L’accueil abandonne les cartes de démonstration au profit d’un tableau compact inspiré de Cotation 3000. Les joueurs de toutes les catégories sont agrégés par identifiant unique. La colonne Poste vient de `players.primary_position`; la colonne Tags équipes vient des sélections représentées et de leur `team_tag_id`. Les autres référentiels restent accessibles depuis la barre d’outils.
-
-## V1.1.15 — Tags liés aux référentiels
-Les tags peuvent désormais être associés explicitement à une entrée du référentiel Sélections. Le tableau d'accueil filtre sur les tags réellement affiliés aux joueurs, et distingue les tags d'appartenance des tags de statut comme `VENU SANS JOUER`.
-
-
-## V1.1.16 — Numéros portés sur l’accueil
-La base joueurs affiche désormais une colonne **Numéros portés**. Les numéros sont composés avec les chiffres France 1998 en PNG transparents dans une capsule bleue compacte. L’affichage maillot complet reste réservé aux tuiles joueur du référentiel Sélections.
-
-
-## V1.1.17 — France A Féminine
-339 internationales France A féminine sont intégrées à Supabase et utilisent le tag existant INTERNATIONALE F. Le référentiel Sélections affiche désormais des compteurs dynamiques par catégorie.
-
-## V1.1.19 — Accomplissements · Capitanat
-- Ajout du premier accomplissement structuré : `Capitanat`.
-- Icône brassard affichée dans les tuiles avec compteur optionnel `×N` en bulle bleu marine bichrome.
-- Sélection et saisie du nombre depuis l’éditeur de joueur.
-- Valeur enregistrée par joueur et par sélection dans `player_achievements`.
-
-
-## V1.1.19
-- correction du rendu des icônes d’accomplissements dans les tuiles ;
-- gestionnaire **Accomplissements** dans le menu Profil ;
-- import PNG/JPG/WebP, normalisation automatique sur canevas transparent 128×128 ;
-- affiliation d’un accomplissement à un ou plusieurs référentiels ;
-- prise en charge de plusieurs postes par joueur (`primary_position` + `secondary_positions`) ;
-- filtre Poste de l’accueil compatible avec les postes secondaires ;
-- suppression de l’icône Sources en haut des tuiles et de la ligne Source en pied de tuile.
-
-
-## V1.1.20 — France A Féminine enrichie
-- 339/339 joueuses avec Victoires, Nuls et Défaites issus du référentiel V2.
-- 51 associations de numéros de maillot observés pour 44 joueuses.
-- 4 capitanats vérifiés dans l’échantillon fourni, enregistrés comme minimum vérifié non exhaustif.
-- Les 12 écarts entre le compteur de sélections V1 et la source V/N/D sont conservés et tracés via `vnd_source_selections` / `vnd_coherence`, sans écraser la valeur V1.
-
-
-## V1.1.24 — Recherche par nom
-Correction du surlignage des correspondances et ajout de variantes de recherche par mots/suffixes du nom (ex. `Platini` → Michel Platini).
-
-
-## V1.1.24 — moteur de recherche unifié
-Le moteur de recherche a été réécrit côté frontend uniquement. Aucun changement de schéma ou de données Supabase. Les recherches par prénom, nom, nom complet, préfixes et fautes légères utilisent désormais la même logique dans la base d’accueil, Sélections et la recherche universelle.
-
-
-## V1.1.25 — Accomplissements dans les fiches joueur
-
-Le mode modification d’une tuile joueur possède désormais un sélecteur d’accomplissement, un bouton `+ Ajouter`, un champ numérique facultatif et un retrait individuel. Les choix proviennent du catalogue d’accomplissements affiliés au référentiel Sélections.
-
-## V1.1.26 — Espoirs relationnels
-- 318 joueurs France Espoirs/U21 reliés aux identités joueurs existantes.
-- Tag ESPOIRS réutilisé et cliquable sur les tuiles joueur.
-- Tag GENERAL virtuel : somme des statistiques de toutes les sélections liées au joueur.
-- Sélecteur de contexte dans l’éditeur joueur pour modifier la ligne statistique d’une sélection précise.
-- 226 matchs Espoirs sous forme de tuiles relationnelles.
-- 8 sélectionneurs, 33 arbitres principaux et 77 autres officiels dans Personnel & Officiels.
-- 809 observations joueur-match et 25 buts documentés conservés en base.
-
-## V1.1.26 — Référentiel Espoirs relationnel
-
-Le référentiel France Espoirs masculin 2004–2026 est intégré au même graphe d'identités que les autres sélections. Un joueur présent en A et en Espoirs conserve un seul `players.id` et plusieurs lignes `player_selection_stats`.
-
-Les tags de sélection sur les tuiles sont cliquables et changent le contexte statistique sans créer de doublon de fiche. `GENERAL` additionne les statistiques connues de toutes les sélections liées au joueur et reste une vue calculée non éditable.
-
-Les onglets Matchs et Personnel & Officiels utilisent désormais les premières données relationnelles Espoirs importées depuis le classeur V4. La source XLSX de l'import est conservée dans `data/`.
-
-
-## V1.1.27 — Responsive iPhone / iPad
-
-- Nouvelle couche `Bleus_3000_V127_responsive.css` chargée en dernier.
-- Correction du zoom Safari/iOS sur les champs dont la taille de police historique était inférieure à 16 px.
-- Header réorganisé sur tablette et mobile pour éviter les superpositions entre logo, recherche, compte et barre d’outils.
-- Modales et panneaux compte adaptés aux safe areas et à la hauteur dynamique du clavier mobile.
-- Tableaux joueurs conservés complets avec défilement horizontal tactile et colonne joueur figée.
-- Référentiels, sélections, filtres, éditeurs, outils XI/Five, mur des membres et présence optimisés pour le tactile.
-- Aucun blocage du zoom manuel : l’accessibilité navigateur est conservée.
-
-
-## V1.1.36 — Tags globaux & drapeaux SVG
-- Les tags du calendrier utilisent maintenant les tags métier de Bleus 3000 : **INTERNATIONAL**, **ESPOIRS**, U20/U19/U18/U17/U16 et leurs variantes féminines.
-- Les 14 sections sont reliées à un tag global dans Supabase.
-- Chaque compétition possède un `tag_id` et un tag modifiable depuis **Profil > Tags & étiquettes**.
-- Les futures compétitions créées par TheSportsDB reçoivent automatiquement leur tag.
-- Dans **Modifier le match**, le tag de section et le tag de compétition peuvent être surchargés pour une tuile précise, sans modifier le référentiel global.
-- Les drapeaux emoji sont remplacés par des drapeaux SVG ISO dans le Calendrier et le référentiel Matchs.
-- Migration : `MIGRATION_V1.1.36_TAGS_DRAPEAUX.sql` (déjà appliquée au Supabase Bleus 3000).
-
-Voir `CALENDRIER_V1.1.36_TAGS_DRAPEAUX.md`.
-
-## V1.1.35 — Calendrier TheSportsDB
-- API-Football retirée du calendrier ; TheSportsDB devient le fournisseur automatique.
-- Un seul `calendar-sync` et un seul **Run now** pour toutes les sélections mappées.
-- France U21 + France U23 sont réunies sous le référentiel/tag **Espoirs**.
-- Les 226 matchs Espoirs déjà présents dans `public.matches` alimentent maintenant aussi `Calendrier > Matchs passés`.
-- Référentiel Matchs réparé visuellement, dates françaises et grille pleine largeur.
-- Filtres Matchs : sélection, sexe, compétition, année et résultat.
-- Score live TheSportsDB dans le calendrier avec indicateur vert lumineux et minute/progression.
-- Diffusions TV TheSportsDB enrichies quand disponibles.
-- Correction manuelle **champ par champ** : une correction de stade, ville, date, score, adversaire, compétition ou diffusion reste prioritaire sur l’API ; les autres champs continuent à se synchroniser.
-- `data_state = locked` reste le verrouillage complet d’une ligne.
-- Migration : `MIGRATION_V1.1.35_THESPORTSDB_CALENDRIER.sql`.
-- Variables Netlify serveur : `THESPORTSDB_KEY`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`.
-
-Voir `CALENDRIER_V1.1.35_THESPORTSDB.md`.
-
-## V1.1.43 — pilote historique Espoirs
-
-Ajout de la fonction Netlify manuelle `history-espoirs` pour auditer et rattacher sans destruction les données historiques TheSportsDB de France Espoirs/U21 à la base existante. Voir `HISTORIQUE_ESPOIRS_V1.1.43.md`.
+## V1.1.59 — Maillots
+Le référentiel Équipements devient **Maillots**. Les fiches sont relationnelles et peuvent être affiliées à plusieurs équipes et plusieurs compétitions, avec séparation visuelle des deux familles de tags. Le système photo prévoit une photo principale et une galerie. Sur une base Supabase existante, exécuter `MIGRATION_V1.1.59_MAILLOTS.sql` avant le premier enregistrement.

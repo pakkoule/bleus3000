@@ -1,0 +1,32 @@
+
+- Gardien
+
+
+- Défenseur central 
+- Stoppeur 
+- Libéro
+
+
+- Latéral droit
+- Latéral gauche
+- Piston droit 
+- Piston gauche 
+
+
+- Milieu défensif /6
+- Milieu central /8
+- Milieu offensif axial /10
+- Demi droit
+- Demi centre
+- Demi gauche
+- Inter droit
+- Inter gauche
+
+
+- Avant-centre 9
+- Deuxième attaquant
+- Faux neuf
+- Neuf et demi
+- Ailier droit 
+- Ailier gauche 
+
