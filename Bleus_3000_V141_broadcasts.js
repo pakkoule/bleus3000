@@ -6,7 +6,7 @@
   const slugify=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,72)||'chaine';
   const state=()=>window.C3K_ACCOUNT_STATE||{};
   const client=()=>window.BLEUS3000_SUPABASE;
-  const canEdit=()=>['editor','admin','superadmin'].includes(String(state().role||'').toLowerCase());
+  const canEdit=()=>['admin','superadmin'].includes(String(state().role||'').toLowerCase());
   let channels=[],tags=new Map(),editingId=null,pendingFile=null,pendingPreview='';
 
   const publicIconUrl=t=>{const c=client();if(!t?.icon_image_path||!c)return '';return c.storage.from('tag-icons').getPublicUrl(t.icon_image_path).data?.publicUrl||'';};

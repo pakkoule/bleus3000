@@ -12,4 +12,4 @@ L'identité et les coordonnées de l'éditeur / directeur de publication n'ont p
 
 ## Sources consolidées
 
-FFF, media.fff.fr, UEFA, FIFA, Chroniques Bleues, Sélection A, Stats des Bleus, Équipe-France.fr, StatsFootFéminin, WhoScored, FootballDatabase.eu, FootyStats, Transfermarkt, TheSportsDB, flag-icons, Google Fonts, ainsi que les références ponctuelles liées aux lieux, équipements, diffuseurs, ouvrages ou médias documentées sur les fiches concernées.
+FFF, media.fff.fr, UEFA, FIFA, Chroniques Bleues, Sélection A, Stats des Bleus, Équipe-France.fr, WhoScored, FootballDatabase.eu, Transfermarkt, TheSportsDB, flag-icons, Google Fonts, ainsi que les références ponctuelles liées aux lieux, équipements, diffuseurs, ouvrages ou médias documentées sur les fiches concernées.

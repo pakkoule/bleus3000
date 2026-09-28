@@ -94,3 +94,68 @@
 .header-left-tools .c3k-v8-signup-shortcut,
 .header-left-tools .c3k-v8-notify-btn{height:31px;min-height:31px}
 .header-left-tools .c3k-v8-presence{height:31px;min-height:31px}
+
+
+/* V1.1.61.29 — profil fixé dans le header ; ne recouvre plus Recherche 3615 */
+.c3k-header-profile-slot{
+  position:absolute;
+  left:14px;
+  top:14px;
+  z-index:920;
+  width:min(310px,calc(100% - 370px));
+  min-width:248px;
+  display:grid;
+  box-sizing:border-box;
+}
+.c3k-header-profile-slot>.c3k-v8-account-shell{
+  position:relative!important;
+  inset:auto!important;
+  top:auto!important;
+  left:auto!important;
+  width:100%!important;
+  margin:0!important;
+  z-index:1!important;
+  box-shadow:0 5px 16px rgba(9,25,52,.12);
+}
+.c3k-header-profile-slot>.c3k-v8-account-shell::before,
+.c3k-header-profile-slot>.c3k-v8-account-shell::after{display:none!important}
+@media(max-width:1024px){
+  .c3k-header-profile-slot{
+    position:relative!important;
+    inset:auto!important;
+    grid-area:left!important;
+    width:100%!important;
+    min-width:0!important;
+    margin:0!important;
+  }
+}
+@media(max-width:720px){
+  .c3k-header-profile-slot{
+    position:relative!important;
+    inset:auto!important;
+    left:auto!important;
+    top:auto!important;
+    width:100%!important;
+    min-width:0!important;
+    margin:0!important;
+    order:2;
+    z-index:920;
+  }
+  .c3k-header-profile-slot>.c3k-v8-account-shell{width:100%!important}
+}
+
+/* V1.1.61.33 — gestion des couleurs associées aux pays */
+.c3k-country-colors{display:grid;gap:11px}
+.c3k-country-colors-head{display:grid;gap:4px}.c3k-country-colors-head strong{font-size:13px;color:#17375e}.c3k-country-colors-head span{font-size:9px;line-height:1.4;color:#6f8199}
+.c3k-country-colors-toolbar{display:flex;gap:7px;align-items:center}.c3k-country-colors-toolbar input{flex:1;border:1px solid #d3e0ef;border-radius:8px;padding:9px 10px;font-size:11px}
+.c3k-country-colors-list{display:grid;gap:7px;max-height:52vh;overflow:auto;padding-right:2px}
+.c3k-country-color-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px;border:1px solid #dce6f2;border-radius:9px;background:#f9fbff}
+.c3k-country-color-name{display:flex;align-items:center;gap:7px;min-width:0}.c3k-country-color-name img{width:26px;height:19px;object-fit:cover;border-radius:3px;border:1px solid #cbd8e7}.c3k-country-color-name strong{font-size:10px;color:#243f62;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.c3k-country-color-name small{display:block;font-size:7.5px;color:#8190a4;text-transform:uppercase}
+.c3k-country-color-controls{display:flex;align-items:center;gap:5px}.c3k-country-color-controls input[type=color]{width:30px;height:28px;padding:2px;border:1px solid #cbd8e7;border-radius:6px;background:#fff;cursor:pointer}.c3k-country-color-save,.c3k-country-color-auto{min-height:28px;border-radius:6px;padding:0 7px;font:800 8px Poppins,Arial;cursor:pointer}.c3k-country-color-save{border:1px solid #2563eb;background:#2563eb;color:#fff}.c3k-country-color-auto{border:1px solid #cbd8e7;background:#fff;color:#536d8d}
+@media(max-width:520px){.c3k-country-color-row{grid-template-columns:1fr}.c3k-country-color-controls{justify-content:flex-end}}
+
+/* V1.1.67 — couleurs pays : uni / dégradé + angle */
+.c3k-country-color-controls{flex-wrap:wrap}
+.c3k-country-color-preview{width:34px;height:28px;border-radius:7px;border:1px solid #cbd8e7;box-shadow:inset 0 0 0 1px rgba(255,255,255,.35);flex:0 0 auto}
+.c3k-country-color-controls select{height:28px;border:1px solid #cbd8e7;border-radius:6px;background:#fff;color:#385675;font:700 8px Poppins,Arial;padding:0 6px}
+.c3k-country-angle{display:flex;align-items:center;gap:2px;color:#6a7e95;font:800 8px Poppins,Arial}.c3k-country-angle input{width:52px;height:28px;box-sizing:border-box;border:1px solid #cbd8e7;border-radius:6px;background:#fff;color:#385675;font:700 8px Poppins,Arial;padding:0 5px}

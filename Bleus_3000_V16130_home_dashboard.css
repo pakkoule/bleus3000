@@ -1,0 +1,383 @@
+/* 3615 Bleus V1.1.61.32 — grille accueil + recherche 3615 minimale centrée */
+
+.home-dashboard-grid{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  grid-template-areas:
+    "search search search"
+    "upcoming recent events"!important;
+  gap:12px!important;
+  align-items:stretch!important;
+  width:100%!important;
+  min-width:0!important;
+}
+.home-dashboard-grid>.home-search-panel{
+  grid-area:search!important;
+  grid-column:auto!important;
+  width:100%!important;
+  min-width:0!important;
+}
+
+/* Recherche 3615 : uniquement la barre, centrée et sans carte/header/exemples. */
+.home-dashboard-grid>.home-search-panel.home-search-panel-minimal{
+  display:flex!important;
+  justify-content:center!important;
+  align-items:flex-start!important;
+  width:100%!important;
+  padding:8px 0 12px!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  overflow:visible!important;
+}
+.home-search-panel-minimal .home-universal-search-shell.universal-search-shell{
+  width:min(780px,calc(100% - 32px))!important;
+  max-width:780px!important;
+  margin:0 auto!important;
+  padding:0!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+.home-search-panel-minimal .home-search-bar{
+  width:100%!important;
+  grid-template-columns:140px minmax(0,1fr)!important;
+  min-height:72px!important;
+}
+.home-search-panel-minimal .home-search-3615 img{height:48px!important}
+.home-search-panel-minimal .home-universal-search-shell .universal-search-results{
+  width:100%!important;
+  margin-top:8px!important;
+}
+@media(max-width:680px){
+  .home-dashboard-grid>.home-search-panel.home-search-panel-minimal{padding:5px 0 9px!important}
+  .home-search-panel-minimal .home-universal-search-shell.universal-search-shell{width:min(100%,calc(100% - 18px))!important}
+  .home-search-panel-minimal .home-search-bar{grid-template-columns:92px minmax(0,1fr)!important;min-height:62px!important}
+  .home-search-panel-minimal .home-search-3615{padding:8px!important}
+  .home-search-panel-minimal .home-search-3615 img{height:38px!important}
+  .home-search-panel-minimal .home-universal-search-shell.universal-search-shell input{height:58px!important;font-size:12px!important}
+}
+.home-dashboard-grid>.calendar-upcoming-home{grid-area:upcoming!important}
+.home-dashboard-grid>.calendar-recent-home{grid-area:recent!important}
+.home-dashboard-grid>.home-events-panel{grid-area:events!important}
+.home-dashboard-grid>.calendar-home,
+.home-dashboard-grid>.home-events-panel{
+  width:100%!important;
+  min-width:0!important;
+  margin:0!important;
+  align-self:stretch!important;
+  box-sizing:border-box!important;
+}
+.home-dashboard-grid>.calendar-home,
+.home-dashboard-grid>.home-events-panel{display:flex!important;flex-direction:column!important;height:100%!important}
+
+/* Les trois colonnes utilisent exactement la même logique de cadre et de header. */
+.home-dashboard-grid>.calendar-home,
+.home-dashboard-grid>.home-events-panel{
+  border-radius:10px!important;
+  overflow:hidden!important;
+}
+.home-dashboard-grid .calendar-home-head,
+.home-dashboard-grid .home-events-head{
+  min-height:50px!important;
+  box-sizing:border-box!important;
+}
+.home-dashboard-grid #calendarHomeList,
+.home-dashboard-grid #calendarRecentList,
+.home-dashboard-grid .home-events-list{
+  padding:8px!important;
+  gap:7px!important;
+  background:#f8fbff!important;
+  box-sizing:border-box!important;
+  flex:1 1 auto!important;
+}
+
+/* Match à venir et résultat : même gabarit, mêmes espacements, mêmes hauteurs internes. */
+.home-dashboard-grid .calendar-home-match-tile{
+  display:grid!important;
+  grid-template-rows:auto auto auto minmax(19px,auto) auto!important;
+  align-content:start!important;
+  min-height:151px!important;
+  padding:9px 10px!important;
+  gap:5px!important;
+  box-sizing:border-box!important;
+}
+.home-dashboard-grid .calendar-home-match-date{min-height:13px!important}
+.home-dashboard-grid .calendar-home-match-fixture{min-height:48px!important}
+.home-dashboard-grid .calendar-home-match-names{min-height:10px!important}
+.home-dashboard-grid .calendar-home-match-meta{
+  min-height:20px!important;
+  margin:0!important;
+  align-items:center!important;
+}
+.home-dashboard-grid .calendar-home-match-footer{
+  min-height:35px!important;
+  margin-top:0!important;
+}
+.home-dashboard-grid .calendar-home-broadcast{flex-wrap:nowrap!important;overflow:hidden!important}
+.home-dashboard-grid .calendar-home-match-tags{flex-wrap:nowrap!important;overflow:hidden!important}
+.home-dashboard-grid .calendar-recent-match-tile{
+  min-height:151px!important;
+}
+
+/* Derniers résultats */
+.calendar-recent-home .calendar-home-icon{background:#153f9e}
+.calendar-recent-home #calendarRecentList{display:grid;gap:7px;padding:8px;background:#f8fbff}
+.calendar-recent-home .calendar-home-head{grid-template-columns:minmax(0,1fr) auto!important}
+.calendar-recent-home .calendar-open-all{justify-self:end}
+.calendar-result-outcome{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:19px;
+  padding:2px 7px;
+  border-radius:999px;
+  font:900 6.7px/1 Poppins,Arial,sans-serif;
+  letter-spacing:.055em;
+  text-transform:uppercase;
+  border:1px solid transparent;
+  white-space:nowrap;
+}
+.calendar-result-outcome.is-win{background:#e7f7ee;color:#17643d;border-color:#bde6cd}
+.calendar-result-outcome.is-draw{background:#fff6d8;color:#715616;border-color:#ead58d}
+.calendar-result-outcome.is-loss{background:#fff0f0;color:#a9333d;border-color:#efc5c9}
+
+/* La case score devient le code couleur du résultat */
+.minitel-scoreboard.is-result-win .minitel-score{
+  background:linear-gradient(180deg,#238654,#17683f)!important;
+  color:#fff!important;
+  border-color:#0f4f31!important;
+  text-shadow:0 1px 0 rgba(0,0,0,.18);
+}
+.minitel-scoreboard.is-result-draw .minitel-score{
+  background:linear-gradient(180deg,#f5d95d,#e5b938)!important;
+  color:#1a2d49!important;
+  border-color:#9f7c18!important;
+  text-shadow:none;
+}
+.minitel-scoreboard.is-result-loss .minitel-score{
+  background:linear-gradient(180deg,#df4a55,#b82d3b)!important;
+  color:#fff!important;
+  border-color:#8f202c!important;
+  text-shadow:0 1px 0 rgba(0,0,0,.18);
+}
+
+/* Bloc Événements */
+.home-events-panel{
+  background:#fff;
+  border:1px solid #d7e2f1;
+  border-radius:10px;
+  overflow:hidden;
+  box-shadow:0 2px 9px rgba(25,55,100,.07);
+}
+.home-events-head{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:8px;
+  min-height:50px;
+  padding:8px 10px;
+  border-bottom:1px solid #e5edf7;
+  background:linear-gradient(135deg,#f9fbff,#eef5ff);
+}
+.home-events-title{display:flex;align-items:center;gap:7px;min-width:0}
+.home-events-icon{
+  width:30px;height:30px;border-radius:8px;display:grid;place-items:center;
+  background:#082654;color:#fff;font-size:15px;flex:0 0 auto;
+}
+.home-events-title-copy{min-width:0;white-space:nowrap;overflow:hidden}
+.home-events-title-copy strong{display:block;color:#082654;font-size:12px;line-height:1.1}
+.home-events-title-copy small{display:block;overflow:hidden;text-overflow:ellipsis;color:#718199;font-size:7.7px;font-weight:650;line-height:1.15}
+.home-events-open{
+  min-height:28px;padding:5px 8px;border:1px solid #b8c9df;border-radius:7px;
+  background:#fff;color:#082654;cursor:pointer;font:800 8px/1.1 Poppins,Arial,sans-serif;
+}
+.home-events-list{display:grid;gap:7px;padding:8px;background:#f8fbff}
+.home-event-tile{
+  --event-accent:#245fae;
+  position:relative;
+  overflow:hidden;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  gap:8px;
+  padding:9px 10px 9px 12px;
+  border:1px solid #d8e4f2;
+  border-radius:10px;
+  background:#fff;
+  box-shadow:0 2px 8px rgba(18,59,143,.04);
+  cursor:pointer;
+}
+.home-event-tile::before{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--event-accent);
+}
+.home-event-tile.is-announcement{--event-accent:#1d5ec9}
+.home-event-tile.is-news{--event-accent:#092b60}
+.home-event-tile.is-withdrawal{--event-accent:#c73543}
+.home-event-tile.is-replacement{--event-accent:#277eb4}
+.home-event-tile.is-reinforcement{--event-accent:#198052}
+.home-event-tile.is-update{--event-accent:#c08b21}
+.home-event-icon{
+  width:28px;height:28px;border-radius:8px;display:grid;place-items:center;
+  background:color-mix(in srgb,var(--event-accent) 12%,white);
+  color:var(--event-accent);font-size:13px;font-weight:900;
+}
+@supports not (background:color-mix(in srgb,red,white)){
+  .home-event-icon{background:#edf4fb}
+}
+.home-event-body{min-width:0}
+.home-event-top{display:flex;align-items:center;justify-content:space-between;gap:7px}
+.home-event-type{font-size:6.7px;font-weight:950;letter-spacing:.07em;text-transform:uppercase;color:var(--event-accent)}
+.home-event-date{font-size:6.7px;font-weight:800;color:#71849a;white-space:nowrap}
+.home-event-title{display:block;margin-top:2px;color:#102f58;font-size:9.2px;line-height:1.25}
+.home-event-description{display:block;margin-top:2px;color:#6f8299;font-size:7.2px;line-height:1.35}
+.home-event-gathering{display:block;margin-top:4px;color:#8a98aa;font-size:6.6px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.home-events-empty{padding:18px 12px;text-align:center;color:#7a8ca2;font-size:8px}
+
+/* Événements dans la tuile Rassemblement */
+.gathering-events-preview{margin-top:12px;padding-top:11px;border-top:1px dashed #cddbeb}
+.gathering-events-preview>strong{display:block;font-size:10px;color:#254a75;margin-bottom:6px}
+.gathering-mini-events{display:grid;gap:5px}
+.gathering-mini-event{display:grid;grid-template-columns:auto minmax(0,1fr);gap:7px;align-items:start;padding:6px 7px;border:1px solid #dce6f2;border-radius:9px;background:#fff}
+.gathering-mini-event>span{font-size:11px;line-height:1}
+.gathering-mini-event strong{display:block;font-size:8.5px;color:#173d69}
+.gathering-mini-event small{display:block;margin-top:1px;font-size:7px;color:#71849a}
+
+/* Éditeur d'événements */
+.gathering-event-editor-row{
+  display:grid;
+  grid-template-columns:150px 130px minmax(160px,1.2fr) minmax(160px,1fr) minmax(130px,.8fr) minmax(130px,.8fr) auto;
+  gap:6px;
+  align-items:center;
+  margin-bottom:6px;
+}
+.gathering-event-editor-row input,.gathering-event-editor-row select{
+  width:100%;box-sizing:border-box;border:1px solid #cbd9e8;border-radius:8px;background:#fff;padding:8px;
+  font:800 9px Poppins,Arial,sans-serif;color:#183c64;
+}
+.gathering-event-auto-note{margin:0 0 8px;color:#6f8299;font-size:8px}
+
+@media(max-width:900px){
+  .home-dashboard-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    grid-template-areas:
+      "search search"
+      "upcoming recent"
+      "events events"!important;
+  }
+  .home-events-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .gathering-event-editor-row{grid-template-columns:1fr 1fr 1fr}
+  .gathering-event-editor-row>[data-remove-event]{grid-column:auto}
+}
+@media(max-width:680px){
+  .home-dashboard-grid{
+    grid-template-columns:1fr!important;
+    grid-template-areas:
+      "search"
+      "upcoming"
+      "recent"
+      "events"!important;
+  }
+  .home-events-list{grid-template-columns:1fr}
+  .gathering-event-editor-row{grid-template-columns:1fr}
+  .home-dashboard-grid .calendar-home-match-tile,
+  .home-dashboard-grid .calendar-recent-match-tile{min-height:0!important}
+}
+
+/* V1.1.61.33 — centrage absolu de la recherche 3615, indépendamment du CSS du profil */
+.home-dashboard-grid>.home-search-panel.home-search-panel-minimal{display:grid!important;place-items:center!important;padding:8px 0 12px!important}
+#universalSearchShell.home-universal-search-shell.universal-search-shell{width:min(780px,calc(100% - 32px))!important;max-width:780px!important;margin:0 auto!important;justify-self:center!important;left:auto!important;right:auto!important}
+.home-search-panel-minimal .home-search-bar{margin:0 auto!important}
+/* Le rappel de nom sous le scoreboard a disparu : 4 rangées seulement. */
+.home-dashboard-grid .calendar-home-match-tile{grid-template-rows:auto auto minmax(19px,auto) auto!important;min-height:137px!important}
+.home-dashboard-grid .calendar-home-match-fixture{min-height:39px!important}
+.home-dashboard-grid .calendar-recent-match-tile{min-height:137px!important}
+@media(max-width:680px){#universalSearchShell.home-universal-search-shell.universal-search-shell{width:min(100%,calc(100% - 18px))!important}}
+
+/* V1.1.61.34 — centrage géométrique de Recherche 3615 sur la largeur des trois colonnes. */
+.home-dashboard-grid > .home-search-panel.home-search-panel-minimal{
+  display:grid!important;
+  grid-template-columns:minmax(9px,1fr) minmax(0,780px) minmax(9px,1fr)!important;
+  align-items:start!important;
+  justify-content:stretch!important;
+  width:100%!important;
+  box-sizing:border-box!important;
+}
+#universalSearchShell.home-universal-search-shell.universal-search-shell{
+  grid-column:2!important;
+  position:relative!important;
+  inset:auto!important;
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  margin:0!important;
+  justify-self:stretch!important;
+  transform:none!important;
+}
+.home-search-panel-minimal .home-search-bar{
+  width:100%!important;
+  max-width:none!important;
+  margin:0!important;
+  box-sizing:border-box!important;
+}
+@media(max-width:680px){
+  .home-dashboard-grid > .home-search-panel.home-search-panel-minimal{
+    grid-template-columns:9px minmax(0,1fr) 9px!important;
+  }
+  #universalSearchShell.home-universal-search-shell.universal-search-shell{
+    width:100%!important;
+    max-width:none!important;
+    margin:0!important;
+  }
+}
+
+/* V1.1.61.35 — Recherche 3615 centrée sur la colonne Derniers résultats.
+   Le panneau de recherche occupe physiquement les 3 colonnes ; la barre reste centrée
+   sur l'axe de la colonne centrale et déborde symétriquement au-dessus des colonnes latérales. */
+.home-dashboard-grid > .home-search-panel.home-search-panel-minimal{
+  grid-area:auto!important;
+  grid-column:1 / -1!important;
+  grid-row:1!important;
+  display:flex!important;
+  justify-content:center!important;
+  align-items:flex-start!important;
+  width:100%!important;
+  min-width:0!important;
+  padding:8px 0 12px!important;
+  box-sizing:border-box!important;
+}
+#universalSearchShell.home-universal-search-shell.universal-search-shell{
+  position:relative!important;
+  inset:auto!important;
+  flex:0 1 780px!important;
+  width:min(780px,calc(100% - 32px))!important;
+  max-width:780px!important;
+  min-width:0!important;
+  margin:0!important;
+  transform:none!important;
+}
+.home-search-panel-minimal .home-search-bar{
+  width:100%!important;
+  max-width:none!important;
+  margin:0!important;
+}
+@media(max-width:900px){
+  .home-dashboard-grid > .home-search-panel.home-search-panel-minimal{
+    grid-column:1 / -1!important;
+    grid-row:1!important;
+  }
+}
+@media(max-width:680px){
+  #universalSearchShell.home-universal-search-shell.universal-search-shell{
+    flex-basis:auto!important;
+    width:calc(100% - 18px)!important;
+    max-width:none!important;
+  }
+}
+
+/* V1.1.63 — joueurs visibles dans les événements récents des rassemblements */
+.gathering-mini-event-people{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-top:3px;font-size:7.5px;font-weight:800;color:#36536f}
+.gathering-mini-event-people .out{color:#a33a3a;text-decoration:line-through;text-decoration-thickness:1px}
+.gathering-mini-event-people .in{color:#1f7444}
+.gathering-mini-event-people b{font-size:8px;color:#72849a}
+.gathering-mini-event-note{display:block;margin-top:2px;font-size:7px;font-style:normal;color:#5f7288}

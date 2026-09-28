@@ -480,7 +480,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .match-sheet-editor-event-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0 6px}
 .match-sheet-editor-event-head h3{margin:0;color:#17385f;font-size:11px}
 .match-sheet-editor-event-labels,.match-sheet-editor-event-row{display:grid;gap:6px;align-items:center}
-.match-sheet-editor-event-labels.goal,.match-sheet-editor-event-row[data-editor-goal]{grid-template-columns:110px minmax(150px,1.2fr) 72px 92px minmax(170px,1.25fr) 34px}
+.match-sheet-editor-event-labels.goal,.match-sheet-editor-event-row[data-editor-goal]{grid-template-columns:100px minmax(145px,1.2fr) 68px 86px 105px minmax(155px,1.15fr) 34px}
 .match-sheet-editor-event-labels.card,.match-sheet-editor-event-row[data-editor-card]{grid-template-columns:110px minmax(180px,1.5fr) 110px 80px 34px}
 .match-sheet-editor-event-labels{padding:0 4px 5px;color:#70839a;font-size:7px;font-weight:850;text-transform:uppercase;letter-spacing:.04em}
 #matchSheetEditorGoals,#matchSheetEditorCards{display:grid;gap:6px}
@@ -571,3 +571,132 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 
 /* V1.1.61.16 — feuille de match live */
 .match-sheet-provider-unmatched{margin-top:10px;padding:9px;border:1px dashed #b7cae4;border-radius:10px;background:#f8fbff}.match-sheet-provider-unmatched>small{display:block;margin-top:6px;color:#71859e;font-size:6px;line-height:1.45}.match-sheet-player.is-provider-unmatched>em{font-style:normal;font-size:5.5px;font-weight:900;color:#fff;background:#315fc9;border-radius:999px;padding:3px 5px}.calendar-home-sheet-btn.is-ready{background:#e8f4ff;border-color:#70a7eb;color:#0c4d9a}
+
+/* 3615 Bleus V1.1.61.17 — validation des feuilles de match */
+.match-sheet-editor-dialog{width:min(1380px,calc(100vw - 24px));max-height:96dvh}
+.match-sheet-editor-context{padding:10px;border:1px solid #d7e4f1;border-radius:11px;background:#f8fbff}
+.match-sheet-editor-context-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.match-sheet-editor-context-grid label{display:grid;gap:4px;color:#536f8e;font-size:7px;font-weight:850}
+.match-sheet-editor-context-grid input,.match-sheet-editor-context-grid select{height:35px;border:1px solid #c9d9ea;border-radius:8px;background:#fff;color:#17385f;padding:0 9px;font:750 8px Poppins,Arial}
+.match-sheet-editor-context-grid small{font-size:5.5px;color:#8192a6;font-weight:650}
+.match-sheet-editor-lineup-head,.match-sheet-editor-lineup-row{grid-template-columns:minmax(175px,1.55fr) minmax(105px,.85fr) 52px minmax(128px,1fr) 58px 40px 50px minmax(150px,1.15fr) 32px}
+.match-sheet-editor-replacement.is-hidden{visibility:hidden;pointer-events:none;opacity:.18}
+.match-sheet-editor-check.is-replacement{font-size:12px!important}
+.match-sheet-validate-btn{background:#187847!important;border-color:#187847!important}
+.match-sheet-validation-state{display:inline-flex;align-items:center;padding:4px 7px;border-radius:999px;background:#fff5d8;color:#856313;font-size:6.5px;font-weight:900}
+.match-sheet-validation-state.is-validated{background:#eaf8ee;color:#2e7943}
+.match-sheet-validation-state.is-needs-validation{background:#fff0e6;color:#a44d13}
+@media(max-width:1100px){.match-sheet-editor-context-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.match-sheet-editor-lineup-head{display:none}.match-sheet-editor-lineup-row{grid-template-columns:1fr 1fr 70px 1fr}.match-sheet-editor-replacement{grid-column:1/-1}}
+@media(max-width:620px){.match-sheet-editor-context-grid{grid-template-columns:1fr}.match-sheet-editor-lineup-row{grid-template-columns:1fr}.match-sheet-editor-replacement{grid-column:auto}.match-sheet-editor-actions{flex-wrap:wrap}.match-sheet-editor-actions>*{flex:1 1 45%}}
+/* V1.1.61.17 — indicateurs validation + champs dérivés */
+.match-sheet-validation-badge{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;padding:5px 8px;border-radius:999px;background:#eef3fa;color:#526d8d;font-size:6.5px;font-weight:900;margin-left:auto}
+.match-sheet-validation-badge.is-validated{background:#e8f8ed;color:#246b3a;border:1px solid #bfe4ca}
+.match-sheet-validation-badge.is-needs_validation{background:#fff0e4;color:#9b4b18;border:1px solid #f0c8aa}
+.match-sheet-validation-badge.is-draft{background:#eef3fa;color:#526d8d;border:1px solid #cedbea}
+.selection-derived-note{display:grid;gap:4px;padding:9px 10px;border:1px solid #d5e1ef;border-radius:9px;background:#f7faff;color:#466483}
+.selection-derived-note strong{font-size:7px;color:#173b65}.selection-derived-note span{font-size:6px;line-height:1.4;color:#73869e}
+
+/* 3615 Bleus V1.1.61.18 — feuille structurée, formation mémorisée et fait de jeu rapide */
+.match-sheet-formation-bar{display:flex;align-items:end;gap:10px;flex-wrap:wrap;padding:9px 10px;border:1px solid #cfdeef;border-radius:10px;background:#f6f9fe}.match-sheet-formation-bar label{display:grid;gap:4px;color:#345676;font-size:7px;font-weight:900}.match-sheet-formation-bar select{height:35px;min-width:135px;border:1px solid #bfd1e7;border-radius:8px;background:#fff;color:#153a64;padding:0 9px;font:850 9px Poppins,Arial}.match-sheet-formation-bar small{padding-bottom:8px;color:#73869d;font-size:6.2px;font-weight:650}.match-sheet-editor-roster-section{display:grid;gap:7px;padding:10px;border:1px solid #d6e3f1;border-radius:12px;background:#f9fbff}.match-sheet-roster-title{display:flex;align-items:center;justify-content:space-between}.match-sheet-roster-title strong{font-size:9px;color:#123b8f}.match-sheet-roster-title span{min-width:25px;height:22px;display:grid;place-items:center;border-radius:999px;background:#e7f0ff;color:#123b8f;font-size:7px;font-weight:950}.match-sheet-editor-lineup-head,.match-sheet-editor-lineup-row{grid-template-columns:30px minmax(190px,1.55fr) 52px minmax(130px,1fr) 58px 40px 50px minmax(155px,1.15fr) 32px}.match-sheet-lineup-slot{display:grid;place-items:center;width:25px;height:25px;border-radius:50%;background:#e9f1fb;color:#15477e;font-size:7px;font-weight:950}.match-sheet-editor-lineup-row.is-starter{border-left:3px solid #245db6}.match-sheet-editor-lineup-row.is-substitute{border-left:3px solid #a8bad0}.match-sheet-editor-slot-lock{display:grid;place-items:center;color:#a9b7c8;font-size:14px}.rel-quick-event-btn{border:1px solid #bfd4ec;border-radius:8px;background:#f3f8ff;color:#174d8d;padding:5px 8px;font-size:6.5px;font-weight:900;cursor:pointer}.rel-quick-event-btn:hover{background:#e6f1ff}.quick-match-event-modal{z-index:12350!important}.quick-match-event-dialog{width:min(620px,calc(100vw - 28px))}.quick-match-event-form{display:grid;grid-template-columns:1fr 1fr;gap:10px}.quick-match-event-form label{display:grid;gap:4px;color:#456581;font-size:7px;font-weight:850}.quick-match-event-form input,.quick-match-event-form select{height:38px;border:1px solid #c5d6e9;border-radius:8px;background:#fff;padding:0 9px;color:#17385d;font:750 8px Poppins,Arial}.quick-match-event-form .match-sheet-editor-status,.quick-match-event-form .match-sheet-editor-actions{grid-column:1/-1}.quick-match-event-form label[hidden]{display:none!important}
+@media(max-width:1100px){.match-sheet-editor-lineup-head{display:none}.match-sheet-editor-lineup-row{grid-template-columns:30px 1fr 70px 1fr}.match-sheet-editor-replacement{grid-column:2/-1}}
+@media(max-width:620px){.match-sheet-editor-lineup-row{grid-template-columns:30px 1fr}.match-sheet-lineup-slot{grid-row:1/3}.match-sheet-editor-lineup-row .match-sheet-editor-player{grid-column:2}.match-sheet-editor-replacement{grid-column:1/-1}.quick-match-event-form{grid-template-columns:1fr}.quick-match-event-form .match-sheet-editor-status,.quick-match-event-form .match-sheet-editor-actions{grid-column:auto}}
+
+
+/* V1.1.61.21 — accueil : recherche universelle Minitel à la place de la base joueurs */
+.top-header{min-height:146px}
+.home-dashboard-grid{grid-template-columns:minmax(0,1.2fr) minmax(350px,.8fr);align-items:start}
+.home-dashboard-grid>.home-search-panel,.home-dashboard-grid>.calendar-home{min-width:0;width:100%;margin:0}
+.home-search-panel{position:relative;overflow:visible;padding:0;border:1px solid #c8d9ed;border-radius:14px;background:linear-gradient(180deg,#f9fbff 0%,#edf4fc 100%);box-shadow:0 7px 22px rgba(21,61,112,.10)}
+.home-search-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 15px 11px;border-bottom:1px solid #d9e5f3}
+.home-search-heading>div{min-width:0}.home-search-heading strong{display:block;color:#17375e;font-size:15px;font-weight:950}.home-search-heading small{display:block;margin-top:2px;color:#71849e;font-size:9px;line-height:1.4}
+.home-search-hint{display:inline-grid;place-items:center;min-width:44px;height:25px;padding:0 8px;border:1px solid #c8d8ec;border-radius:7px;background:#fff;color:#6e819a;font-size:8px;font-weight:900;white-space:nowrap}
+.home-universal-search-shell.universal-search-shell{position:relative!important;inset:auto!important;display:block!important;width:auto!important;min-height:0!important;margin:14px!important;padding:0!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;color:#17243a!important;z-index:25!important}
+.home-search-bar{display:grid;grid-template-columns:128px minmax(0,1fr);min-height:72px;border:2px solid #245fbd;border-radius:13px;background:#fff;overflow:hidden;box-shadow:0 0 0 3px rgba(37,99,235,.08),0 7px 18px rgba(25,67,125,.12)}
+.home-search-3615{display:flex;align-items:center;justify-content:center;padding:10px 13px;background:linear-gradient(145deg,#07172f,#102d5e);border-right:1px solid #264f86;overflow:hidden}
+.home-search-3615 img{display:block;width:100%;height:48px;object-fit:contain;filter:drop-shadow(0 2px 2px rgba(0,0,0,.3))}
+.home-search-input-zone{display:flex;align-items:center;gap:12px;min-width:0;padding:0 15px;background:linear-gradient(180deg,#fff,#f9fbff);cursor:text}
+.home-search-input-zone .universal-search-icon{width:24px;height:24px;stroke:#164c99;stroke-width:1.8;flex:0 0 auto}
+.home-universal-search-shell.universal-search-shell input{height:68px;flex:1;min-width:0;border:0;background:transparent;color:#193858;font-size:14px;font-weight:700;outline:0}
+.home-universal-search-shell.universal-search-shell input::placeholder{color:#8393a8;font-weight:600}
+.home-universal-search-shell .universal-search-shortcut{font-size:8px;font-weight:900;color:#627997;border:1px solid #cad9ea;border-radius:6px;background:#eef4fb;padding:4px 6px}
+.home-search-help{margin:0;padding:0 15px 14px;color:#8190a4;font-size:8.5px;font-weight:650}
+.home-universal-search-shell .universal-search-results{position:relative!important;top:auto!important;left:auto!important;width:100%!important;max-height:490px;margin-top:10px;overflow:auto;padding:7px;background:#f5f8fc;border:1px solid #cbd9e9;border-radius:12px;box-shadow:0 12px 28px rgba(27,60,103,.13)}
+.home-universal-search-shell .universal-search-section+.universal-search-section{margin-top:7px;padding-top:7px;border-top:1px solid #d9e4f0}
+.home-universal-search-shell .universal-search-section-title{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 7px;color:#3b5f88;font-size:8px;font-weight:950;text-transform:uppercase;letter-spacing:.07em}
+.home-universal-search-shell .universal-search-section-title b{display:grid;place-items:center;min-width:22px;height:18px;padding:0 5px;border-radius:999px;background:#dfeaf8;color:#41658d;font-size:7px}
+.home-universal-search-shell .universal-search-result{width:100%;display:grid;grid-template-columns:46px minmax(0,1fr) 22px;align-items:center;gap:10px;min-height:58px;margin:3px 0;padding:7px 9px;border:1px solid #dbe5f0;border-radius:10px;background:#fff;color:#1a3657;text-align:left;box-shadow:0 1px 3px rgba(20,57,101,.04);transition:.13s ease}
+.home-universal-search-shell .universal-search-result:hover,.home-universal-search-shell .universal-search-result.is-active{border-color:#7fa8e1;background:#eef5ff;box-shadow:0 3px 10px rgba(31,79,139,.10);transform:translateY(-1px)}
+.home-universal-search-shell .universal-search-result-icon{width:46px;height:42px;display:grid;place-items:center;border-radius:9px;background:#e6eef9;border:1px solid #d0deef;color:#2560ad;font-size:19px;overflow:hidden}
+.home-universal-search-shell .universal-search-result-icon.has-image{background:#fff}.home-universal-search-shell .universal-search-result-icon img{width:100%;height:100%;display:block;object-fit:cover}
+.home-universal-search-shell .universal-search-result-copy{display:flex;flex-direction:column;gap:2px;min-width:0}.home-universal-search-shell .universal-search-result-title{color:#163659;font-size:10.5px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.home-universal-search-shell .universal-search-result-meta{color:#71849d;font-size:8px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.home-universal-search-shell .universal-search-result-arrow{display:grid;place-items:center;color:#3970b6;font-size:20px;font-weight:500}
+.home-universal-search-shell .universal-search-empty{display:grid;gap:3px;padding:15px 12px;border:1px dashed #c9d8e9;border-radius:9px;background:#fff;color:#778aa1;font-size:9px}.home-universal-search-shell .universal-search-empty strong{color:#3b587a;font-size:10px}
+@media(max-width:980px){.home-dashboard-grid{grid-template-columns:1fr}.home-search-panel{order:0}.home-dashboard-grid>.calendar-home{order:1}}
+@media(max-width:620px){.top-header{min-height:112px}.home-search-heading{padding:12px}.home-search-heading strong{font-size:14px}.home-search-heading small{font-size:9px}.home-search-hint{display:none}.home-universal-search-shell.universal-search-shell{margin:10px!important}.home-search-bar{grid-template-columns:86px minmax(0,1fr);min-height:62px}.home-search-3615{padding:8px}.home-search-3615 img{height:38px}.home-search-input-zone{gap:8px;padding:0 10px}.home-search-input-zone .universal-search-icon{width:20px;height:20px}.home-universal-search-shell.universal-search-shell input{height:58px;font-size:12px}.home-universal-search-shell .universal-search-shortcut{display:none!important}.home-universal-search-shell .universal-search-result{grid-template-columns:42px minmax(0,1fr) 18px;min-height:54px;padding:6px}.home-universal-search-shell .universal-search-result-icon{width:42px;height:40px}.home-universal-search-shell .universal-search-result-title{font-size:10px}.home-search-help{padding:0 12px 12px}}
+
+
+/* V1.1.61.26 — scoreboards et faits de jeu minitel */
+.minitel-scoreboard{display:grid;grid-template-columns:minmax(84px,1fr) auto minmax(84px,1fr);align-items:stretch;gap:0;overflow:hidden;border:3px solid #0c2354;border-radius:10px;background:#fff;box-shadow:inset 0 0 0 2px #4167b4,0 4px 0 rgba(12,35,84,.08)}
+.minitel-scoreboard.is-compact{grid-template-columns:minmax(64px,1fr) auto minmax(64px,1fr);border-width:2px;border-radius:8px}
+.minitel-side,.minitel-score{min-height:48px;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 10px}
+.minitel-scoreboard.is-compact .minitel-side,.minitel-scoreboard.is-compact .minitel-score{min-height:34px;padding:0 8px;gap:6px}
+.minitel-side{position:relative;color:var(--minitel-team-fg,#fff);background:var(--minitel-team-bg,linear-gradient(180deg,#153f9e,#0b2b72));text-transform:uppercase;font:900 20px/1 "Poppins",Arial,sans-serif;letter-spacing:.08em;transition:background .2s ease,color .2s ease}
+.minitel-side.is-left{background:var(--minitel-team-bg,linear-gradient(180deg,#153f9e,#0b2b72))}
+.minitel-side.is-right{background:var(--minitel-team-bg,linear-gradient(180deg,#315f9a,#173b6b))}
+.minitel-score{background:linear-gradient(180deg,#fffef6,#ece8d8);color:#09245c;font:900 26px/1 "Courier New",monospace;letter-spacing:.08em;white-space:nowrap;border-left:3px solid #0c2354;border-right:3px solid #0c2354}
+.minitel-scoreboard.is-vs .minitel-score{font-size:18px;letter-spacing:.16em}
+.minitel-scoreboard.is-compact .minitel-side{font-size:14px}.minitel-scoreboard.is-compact .minitel-score{font-size:18px}.minitel-scoreboard.is-compact.is-vs .minitel-score{font-size:12px}
+.minitel-flag{display:grid;place-items:center;flex:0 0 auto;width:34px;height:26px;padding:2px;border:2px solid rgba(255,255,255,.78);border-radius:4px;background:rgba(255,255,255,.08)}
+.minitel-scoreboard.is-compact .minitel-flag{width:26px;height:20px;padding:1px;border-width:1.5px}
+.minitel-flag .calendar-svg-flag,.minitel-flag .rel-svg-flag{width:100%!important;height:100%!important;border-radius:1px!important;box-shadow:none!important;display:block}
+.minitel-code{display:block;white-space:nowrap}
+.minitel-status-badge{display:inline-flex;align-items:center;gap:7px;padding:4px 8px;border:2px solid #0c2354;border-radius:8px;background:#09245c;color:#fff;font:900 10px/1 "Courier New",monospace;letter-spacing:.06em;white-space:nowrap;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}
+.minitel-status-kicker{opacity:.78}.minitel-status-value{font-size:11px;letter-spacing:.08em}
+.calendar-live.minitel-status-badge{background:linear-gradient(180deg,#0d224f,#08204a);color:#ff4a5a}
+.calendar-live.minitel-status-badge i{width:8px;height:8px;border-radius:2px;background:#ff3348;box-shadow:0 0 0 2px rgba(255,51,72,.14),0 0 10px rgba(255,51,72,.5)}
+.calendar-finished.minitel-status-badge,.match-sheet-validation-badge.is-validated{background:linear-gradient(180deg,#0e2f72,#0a214f);color:#f4f7ff;border-color:#0b2459}
+.calendar-postponed.minitel-status-badge{background:linear-gradient(180deg,#fff4d2,#f5df9b);color:#704a00;border-color:#ac8b3c}
+.calendar-cancelled.minitel-status-badge{background:linear-gradient(180deg,#ffe2e5,#ffc4cc);color:#8f1f35;border-color:#c85a6d}
+.rel-ref-head-match{align-items:center}
+.rel-match-board-wrap{display:grid;gap:6px;margin:5px 0 4px}
+.rel-match-team-names{display:flex;justify-content:space-between;gap:10px;color:#6b83a3;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.match-event-row{grid-template-columns:46px 28px minmax(0,1fr) 28px}
+.match-event-minute{display:grid;place-items:center;min-height:24px;padding:2px 4px;border:1px solid #cedaed;border-radius:6px;background:#f7fbff;color:#113660}
+.match-event-kind-icon{display:grid;place-items:center;width:24px;height:24px;border:2px solid #0c2354;border-radius:6px;background:#fffef6;position:relative;overflow:hidden}
+.match-event-kind-icon.is-goal{background:linear-gradient(180deg,#edf4ff,#dbe9ff)}
+.match-event-kind-icon.is-assist-inline{width:14px;height:14px;border-width:1px;border-radius:4px;background:#eef5ff;flex:0 0 14px}
+.match-event-icon-ball{width:14px;height:14px;border:2px solid #0c2354;border-radius:50%;background:radial-gradient(circle at 50% 50%,#fff 0 22%,#0c2354 23% 29%,#fff 30% 100%);position:relative}
+.match-event-icon-ball::before,.match-event-icon-ball::after{content:"";position:absolute;background:#0c2354}
+.match-event-icon-ball::before{left:50%;top:1px;bottom:1px;width:1.5px;transform:translateX(-50%)}
+.match-event-icon-ball::after{top:50%;left:1px;right:1px;height:1.5px;transform:translateY(-50%)}
+.match-event-arrow{width:8px;height:8px;border-right:2px solid #113c86;border-bottom:2px solid #113c86;transform:rotate(-45deg);display:block;margin-right:1px}
+.match-event-card-icon{display:inline-block;width:11px;height:16px;border-radius:2px;background:#ffd834;box-shadow:0 0 0 1px rgba(137,109,0,.15)}
+.match-event-card-icon.is-red{background:#e6363f;box-shadow:0 0 0 1px rgba(140,20,27,.14)}
+.match-event-assist{color:#445c7d!important}
+.match-sheet-validation-badge{border:2px solid #c9d7e6;border-radius:8px;background:#eef3fa;color:#526d8d;font-family:"Courier New",monospace;font-weight:900;letter-spacing:.06em}
+.match-sheet-validation-badge.is-needs_validation{background:linear-gradient(180deg,#fff0e4,#ffe0c7);color:#9b4b18;border-color:#e5af85}
+.match-sheet-validation-badge.is-draft{background:linear-gradient(180deg,#eef3fa,#dde8f7);color:#425c7d;border-color:#c7d6e7}
+@media(max-width:640px){.minitel-scoreboard{grid-template-columns:minmax(68px,1fr) auto minmax(68px,1fr)}.minitel-side{font-size:14px}.minitel-score{font-size:18px;min-width:62px}.minitel-flag{width:26px;height:20px}.rel-match-team-names{font-size:8px}}
+
+/* V1.1.61.33 — scoreboards affinés + noms de pays complets */
+.minitel-scoreboard{border-width:2px;border-radius:9px;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}
+.minitel-scoreboard.is-compact{border-width:2px;border-radius:8px}
+.minitel-side,.minitel-score{min-height:39px;padding:0 7px;gap:6px}
+.minitel-scoreboard.is-compact .minitel-side,.minitel-scoreboard.is-compact .minitel-score{min-height:31px;padding:0 6px;gap:5px}
+.minitel-side{font-size:11px;letter-spacing:.015em;text-transform:none;min-width:0}
+.minitel-country-name{display:block;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:none;letter-spacing:0;font-weight:850}
+.minitel-score{font-size:19px;min-width:62px;border-left-width:2px;border-right-width:2px}
+.minitel-scoreboard.is-vs .minitel-score{font-size:14px;letter-spacing:.08em}
+.minitel-scoreboard.is-compact .minitel-side{font-size:9px}
+.minitel-scoreboard.is-compact .minitel-score{font-size:15px;min-width:50px}
+.minitel-scoreboard.is-compact.is-vs .minitel-score{font-size:10px}
+.minitel-scoreboard .minitel-flag{width:22px;height:16px}
+.minitel-scoreboard.is-compact .minitel-flag{width:20px;height:15px}
+@media(max-width:640px){.minitel-side{font-size:9px}.minitel-score{font-size:16px;min-width:52px}.minitel-flag{width:20px;height:15px}.minitel-country-name{max-width:110px}}
+/* Les noms complets peuvent se répartir sur deux lignes sans recréer un cartouche haut. */
+.minitel-country-name{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;line-height:1.08!important;text-align:center!important;word-break:normal!important}
+
+/* V1.1.63 — header remonté contre le haut de page */
+body{padding-top:0!important}
+.top-header{margin-top:0!important}
+@media(max-width:720px){body{padding-top:0!important}.top-header{margin-top:0!important}}

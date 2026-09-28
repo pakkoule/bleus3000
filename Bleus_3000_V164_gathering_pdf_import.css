@@ -1,0 +1,27 @@
+/* 3615 Bleus V1.1.65 — import PDF FFF + création de nouveaux appelés */
+.gathering-tile-actions{display:flex;align-items:center;gap:6px;flex:0 0 auto}
+.gathering-pdf-tile-btn{font-size:11px;line-height:1;font-weight:800;letter-spacing:.02em;min-width:58px;padding:9px 10px;border-radius:10px}
+.gathering-pdf-dialog{width:min(1000px,calc(100vw - 32px));max-height:min(860px,calc(100vh - 28px))}
+.gathering-pdf-summary{display:grid;gap:4px;padding:12px 14px;margin-bottom:12px;border:1px solid rgba(36,91,180,.18);border-radius:12px;background:rgba(15,56,116,.05)}
+.gathering-pdf-summary strong{font-size:15px}.gathering-pdf-summary span{font-size:13px;font-weight:700}.gathering-pdf-summary small{opacity:.7}
+.gathering-pdf-rows{display:grid;gap:7px;max-height:55vh;overflow:auto;padding-right:4px}
+.gathering-pdf-row{display:grid;grid-template-columns:28px minmax(210px,1fr) 28px minmax(260px,1.15fr);align-items:center;gap:10px;padding:9px 10px;border:1px solid rgba(20,48,90,.12);border-radius:11px;background:#fff}
+.gathering-pdf-row.is-ok{border-left:4px solid #208652}.gathering-pdf-row.is-maybe{border-left:4px solid #c88b16}.gathering-pdf-row.is-miss{border-left:4px solid #bd3e47}
+.gathering-pdf-state{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;font-weight:900;background:rgba(15,56,116,.07)}
+.gathering-pdf-source{display:grid;gap:2px}.gathering-pdf-source strong{font-size:13px}.gathering-pdf-source small,.gathering-pdf-row label small{font-size:11px;opacity:.68}
+.gathering-pdf-arrow{text-align:center;font-weight:900;opacity:.45}.gathering-pdf-row label{display:grid;gap:3px}.gathering-pdf-row label>span{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;opacity:.6}.gathering-pdf-row select{width:100%;min-width:0}
+.gathering-pdf-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:14px}.gathering-pdf-empty{padding:18px;text-align:center;opacity:.7}
+#gatheringQuickTools [data-gathering-pdf-editor]{white-space:nowrap}
+@media(max-width:760px){.gathering-pdf-row{grid-template-columns:28px 1fr}.gathering-pdf-arrow{display:none}.gathering-pdf-row label{grid-column:2}.gathering-pdf-actions>*{flex:1 1 auto}}
+
+/* V1.1.65 — création manuelle d'un nouvel international depuis l'import PDF */
+.gathering-pdf-link-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:3px}
+.gathering-pdf-create-player{padding:6px 9px;font-size:10px;line-height:1.15;white-space:nowrap}
+.gathering-pdf-create-backdrop{z-index:10080}
+.gathering-pdf-create-dialog{width:min(560px,calc(100vw - 28px))}
+.gathering-pdf-create-form{display:grid;gap:12px}
+.gathering-pdf-create-form>label{display:grid;gap:5px;font-size:12px;font-weight:800}
+.gathering-pdf-create-context{display:grid;gap:4px;padding:10px 12px;border:1px solid rgba(20,48,90,.12);border-radius:10px;background:rgba(15,56,116,.04)}
+.gathering-pdf-create-context span{font-weight:800}.gathering-pdf-create-context small{opacity:.7}
+.gathering-pdf-create-note{margin:0;font-size:11px;line-height:1.45;opacity:.72}
+@media(max-width:760px){.gathering-pdf-link-actions{align-items:stretch}.gathering-pdf-create-player{width:100%}}

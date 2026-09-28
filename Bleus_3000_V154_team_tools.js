@@ -151,7 +151,7 @@
 
   const store=()=>window.BLEUS3000_RELATIONAL_REFS;
   const eff=(m,k)=>store()?.effective?store().effective(m,k):m?.[k];
-  function cleanSelectionName(m){return String(m?.selection?.name||m?.selection_category||'France').replace(/ Masculin$/,'').replace(/ Féminine$/,' F').trim()||'France';}
+  function cleanSelectionName(){return 'France A';}
   function fixtureLabel(m){const opp=String(eff(m,'opponent_name')||'Adversaire').trim(),fr=cleanSelectionName(m);return m?.home_away==='away'?`${opp} – ${fr}`:`${fr} – ${opp}`;}
   function flagEmoji(name){const c=String(window.BLEUS3000_FLAGS?.codeFor?.(name)||'').toUpperCase();return /^[A-Z]{2}$/.test(c)?String.fromCodePoint(...[...c].map(x=>127397+x.charCodeAt(0))):'⚽';}
   function fixtureOptionLabel(m){const opp=String(eff(m,'opponent_name')||'Adversaire').trim(),fr=cleanSelectionName(m),left=m?.home_away==='away'?opp:'France',right=m?.home_away==='away'?'France':opp;return `${flagEmoji(left)} ${m?.home_away==='away'?opp:fr} – ${flagEmoji(right)} ${m?.home_away==='away'?fr:opp}`;}

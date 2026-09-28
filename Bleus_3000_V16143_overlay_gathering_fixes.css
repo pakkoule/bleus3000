@@ -1,0 +1,89 @@
+/* 3615 Bleus V1.1.61.43 — recherche overlay + correctifs rassemblements */
+.home-dashboard-grid>.home-search-panel.home-search-panel-minimal{
+  position:relative!important;
+  z-index:120!important;
+  overflow:visible!important;
+}
+#universalSearchShell.home-universal-search-shell.universal-search-shell{
+  position:relative!important;
+  z-index:121!important;
+  overflow:visible!important;
+}
+.home-search-panel-minimal .home-universal-search-shell .universal-search-results{
+  position:absolute!important;
+  top:calc(100% + 8px)!important;
+  left:0!important;
+  right:0!important;
+  width:100%!important;
+  max-height:min(560px,68vh)!important;
+  margin:0!important;
+  z-index:2500!important;
+  box-sizing:border-box!important;
+  box-shadow:0 18px 42px rgba(10,38,78,.22)!important;
+}
+.home-dashboard-grid>.calendar-home,
+.home-dashboard-grid>.home-events-panel{position:relative;z-index:1}
+
+/* Même code couleur quel que soit le moteur de rendu qui a rafraîchi Événements. */
+#homeEventsCard .home-event-transfer,
+#homeEventsCard .home-replacement-recap{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 38px minmax(0,1fr)!important;
+  align-items:center!important;
+  gap:8px!important;
+  width:100%!important;
+  margin:7px 0!important;
+}
+#homeEventsCard .home-event-transfer.home-withdrawal-only,
+#homeEventsCard .home-replacement-recap.home-withdrawal-only{
+  grid-template-columns:minmax(0,1fr)!important;
+}
+#homeEventsCard .home-event-transfer .out,
+#homeEventsCard .home-replacement-recap .out{
+  display:block!important;
+  padding:7px 10px!important;
+  border:1px solid #c72a27!important;
+  border-radius:9px!important;
+  background:#e83a36!important;
+  color:#fff!important;
+  font-weight:900!important;
+  text-align:center!important;
+  text-decoration:line-through!important;
+}
+#homeEventsCard .home-event-transfer .in,
+#homeEventsCard .home-replacement-recap .in{
+  display:block!important;
+  padding:7px 10px!important;
+  border:1px solid #237844!important;
+  border-radius:9px!important;
+  background:#2f9d58!important;
+  color:#fff!important;
+  font-weight:900!important;
+  text-align:center!important;
+}
+#homeEventsCard .home-event-transfer>b,
+#homeEventsCard .home-replacement-recap>b{
+  color:#114d91!important;
+  font-size:29px!important;
+  line-height:1!important;
+  text-align:center!important;
+}
+
+.gathering-match-search-wrap{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px;margin:0 0 8px}
+.gathering-match-search-wrap input{width:100%;box-sizing:border-box;border:1px solid #bfd2e6;border-radius:9px;background:#fff;padding:9px 10px;color:#153d69;font-size:9px}
+.gathering-match-search-wrap span{display:flex;align-items:center;padding:0 8px;border:1px solid #d0deec;border-radius:9px;background:#f5f9fe;color:#607993;font-size:8px;font-weight:850;white-space:nowrap}
+.gathering-match-picker{max-height:330px;overflow:auto}
+.gathering-match-picker .is-past-match{background:#f8fafc}
+.gathering-match-picker .is-selected-match{box-shadow:inset 3px 0 #2c69c9}
+@media(max-width:680px){
+  .home-search-panel-minimal .home-universal-search-shell .universal-search-results{max-height:58vh!important}
+  .gathering-match-search-wrap{grid-template-columns:1fr}
+}
+
+/* V1.1.67 — sélecteur de matchs : interaction explicite, y compris historique */
+.gathering-match-picker .gathering-match-choice{display:grid;grid-template-columns:auto minmax(0,1fr) 20px;gap:8px;align-items:center;border:1px solid #d8e4ef;border-radius:9px;padding:8px;background:#fff;cursor:pointer;user-select:none;outline:none}
+.gathering-match-picker .gathering-match-choice:hover,.gathering-match-picker .gathering-match-choice:focus-visible{border-color:#75a4da;box-shadow:0 0 0 2px rgba(47,109,255,.09)}
+.gathering-match-picker .gathering-match-choice>input{width:15px;height:15px;pointer-events:none}
+.gathering-match-picker .gathering-match-choice>span{min-width:0}.gathering-match-picker .gathering-match-choice strong{display:block;font-size:9px}.gathering-match-picker .gathering-match-choice small{display:block;font-size:8px;color:#74879e}
+.gathering-match-picker .gathering-match-choice>i{display:grid;place-items:center;width:18px;height:18px;border-radius:50%;font-style:normal;font-size:9px;font-weight:900;color:#fff;background:#2f6dff;opacity:0}
+.gathering-match-picker .gathering-match-choice.is-selected-match>i{opacity:1}.gathering-match-picker .gathering-match-choice.is-selected-match{border-color:#7aa8de;background:#edf5ff}.gathering-match-picker .gathering-match-choice.is-past-match{background:#f8fafc}.gathering-match-picker .gathering-match-choice.is-past-match.is-selected-match{background:#edf5ff}

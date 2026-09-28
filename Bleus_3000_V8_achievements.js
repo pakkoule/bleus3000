@@ -8,7 +8,7 @@
   const state=()=>window.C3K_ACCOUNT_STATE||{};
   const userId=()=>state().session?.user?.id||state().profile?.id||null;
   const role=()=>state().profile?.role||'guest';
-  const canEdit=()=>['contributor','admin','superadmin'].includes(role());
+  const canEdit=()=>['admin','superadmin'].includes(role());
   const refs=[
     ['selection','Sélections'],['callup','Convocations'],['match','Matchs'],['competition','Compétitions'],['opponent','Adversaires'],
     ['personnel','Staff / Arbitres'],['equipment','Maillots'],['statistics','Statistiques'],['place','Stades']

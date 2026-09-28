@@ -4,5 +4,10 @@ window.BLEUS3000_CONFIG = {
   SUPABASE_URL: 'https://hwhydccoslslfqqhmirj.supabase.co',
   SUPABASE_ANON_KEY: 'sb_publishable_KZC8Kp0q748L9URdgOnw0A_HwRI-Sug',
   PRODUCTION_URL: 'https://bleus3000.netlify.app/',
-  SPORTSDB_LIVE_PROXY: '/api/sportsdb-live'
+  SPORTSDB_LIVE_PROXY: '/api/sportsdb-live',
+  SCOPE_MODE: 'FRANCE_A_M_ONLY',
+  SELECTION_CODE: 'FRA-A-M',
+  SELECTION_GENDER: 'M',
+  SELECTION_CATEGORY: 'A'
 };
+window.BLEUS3000_SCOPE = Object.freeze({mode:'FRANCE_A_M_ONLY',code:'FRA-A-M',gender:'M',category:'A'});

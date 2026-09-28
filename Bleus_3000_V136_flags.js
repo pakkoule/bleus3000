@@ -7,6 +7,6 @@
   function codeFor(name){return MAP[norm(name)]||null;}
   function countryName(name){return stripSection(name)||String(name||'');}
   function urlForCode(code){if(!code)return '';return `https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.3.2/flags/4x3/${encodeURIComponent(String(code).toLowerCase())}.svg`;}
-  function img(name,cls='b3k-svg-flag'){const code=codeFor(name);if(!code)return `<span class="${cls} is-missing" aria-hidden="true">◌</span>`;return `<img class="${cls}" src="${urlForCode(code)}" alt="" loading="lazy" decoding="async" data-flag-code="${code}">`;}
+  function img(name,cls='b3k-svg-flag'){const code=codeFor(name);if(!code)return `<span class="${cls} is-missing" aria-hidden="true">◌</span>`;return `<img class="${cls}" src="${urlForCode(code)}" alt="" loading="lazy" decoding="async" crossorigin="anonymous" data-flag-code="${code}">`;}
   window.BLEUS3000_FLAGS={codeFor,urlForCode,img,countryName,map:MAP};
 })();

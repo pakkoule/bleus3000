@@ -1,17 +1,17 @@
-/* 3615 Bleus V1.1.40 — tags : création d’entrée Compétitions + dégradés 5 couleurs */
+/* 3615 Bleus V1.1.61.28 — tags : catalogue canonique Compétitions ENTITÉ → ÉDITION */
 (() => {
   'use strict';
   const $=(s,p=document)=>p.querySelector(s), $$=(s,p=document)=>[...p.querySelectorAll(s)];
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const localKey='bleus3000.tags.local.v1';
   const iconChoices=['🏷️','⭐','🇫🇷','⚽','🏆','📊','📅','📚','📍','👤','👥','🧤','🎯','🔥','✨','🧠','🩺','🎥','📰','🔎'];
-  let tags=[],selectionTeams=[],competitions=[],referenceLinks=[],editingId=null,lastError='',pendingIconFile=null,pendingIconPreview='';
+  let tags=[],selectionTeams=[],competitions=[],competitionEntities=[],competitionEditions=[],referenceLinks=[],editingId=null,lastError='',pendingIconFile=null,pendingIconPreview='';
 
   const state=()=>window.C3K_ACCOUNT_STATE||{};
   const client=()=>window.BLEUS3000_SUPABASE;
   const role=()=>state().profile?.role||'user';
-  const canCreate=()=>['contributor','editor','admin','superadmin'].includes(role());
-  const canEditAll=()=>['editor','admin','superadmin'].includes(role());
+  const canCreate=()=>['admin','superadmin'].includes(role());
+  const canEditAll=()=>['admin','superadmin'].includes(role());
   const userId=()=>state().profile?.id||'local-demo';
   const slugify=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,72)||'tag';
   const uuid=()=>crypto.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -44,17 +44,21 @@
     lastError='';
     const c=client();
     if(c&&state().session?.user){
-      const [{data,error},{data:teamsData,error:teamsError},{data:compData,error:compError},{data:linksData,error:linksError}]=await Promise.all([
+      const [{data,error},{data:teamsData,error:teamsError},{data:compData,error:compError},{data:entityData,error:entityError},{data:editionData,error:editionError},{data:linksData,error:linksError}]=await Promise.all([
         c.from('tags').select('*').eq('is_active',true).order('label_text',{ascending:true}),
-        c.from('selection_teams').select('id,code,name,gender,category,sort_order,team_tag_id').eq('active',true).order('sort_order'),
-        c.from('competitions').select('id,name,edition,tag_id').order('name'),
+        c.from('selection_teams').select('id,code,name,gender,category,sort_order,team_tag_id').eq('active',true).eq('code','FRA-A-M').order('sort_order'),
+        c.from('competitions').select('id,name,edition,tag_id,canonical_entity_id,canonical_edition_id').order('name'),
+        c.from('competition_entities').select('id,slug,name,aliases,competition_tag_id').order('name'),
+        c.from('competition_editions').select('id,competition_entity_id,edition_year,edition_label,edition_tag_id').order('edition_year',{ascending:false}),
         c.from('tag_reference_links').select('id,tag_id,reference_type,reference_id,relation_kind')
       ]);
       if(error){lastError=error.message;tags=[];}else tags=data||[];
       if(teamsError)lastError=lastError||teamsError.message;selectionTeams=teamsData||[];
       if(compError)lastError=lastError||compError.message;competitions=compData||[];
+      if(entityError&&String(entityError.code||'')!=='42P01')lastError=lastError||entityError.message;competitionEntities=entityData||[];
+      if(editionError&&String(editionError.code||'')!=='42P01')lastError=lastError||editionError.message;competitionEditions=editionData||[];
       if(linksError)lastError=lastError||linksError.message;referenceLinks=linksData||[];
-    }else{tags=localRows();selectionTeams=[];competitions=[];referenceLinks=[];}
+    }else{tags=localRows();selectionTeams=[];competitions=[];competitionEntities=[];competitionEditions=[];referenceLinks=[];}
     render();
   }
 
@@ -68,6 +72,13 @@
 
   function blank(){return {kind:'tag',label_text:'',icon_text:'🏷️',icon_image_path:null,appearance:'gradient',color_start:'#2563EB',color_end:'#0EA5C6',gradient_colors:['#2563EB','#0EA5C6'],text_color:'#FFFFFF',border_color:'#1E4FA7',gradient_angle:135,border_radius:8,border_width:1,aliases:[]};}
   function current(){return tags.find(t=>t.id===editingId)||blank();}
+  function referenceLabel(l){
+    if(l.reference_type==='selection'){const tm=selectionTeams.find(x=>String(x.id)===String(l.reference_id));return tm?`Sélection · ${tm.name}`:'';}
+    if(l.reference_type==='competition'){const cp=competitions.find(x=>String(x.id)===String(l.reference_id));return cp?`Compétition (legacy) · ${cp.name}${cp.edition?` · ${cp.edition}`:''}`:'';}
+    if(l.reference_type==='competition_entity'){const ce=competitionEntities.find(x=>String(x.id)===String(l.reference_id));return ce?`Compétition · ENTITÉ · ${ce.name}`:'';}
+    if(l.reference_type==='competition_edition'){const ed=competitionEditions.find(x=>String(x.id)===String(l.reference_id)),ce=competitionEntities.find(x=>String(x.id)===String(ed?.competition_entity_id));return ed?`Compétition · ÉDITION · ${ce?.name||'Compétition'} ${ed.edition_label||ed.edition_year}`:'';}
+    return '';
+  }
 
   function render(){
     const body=$('#c3kV8PanelBody');if(!body)return;
@@ -75,18 +86,18 @@
     const list=tags.map(t=>{
       const mine=t.created_by===userId();
       const mayEdit=editable&&(mine||canEditAll());
-      const assoc=referenceLinks.filter(l=>l.tag_id===t.id).map(l=>{if(l.reference_type==='selection'){const tm=selectionTeams.find(x=>x.id===l.reference_id);return tm?`Sélection · ${tm.name}`:'';}if(l.reference_type==='competition'){const cp=competitions.find(x=>x.id===l.reference_id);return cp?`Compétition · ${cp.name}${cp.edition?` · ${cp.edition}`:''}`:'';}return '';}).filter(Boolean);
+      const assoc=referenceLinks.filter(l=>String(l.tag_id)===String(t.id)).map(referenceLabel).filter(Boolean);
       return `<article class="b3k-tag-row" data-tag-row="${esc(t.id)}">
         <div class="b3k-tag-row-preview">${tagHtml(t)}</div>
-        <div class="b3k-tag-row-meta"><strong>${esc(t.kind==='label'?'Étiquette':'Tag')}</strong><small>${esc((t.aliases||[]).join(' · ')||t.slug||'')}</small>${assoc.length?`<small class="b3k-tag-ref-meta">Référentiel · ${esc(assoc.join(' · '))}</small>`:''}</div>
-        <div class="b3k-tag-row-actions">${mayEdit?`<button type="button" data-tag-edit="${esc(t.id)}">Modifier</button><button type="button" class="is-danger" data-tag-delete="${esc(t.id)}">Supprimer</button>`:''}</div>
+        <div class="b3k-tag-row-meta"><strong>${esc(t.kind==='label'?'Étiquette':t.competition_tag_level==='entity'?'Tag compétition · ENTITÉ':t.competition_tag_level==='edition'?'Tag compétition · ÉDITION':'Tag')}</strong><small>${esc((t.aliases||[]).join(' · ')||t.slug||'')}</small>${assoc.length?`<small class="b3k-tag-ref-meta">Référentiel · ${esc(assoc.join(' · '))}</small>`:''}</div>
+        <div class="b3k-tag-row-actions">${mayEdit?`<button type="button" data-tag-edit="${esc(t.id)}">Modifier</button>${t.competition_tag_level==='entity'||t.competition_tag_level==='edition'?'':`<button type="button" class="is-danger" data-tag-delete="${esc(t.id)}">Supprimer</button>`}`:''}</div>
       </article>`;
     }).join('')||'<div class="b3k-tags-empty">Aucun tag pour le moment.</div>';
 
     body.innerHTML=`<section class="b3k-tags-manager">
-      <div class="b3k-tags-head"><div><strong>Tags & étiquettes</strong><span>Catalogue global : sections, compétitions et étiquettes personnalisées. Toute modification se répercute dans Matchs et Calendrier.</span></div><span class="b3k-tags-count">${tags.length}</span></div>
+      <div class="b3k-tags-head"><div><strong>Tags & étiquettes</strong><span>Catalogue global canonique. Compétitions : ENTITÉ = visible ; ÉDITION = relation technique enfant pour matchs, maillots, filtres et statistiques.</span></div><span class="b3k-tags-count">${tags.length}</span></div>
       ${lastError?`<div class="c3k-v8-status is-error">${esc(lastError)}</div>`:''}
-      ${editable?editorHtml(cur):`<div class="b3k-tags-readonly">Ton rôle <strong>${esc(role().toUpperCase())}</strong> peut consulter le catalogue. La création et la modification sont réservées aux contributeurs, éditeurs et administrateurs.</div>`}
+      ${editable?editorHtml(cur):`<div class="b3k-tags-readonly">Ton rôle <strong>${esc(role().toUpperCase())}</strong> peut consulter le catalogue. La création et la modification sont réservées aux ADMIN et SUPERADMIN.</div>`}
       <div class="b3k-tags-list-head"><strong>Catalogue</strong><small>${tags.length} élément${tags.length>1?'s':''}</small></div>
       <div class="b3k-tags-list">${list}</div>
       <div class="c3k-v8-actions"><button class="c3k-v8-secondary" id="b3kTagsBack" type="button">Retour</button></div>
@@ -119,21 +130,18 @@
     }
   }
 
-  function currentReferenceLinks(t){return referenceLinks.filter(l=>l.tag_id===t.id&&(l.reference_type==='selection'||l.reference_type==='competition'));}
+  function currentReferenceLinks(t){return referenceLinks.filter(l=>String(l.tag_id)===String(t.id)&&['selection','competition','competition_entity','competition_edition'].includes(l.reference_type));}
   function currentReferenceLink(t){return currentReferenceLinks(t)[0]||null;}
   function referenceEditorHtml(t){
     const links=currentReferenceLinks(t);
     if(editingId&&links.length){
-      const labels=links.map(l=>{
-        if(l.reference_type==='selection'){const tm=selectionTeams.find(x=>x.id===l.reference_id);return tm?`Sélection · ${tm.name}`:'';}
-        const cp=competitions.find(x=>x.id===l.reference_id);return cp?`Compétition · ${cp.name}${cp.edition?` · ${cp.edition}`:''}`:'';
-      }).filter(Boolean);
-      return `<fieldset class="b3k-tag-reference-box"><legend>Associations au référentiel</legend><div class="b3k-tag-ref-readonly">${labels.map(x=>`<span>${esc(x)}</span>`).join('')}</div><small>${links.length>1?'Ce tag est partagé par plusieurs entrées.':'Association existante.'} Modifier le texte, les couleurs ou l’icône conserve toutes les associations.</small></fieldset>`;
+      const labels=links.map(referenceLabel).filter(Boolean);
+      return `<fieldset class="b3k-tag-reference-box"><legend>Associations au référentiel</legend><div class="b3k-tag-ref-readonly">${labels.map(x=>`<span>${esc(x)}</span>`).join('')}</div><small>${links.length>1?'Ce tag est partagé par plusieurs entrées canoniques.':'Association canonique existante.'} Modifier le texte, les couleurs ou l’icône conserve les relations. Un tag ÉDITION reste automatiquement enfant de son tag ENTITÉ.</small></fieldset>`;
     }
     const link=currentReferenceLink(t), selected=link?.reference_id||'', type=link?.reference_type||t.reference_scope||'', kind=link?.relation_kind||'membership';
     const teamOpts=selectionTeams.map(tm=>`<option value="${esc(tm.id)}" data-ref-type="selection" ${selected===tm.id?'selected':''}>${esc(tm.name)}</option>`).join('');
     const compOpts=competitions.map(cp=>`<option value="${esc(cp.id)}" data-ref-type="competition" ${selected===cp.id?'selected':''}>${esc(cp.name)}${cp.edition?` · ${esc(cp.edition)}`:''}</option>`).join('');
-    return `<fieldset class="b3k-tag-reference-box"><legend>Association au référentiel</legend><div class="b3k-tag-grid three"><label>Référentiel<select name="reference_type"><option value="">Aucun</option><option value="selection" ${type==='selection'?'selected':''}>Sélections</option><option value="competition" ${type==='competition'?'selected':''}>Compétitions</option></select></label><label>Entrée existante<select name="reference_id"><option value="">Aucune / créer une nouvelle entrée</option><optgroup label="Sélections">${teamOpts}</optgroup><optgroup label="Compétitions">${compOpts}</optgroup></select></label><label>Type de lien<select name="relation_kind"><option value="membership" ${kind==='membership'?'selected':''}>Appartenance</option><option value="status" ${kind==='status'?'selected':''}>Statut</option><option value="topic" ${kind==='topic'?'selected':''}>Sujet</option></select></label></div><div class="b3k-tag-new-competition" data-new-competition hidden><strong>Nouvelle entrée Compétitions</strong><div class="b3k-tag-grid two"><label>Nom de la compétition<input name="new_competition_name" maxlength="160" placeholder="Par défaut : le texte du tag"></label><label>Édition / saison<input name="new_competition_edition" maxlength="80" placeholder="Facultatif · ex. 2027"></label></div><small>Si aucune entrée existante n’est choisie, 3615 Bleus crée automatiquement cette nouvelle compétition et lui associe le tag.</small></div><small>Un nouveau tag peut donc soit rejoindre une entrée existante, soit créer lui-même la nouvelle entrée Compétitions.</small></fieldset>`;
+    return `<fieldset class="b3k-tag-reference-box"><legend>Association au référentiel</legend><div class="b3k-tag-grid three"><label>Référentiel<select name="reference_type"><option value="">Aucun</option><option value="selection" ${type==='selection'?'selected':''}>Sélections</option><option value="competition" ${type==='competition'?'selected':''}>Compétitions</option></select></label><label>Entrée existante<select name="reference_id"><option value="">Aucune / créer une nouvelle entrée</option><optgroup label="Sélections">${teamOpts}</optgroup><optgroup label="Compétitions">${compOpts}</optgroup></select></label><label>Type de lien<select name="relation_kind"><option value="membership" ${kind==='membership'?'selected':''}>Appartenance</option><option value="status" ${kind==='status'?'selected':''}>Statut</option><option value="topic" ${kind==='topic'?'selected':''}>Sujet</option></select></label></div><div class="b3k-tag-new-competition" data-new-competition hidden><strong>Nouvelle entrée Compétitions</strong><div class="b3k-tag-grid two"><label>Nom de la compétition<input name="new_competition_name" maxlength="160" placeholder="Par défaut : le texte du tag"></label><label>Édition / saison<input name="new_competition_edition" maxlength="80" placeholder="Facultatif · ex. 2027"></label></div><small>Si aucune entrée existante n’est choisie, 3615 Bleus crée une ENTITÉ canonique et, si une édition/saison est renseignée, son ÉDITION enfant. La couche historique Compétitions est conservée uniquement pour compatibilité.</small></div><small>Un tag compétition créé ici devient donc un tag ENTITÉ canonique ; les tags ÉDITION sont générés automatiquement.</small></fieldset>`;
   }
 
   function editorHtml(t){
@@ -213,8 +221,15 @@
     }
     const refSpec={reference_type:payload.reference_type,reference_id:payload.reference_id,relation_kind:payload.relation_kind,new_competition_name:payload.new_competition_name,new_competition_edition:payload.new_competition_edition};
     payload.reference_scope=refSpec.reference_type||current().reference_scope||null;
+    if(!editingId&&refSpec.reference_type==='competition'){payload.competition_tag_level='entity';payload.parent_tag_id=null;}
     if(refSpec.reference_type==='selection'&&refSpec.reference_id&&!selectionTeams.some(x=>String(x.id)===String(refSpec.reference_id)))return status(st,'Choisis une entrée du référentiel Sélections.','error');
     if(refSpec.reference_type==='competition'&&refSpec.reference_id&&!competitions.some(x=>String(x.id)===String(refSpec.reference_id)))return status(st,'Choisis une entrée du référentiel Compétitions.','error');
+    if(!editingId&&refSpec.reference_type==='competition'&&refSpec.reference_id){
+      const cp=competitions.find(x=>String(x.id)===String(refSpec.reference_id));
+      const ce=competitionEntities.find(x=>String(x.id)===String(cp?.canonical_entity_id));
+      const canonical=ce?.competition_tag_id?tags.find(x=>String(x.id)===String(ce.competition_tag_id)):null;
+      if(canonical)return status(st,`Cette compétition possède déjà son tag ENTITÉ canonique « ${canonical.label_text} ». Modifie ce tag au lieu d’en créer un doublon.`,'error');
+    }
     delete payload.reference_type;delete payload.reference_id;delete payload.relation_kind;delete payload.new_competition_name;delete payload.new_competition_edition;
     let savedTagId=editingId;
     if(c&&state().session?.user){
@@ -231,9 +246,20 @@
         if(refSpec.reference_type==='competition'&&!refSpec.reference_id){
           const competitionName=(refSpec.new_competition_name||payload.label_text).trim();
           if(competitionName){
-            const compPayload={name:competitionName,edition:refSpec.new_competition_edition||null,competition_type:'Sélection nationale',status:'active',tag_id:savedTagId,external_ids:{manual_tag_entry:true}};
-            const {data:newComp,error:compErr}=await c.from('competitions').insert(compPayload).select('id,name,edition,tag_id').single();
-            if(compErr){await c.from('tags').delete().eq('id',savedTagId).catch?.(()=>{});return status(st,'Création de la compétition · '+compErr.message,'error');}
+            const entitySlugBase=slugify(competitionName).slice(0,72),entitySlug=`${entitySlugBase}-${Date.now()}`.slice(0,96);
+            const {data:newEntity,error:entityErr}=await c.from('competition_entities').insert({slug:entitySlug,name:competitionName,aliases:payload.aliases||[],competition_type:'Sélection nationale',competition_tag_id:savedTagId,notes:'Entité créée depuis le gestionnaire de tags.'}).select('id,name,competition_tag_id').single();
+            if(entityErr)return status(st,'Création de l’entité compétition · '+entityErr.message,'error');
+            let editionId=null,editionLabel=refSpec.new_competition_edition||null;
+            if(editionLabel){
+              const m=String(editionLabel).match(/\b(?:19|20)\d{2}\b/),year=m?Number(m[0]):null;
+              if(!year)return status(st,'Édition : indique au moins une année sur 4 chiffres (ex. 2026 ou 2026-2027).','error');
+              const {data:newEdition,error:editionErr}=await c.from('competition_editions').insert({competition_entity_id:newEntity.id,edition_year:year,edition_label:editionLabel}).select('id').single();
+              if(editionErr)return status(st,'Création de l’édition compétition · '+editionErr.message,'error');
+              editionId=newEdition?.id||null;
+            }
+            const compPayload={name:competitionName,edition:editionLabel,competition_type:'Sélection nationale',status:'active',tag_id:savedTagId,canonical_entity_id:newEntity.id,canonical_edition_id:editionId,external_ids:{manual_tag_entry:true,canonical_model:true}};
+            const {data:newComp,error:compErr}=await c.from('competitions').insert(compPayload).select('id,name,edition,tag_id,canonical_entity_id,canonical_edition_id').single();
+            if(compErr)return status(st,'Création de la couche de compatibilité Compétitions · '+compErr.message,'error');
             refSpec.reference_id=newComp?.id||'';
           }
         }
@@ -286,7 +312,9 @@
   }
 
   async function removeTag(id){
-    const t=tags.find(x=>x.id===id);if(!t||!confirm(`Supprimer « ${t.label_text} » ?`))return;
+    const t=tags.find(x=>x.id===id);if(!t)return;
+    if(t.competition_tag_level==='entity'||t.competition_tag_level==='edition')return alert('Ce tag appartient au modèle canonique Compétition ENTITÉ → ÉDITION. Il peut être modifié mais pas supprimé depuis le gestionnaire de tags.');
+    if(!confirm(`Supprimer « ${t.label_text} » ?`))return;
     const c=client();
     if(c&&state().session?.user){const {error}=await c.from('tags').delete().eq('id',id);if(error)return alert(error.message);}
     else{tags=tags.filter(x=>x.id!==id);saveLocal();}

@@ -1,0 +1,5 @@
+3615 Bleus — V1.1.63
+
+Typographie interface :
+- Poppins : totalité du site et de l’interface (chargée via Google Fonts).
+- Les polices/visuels de flocage et numéros de maillot restent gérés séparément car ils représentent des équipements historiques, pas la typographie de l’interface.

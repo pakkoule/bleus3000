@@ -20,7 +20,7 @@
   function matchLabel(m){
     const eff=(k)=>store()?.effective?.(m,k)??m?.[k];
     const opp=String(eff('opponent_name')||m?.opponent?.name||'Adversaire');
-    const sel=String(m?.selection?.name||m?.selection_category||'France').replace(/ Masculin$/,'').replace(/ Féminine$/,' F');
+    const sel='France A';
     return m?.home_away==='away'?`${opp} – ${sel}`:`${sel} – ${opp}`;
   }
   function events(){

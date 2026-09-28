@@ -1,0 +1,25 @@
+/* 3615 Bleus V1.1.63 — Poppins partout dans l’interface. */
+:root{
+  --b3k-font-body:"Poppins",Arial,sans-serif;
+  --b3k-font-ui:"Poppins",Arial,sans-serif;
+  --b3k-font-minitel:"Poppins",Arial,sans-serif;
+}
+html,body,body *,body *::before,body *::after,button,input,textarea,select,option,datalist,summary,
+.modal-dialog,.c3k-v8-account-shell,.c3k-ephemeride,.team-tool-dialog,
+.match-sheet-editor-dialog,.quick-match-event-dialog,
+.toolbar-drop-panel button,.c3k-v8-menu button,.selection-category-tabs button,
+.performance-toolbar button,.match-sheet-tabs button,.match-sheet-editor-tabs button,
+.calendar-tab,.primary-btn,.secondary-btn,.danger-btn,
+.c3k-v8-primary,.c3k-v8-secondary,.c3k-v8-danger,.c3k-v8-ghost,
+.tag-badge,.position-badge,.calendar-tag,.calendar-global-tag,.rel-tag-fallback,
+.selection-context-tag,.c3k-v8-role,.c3k-v8-sync-pill,.gathering-status-badge,
+.player-row-tag,.smart-search-type,.smart-search-pill,
+.minitel-score,.calendar-score,.calendar-home-score,.rel-linked-score,
+.minitel-code,.minitel-status-badge,.minitel-status-kicker,.minitel-status-value,
+.match-event-minute,.match-event-kind-icon,.match-sheet-validation-badge,.match-sheet-validation-state{
+  font-family:"Poppins",Arial,sans-serif!important;
+}
+/* Les flocages/numéros historiques restent des assets typographiques de maillot, pas du texte d’interface. */
+.c3k-flockage-style-number,.team-number-style-sample,[data-number-style],[class*="flockage-style-number"]{
+  font-family:var(--fs-font,Arial Black,Arial,sans-serif)!important;
+}

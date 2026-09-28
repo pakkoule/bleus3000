@@ -1,0 +1,100 @@
+/* 3615 Bleus V1.1.61.38 — correctifs visuels isolés
+   - fiche joueur recentrée
+   - fondu vertical de la photo vers le bas
+   - drapeaux scoreboards sans bordure blanche
+*/
+
+/* FICHE JOUEUR : centrage du contenu sans modifier la grille globale du référentiel. */
+.selection-player-row-detail .selection-row-detail-content{
+  margin-left:auto!important;
+  margin-right:auto!important;
+  text-align:center;
+}
+.selection-player-row-detail .selection-row-detail-top{
+  position:relative;
+  justify-content:center!important;
+  text-align:center;
+}
+.selection-player-row-detail .selection-row-identity{
+  width:100%;
+  display:grid;
+  justify-items:center;
+  text-align:center;
+}
+.selection-player-row-detail .selection-row-identity .selection-position{
+  justify-content:center!important;
+}
+.selection-player-row-detail .selection-tile-actions{
+  position:absolute;
+  top:0;
+  right:0;
+}
+.selection-player-row-detail .selection-tags{
+  justify-content:center!important;
+}
+.selection-player-row-detail footer{
+  justify-content:center!important;
+}
+/* Les listes et champs détaillés restent lisibles de gauche à droite. */
+.selection-player-row-detail .selection-linked-fields,
+.selection-player-row-detail .selection-player-matches{
+  text-align:left;
+}
+
+/* PHOTO JOUEUR : on conserve le fondu latéral existant et on ajoute un vrai fondu
+   du bas vers le haut, sans toucher à la photo ni au layout de la page. */
+.selection-player-row-detail::after{
+  background:
+    linear-gradient(90deg,
+      #edf4fb 0%,
+      rgba(237,244,251,.98) 28%,
+      rgba(237,244,251,.82) 46%,
+      rgba(237,244,251,.42) 70%,
+      rgba(237,244,251,.10) 100%),
+    linear-gradient(to top,
+      #edf4fb 0%,
+      rgba(237,244,251,.98) 15%,
+      rgba(237,244,251,.86) 30%,
+      rgba(237,244,251,.55) 48%,
+      rgba(237,244,251,.22) 66%,
+      rgba(237,244,251,0) 86%)!important;
+}
+
+/* SCOREBOARDS : drapeau seul, sans cartouche blanc. */
+.minitel-scoreboard .minitel-flag,
+.minitel-scoreboard.is-compact .minitel-flag{
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.minitel-scoreboard .minitel-flag .calendar-svg-flag,
+.minitel-scoreboard .minitel-flag .rel-svg-flag,
+.minitel-scoreboard .calendar-svg-flag,
+.minitel-scoreboard .rel-svg-flag{
+  margin:0!important;
+  border:0!important;
+  outline:0!important;
+  box-shadow:none!important;
+  background:transparent!important;
+}
+
+@media(max-width:680px){
+  .selection-player-row-detail .selection-tile-actions{
+    position:static;
+    justify-content:center;
+    margin-top:8px;
+  }
+  .selection-player-row-detail::after{
+    background:
+      linear-gradient(90deg,
+        rgba(237,244,251,.94) 0%,
+        rgba(237,244,251,.72) 55%,
+        rgba(237,244,251,.32) 100%),
+      linear-gradient(to top,
+        #edf4fb 0%,
+        rgba(237,244,251,.96) 20%,
+        rgba(237,244,251,.58) 52%,
+        rgba(237,244,251,0) 86%)!important;
+  }
+}

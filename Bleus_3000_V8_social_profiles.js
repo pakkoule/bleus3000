@@ -3,7 +3,7 @@
   'use strict';
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const memberLabels=new Map();
-  const roleName=r=>({user:'USER',contributor:'CONTRIBUTOR',editor:'EDITOR',admin:'ADMIN',superadmin:'SUPERADMIN',guest:'VISITEUR'}[r]||String(r||'USER').toUpperCase());
+  const roleName=r=>({user:'USER',admin:'ADMIN',superadmin:'SUPERADMIN',guest:'VISITEUR'}[r]||String(r||'USER').toUpperCase());
   const presenceLabel=s=>({online:'En ligne',away:'Absent',dnd:'Ne pas déranger',offline:'Hors ligne'}[s]||'En ligne');
   function defaultMemberLabel(role){return {label_text:roleName(role),icon_text:role==='superadmin'?'★':'',appearance:'gradient',color_start:role==='superadmin'?'#E7F0FF':'#DDEAFF',color_end:role==='superadmin'?'#2563EB':'#5B8DCC',gradient_angle:135};}
   function memberLabelBadgeHtml(row){if(!row)return '';const c1=row.color_start||'#DDEAFF',c2=row.color_end||c1,ang=Number(row.gradient_angle)||135,klass=row.appearance==='solid'?'is-solid':'is-gradient';return `<span class="c3k-member-label ${klass}" style="--member-label-c1:${esc(c1)};--member-label-c2:${esc(c2)};--member-label-angle:${ang}deg"><span class="c3k-member-label-icon">${esc(row.icon_text||'')}</span><span>${esc(row.label_text||'MEMBRE')}</span></span>`;}

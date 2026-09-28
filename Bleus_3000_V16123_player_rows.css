@@ -1,0 +1,66 @@
+/* 3615 Bleus V1.1.61.23 — Internationaux A · lignes déployables */
+.selection-player-list{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;width:100%;min-width:0}
+.selection-player-row{position:relative;isolation:isolate;overflow:hidden;border:1px solid #c9d8ea;border-radius:14px;background:#f7faff;box-shadow:0 4px 14px rgba(15,47,88,.055);transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease}
+.selection-player-row:hover{border-color:#9eb9db;box-shadow:0 7px 20px rgba(15,47,88,.09)}
+.selection-player-row.is-open{border-color:#89aeda;box-shadow:0 12px 30px rgba(15,47,88,.12)}
+.selection-player-row-summary{position:relative;z-index:5;width:100%;min-height:72px;display:grid;grid-template-columns:58px minmax(220px,1fr) 112px 112px 92px 34px;align-items:center;gap:12px;padding:7px 12px;border:0;background:linear-gradient(180deg,#fbfdff,#f2f7fd);color:#173a66;text-align:left;cursor:pointer}
+.selection-player-row-summary:hover{background:linear-gradient(180deg,#fff,#edf4fc)}
+.selection-player-row.is-open .selection-player-row-summary{background:linear-gradient(180deg,#f8fbff,#ebf3fc);border-bottom:1px solid #cfdeed}
+.selection-row-photo{width:54px;height:54px;box-sizing:border-box;border-radius:12px!important;display:block;overflow:hidden}
+.selection-row-photo .selection-photo-inner{width:100%;height:100%;border-radius:9px;font-size:15px}
+.selection-row-name{display:grid;min-width:0;gap:3px}
+.selection-row-name strong{font-size:15px;line-height:1.15;color:#102f58;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.selection-row-name small{font-size:10px;line-height:1.2;color:#73869d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.selection-row-stat{display:grid;gap:2px;justify-items:start;min-width:0;padding-left:12px;border-left:1px solid #dce6f1}
+.selection-row-stat small{font-size:8px;letter-spacing:.04em;text-transform:uppercase;color:#8596aa;font-weight:800}
+.selection-row-stat strong{font-size:14px;color:#173a66;font-variant-numeric:tabular-nums}
+.selection-row-stat.is-order strong{color:#245fb8}
+.selection-row-chevron{display:grid;place-items:center;width:28px;height:28px;border-radius:999px;border:1px solid #c7d8ea;background:#fff;color:#245fb8;font-size:17px;font-weight:900;transition:transform .18s ease,background .18s ease}
+.selection-player-row.is-open .selection-row-chevron{transform:rotate(180deg);background:#e7f0ff}
+.selection-player-row-detail{position:relative;min-height:280px;overflow:hidden;background:#edf4fb}
+.selection-player-row-detail[hidden]{display:none!important}
+.selection-row-action-photo{position:absolute;z-index:0;inset:0 0 0 36%;background-image:var(--player-action-photo);background-size:cover;background-position:center 28%;opacity:.92;pointer-events:none;-webkit-mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.18) 16%,rgba(0,0,0,.82) 54%,#000 100%);mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.18) 16%,rgba(0,0,0,.82) 54%,#000 100%)}
+.selection-player-row:not([style*="--player-action-photo"]) .selection-row-action-photo{display:none}
+.selection-player-row-detail::after{content:"";position:absolute;z-index:1;inset:0;pointer-events:none;background:linear-gradient(90deg,#edf4fb 0%,#edf4fb 34%,rgba(237,244,251,.97) 46%,rgba(237,244,251,.68) 67%,rgba(237,244,251,.22) 100%),linear-gradient(0deg,#edf4fb 0%,transparent 34%,rgba(237,244,251,.08) 100%)}
+.selection-row-detail-content{position:relative;z-index:2;width:min(72%,860px);padding:18px 20px 18px;box-sizing:border-box}
+.selection-row-detail-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.selection-row-identity h3{margin:5px 0 4px;font-size:21px;color:#0f315d}
+.selection-row-identity .selection-position{margin-top:7px}
+.selection-player-row-detail .selection-stats-grid{grid-template-columns:repeat(5,minmax(0,1fr));margin-top:14px}
+.selection-player-row-detail .sel-stat{background:rgba(255,255,255,.83);backdrop-filter:blur(3px)}
+.selection-player-row-detail .selection-linked-fields>div{background:rgba(255,255,255,.7);backdrop-filter:blur(3px)}
+.selection-player-row-detail .selection-tags{position:relative;z-index:3}
+.selection-player-matches{margin-top:14px;border-top:1px solid rgba(107,137,174,.2);padding-top:12px}
+.selection-player-matches-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:7px}.selection-player-matches-head strong{font-size:12px;color:#16395f}.selection-player-matches-head small{font-size:9px;color:#7b8ca2}
+.selection-player-match-list{display:grid;gap:5px;max-height:270px;overflow:auto;padding-right:2px}
+.selection-player-match-row{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid rgba(188,207,229,.85);border-radius:9px;background:rgba(255,255,255,.82);padding:8px 10px;text-align:left;cursor:pointer;backdrop-filter:blur(4px)}
+.selection-player-match-row:hover{background:#fff;border-color:#90b1d9}
+.selection-player-match-row span{min-width:0;display:grid;gap:2px}.selection-player-match-row strong{font-size:10.5px;color:#17395f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.selection-player-match-row small{font-size:8.5px;color:#72869e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.selection-player-match-row em{font-size:8px;color:#567391;font-style:normal;font-weight:800;text-transform:uppercase;letter-spacing:.04em;flex:0 0 auto}
+.selection-player-match-loading,.selection-player-match-empty{padding:12px;border:1px dashed #bfd0e3;border-radius:9px;background:rgba(255,255,255,.58);font-size:10px;color:#6f8299}
+.selection-player-row footer{display:flex;justify-content:flex-start;border-top:1px solid rgba(194,210,228,.72);margin-top:12px;padding-top:10px}
+.selection-player-row footer:has(.contributors:empty){display:none}
+.selection-player-row.is-search-target{animation:b3k-player-search-target 1.8s ease}
+.selection-action-photo-editor{width:100%;display:grid;gap:7px;margin-top:10px;padding-top:10px;border-top:1px solid #d2deeb}
+.selection-action-photo-editor-preview{width:100%;aspect-ratio:16/9;border:1px dashed #b8cbe0;border-radius:10px;overflow:hidden;background:linear-gradient(135deg,#e6eef8,#f7faff);display:grid;place-items:center;color:#6d829d;font-size:10px;font-weight:800}
+.selection-action-photo-editor-preview img{width:100%;height:100%;object-fit:cover;display:block}.selection-action-photo-editor-preview.has-image{border-style:solid}
+@media(max-width:980px){.selection-player-row-summary{grid-template-columns:52px minmax(150px,1fr) 84px 82px 70px 30px;gap:8px;padding-inline:8px}.selection-row-stat{padding-left:8px}.selection-row-detail-content{width:82%}.selection-player-row-detail .selection-stats-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:680px){.selection-player-row{border-radius:12px}.selection-player-row-summary{grid-template-columns:46px minmax(0,1fr) 58px 58px 28px;min-height:62px;gap:7px}.selection-row-photo{width:44px;height:44px}.selection-row-name strong{font-size:13px}.selection-row-name small{font-size:8.5px}.selection-row-stat{padding-left:6px}.selection-row-stat small{font-size:6.5px}.selection-row-stat strong{font-size:12px}.selection-row-stat.is-order{display:none}.selection-row-chevron{width:24px;height:24px;font-size:14px}.selection-player-row-detail{min-height:0}.selection-row-action-photo{inset:0 0 0 14%;opacity:.52;-webkit-mask-image:linear-gradient(90deg,transparent,rgba(0,0,0,.85));mask-image:linear-gradient(90deg,transparent,rgba(0,0,0,.85))}.selection-player-row-detail::after{background:linear-gradient(90deg,#edf4fb 0%,rgba(237,244,251,.95) 48%,rgba(237,244,251,.68) 100%),linear-gradient(0deg,#edf4fb 0%,rgba(237,244,251,.65) 60%,rgba(237,244,251,.42) 100%)}.selection-row-detail-content{width:100%;padding:14px 12px}.selection-row-identity h3{font-size:18px}.selection-player-row-detail .selection-stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.selection-player-matches-head{align-items:flex-start;flex-direction:column;gap:2px}.selection-player-match-row{padding:8px}.selection-player-match-row em{display:none}}
+
+/* V1.1.61.34 — la liste Internationaux A occupe toute la largeur du référentiel. */
+#referenceEntries > .selection-player-list{
+  grid-column:1 / -1!important;
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  justify-self:stretch!important;
+}
+#referenceEntries > .selection-player-list > .selection-player-row{
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  box-sizing:border-box!important;
+}
+#referenceEntries > .selection-pagination{
+  grid-column:1 / -1!important;
+  width:100%!important;
+}
