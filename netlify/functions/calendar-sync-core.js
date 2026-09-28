@@ -2,23 +2,9 @@
 const SPORTSDB='https://www.thesportsdb.com/api/v2/json';
 
 const BUILTIN_TEAM_IDS={
-  'FRA-A-M':[133913],
-  'FRA-ESP-M':[136843,143161], // U21 + U23 partagent le référentiel Espoirs ; les JO sont identifiés par leur compétition
-  'FRA-U20-M':[152249],
-  'FRA-U19-M':[149863],
-  'FRA-U17-M':[149609],
-  'FRA-A-F':[136801],
-  'FRA-U17-F':[153623]
+  'FRA-A-M':[133913]
 };
-const SEARCH_TERMS={
-  'FRA-U18-M':['France U18'],
-  'FRA-U16-M':['France U16'],
-  'FRA-U23-F':['France U23 W','France Women U23','France U23 Women'],
-  'FRA-U20-F':['France U20 W','France Women U20','France U20 Women'],
-  'FRA-U19-F':['France U19 W','France Women U19','France U19 Women'],
-  'FRA-U18-F':['France U18 W','France Women U18','France U18 Women'],
-  'FRA-U16-F':['France U16 W','France Women U16','France U16 Women']
-};
+const SEARCH_TERMS={};
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 const arr=v=>(Array.isArray(v)?v:[v]).map(Number).filter(Number.isFinite).filter(Boolean);
@@ -31,13 +17,6 @@ const competitionFamilySpec=(name,selection={})=>{
   if(!n)return null;
   if(n.includes('friendly')||n.includes('friendlies')||n.includes('amic'))return {slug:'match-amical',label:'Match Amical',icon:'⚽',aliases:['Amical','Match amical','Matchs amicaux','International Friendlies','International Friendly']};
   if(n.includes('uefa nations league')||n.includes('ligue des nations'))return {slug:'ligue-des-nations',label:'Ligue des Nations',icon:'🏆',aliases:['UEFA Nations League','Ligue des Nations']};
-  if(n.includes('olympic')||n.includes('jeux olympiques'))return {slug:'jeux-olympiques',label:'JEUX OLYMPIQUES',icon:'🥇',aliases:['Jeux Olympiques','Olympics Soccer','Olympic Games','JO']};
-  if(n.includes('fifa womens u17 world cup')||n.includes('fifa women u17 world cup'))return {slug:'coupe-du-monde-u17-f',label:'Coupe du monde U17 F',icon:'🌍',aliases:['FIFA Womens U17 World Cup','Mondial U17 féminin']};
-  if(n.includes('fifa u 17 world cup')||n.includes('fifa u17 world cup'))return {slug:'coupe-du-monde-u17',label:'Coupe du monde U17',icon:'🌍',aliases:['FIFA U-17 World Cup','Mondial U17']};
-  if(n.includes('u21')||n.includes('under 21')){
-    if(n.includes('qualif')||n.includes('qualification')||n.includes('qualifying')||n==='uefa european under 21 championship')return {slug:'qualif-euro-u21',label:'Qualif EURO U21',icon:'🎯',aliases:['Qualification Euro U21','Qualifications Euro U21','UEFA U21 Championship Qualification','Qualification Coupe Europe']};
-    if(/^euro u21\b/.test(n)||n.includes('european under 21 championship'))return {slug:'euro-u21',label:'Euro U21',icon:'🏆',aliases:['Euro U21','UEFA European Under-21 Championship']};
-  }
   return null;
 };
 const competitionKey=(name,gender,category)=>`${norm(name)}|${String(gender||'')}|${norm(category||'')}`;
@@ -165,7 +144,7 @@ exports.runCalendarSync=async()=>{
     return result;
   });
 
-  // Déduplique par sélection + idEvent. Les U21 et U23 restent tous les deux sous le tag ESPOIRS.
+  // Déduplique les événements de l'Équipe de France masculine A.
   const eventMap=new Map();
   for(const pack of remote){for(const [bucket,events] of [['next',pack.next],['previous',pack.previous]]){for(const e of events||[]){if(!e?.idEvent)continue;const key=`${pack.job.selection.id}:${e.idEvent}`;const prior=eventMap.get(key);if(!prior||bucket==='next')eventMap.set(key,{e,selection:pack.job.selection,teamIds:pack.job.allIds,bucket});}}}
   const eventRows=[...eventMap.values()].filter(({e,teamIds})=>franceSide(e,teamIds));

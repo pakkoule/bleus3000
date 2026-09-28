@@ -1,7 +1,7 @@
 -- ============================================================================
--- 3615 BLEUS — SUPABASE BASELINE V1.1.61.15
+-- 3615 BLEUS — SUPABASE BASELINE V1.1.62
 -- Généré le 25/09/2026 à partir du setup historique et des migrations
--- présentes dans la V1.1.61.14 CLEANUP.
+-- consolidées jusqu’à la V1.1.62.
 --
 -- USAGE : NOUVEAU PROJET SUPABASE UNIQUEMENT.
 -- Ce fichier reconstruit le schéma, les fonctions, RLS, policies, buckets et
@@ -23,7 +23,7 @@ create table if not exists public.profiles (
   email text,
   first_name text,
   username text,
-  role text not null default 'user' check (role in ('user','contributor','editor','admin','superadmin')),
+  role text not null default 'user' check (role in ('user','admin','superadmin')),
   status_text text check (status_text is null or char_length(status_text)<=90),
   presence_status text not null default 'online' check (presence_status in ('online','away','dnd','offline')),
   last_seen_at timestamptz default now(),
@@ -47,8 +47,8 @@ create trigger on_auth_user_created after insert on auth.users for each row exec
 
 create or replace function public.touch_updated_at() returns trigger language plpgsql as $$ begin new.updated_at=now(); return new; end $$;
 create or replace function public.current_role() returns text language sql stable security definer set search_path=public as $$ select coalesce((select role from public.profiles where id=auth.uid()),'user') $$;
-create or replace function public.can_edit() returns boolean language sql stable security definer set search_path=public as $$ select public.current_role() in ('editor','admin','superadmin') $$;
-create or replace function public.can_contribute() returns boolean language sql stable security definer set search_path=public as $$ select public.current_role() in ('contributor','editor','admin','superadmin') $$;
+create or replace function public.can_edit() returns boolean language sql stable security definer set search_path=public as $$ select public.current_role() in ('admin','superadmin') $$;
+create or replace function public.can_contribute() returns boolean language sql stable security definer set search_path=public as $$ select public.current_role() in ('admin','superadmin') $$;
 create or replace function public.is_admin() returns boolean language sql stable security definer set search_path=public as $$ select public.current_role() in ('admin','superadmin') $$;
 create or replace function public.is_superadmin() returns boolean language sql stable security definer set search_path=public as $$ select public.current_role()='superadmin' $$;
 
@@ -722,7 +722,7 @@ create table if not exists public.player_achievements (
 
 create or replace function public.can_edit_selections()
 returns boolean language sql stable security definer set search_path=public
-as $$ select public.current_role() in ('contributor','admin','superadmin') $$;
+as $$ select public.current_role() in ('admin','superadmin') $$;
 revoke all on function public.can_edit_selections() from public,anon;
 grant execute on function public.can_edit_selections() to authenticated,service_role;
 
@@ -2973,13 +2973,7 @@ alter table if exists public.match_appearances
 create index if not exists idx_match_appearances_shirt_number on public.match_appearances (player_id, selection_team_id, shirt_number);
 create index if not exists idx_match_appearances_jersey_id on public.match_appearances (jersey_id);
 
-create table if not exists public.user_display_preferences (
-  user_id uuid primary key,
-  flocking_style text not null default 'france-2024',
-  updated_at timestamptz not null default now()
-);
-
-comment on table public.user_display_preferences is 'Préférences d’affichage utilisateur : style de flocage global pour tout le site.';
+-- V1.1.62 : user_display_preferences retirée ; les préférences sont centralisées dans public.user_preferences.
 comment on column public.match_appearances.shirt_number is 'Numéro porté par le joueur lors de cette feuille de match, utilisé pour les vues par sélection.';
 comment on column public.match_appearances.jersey_id is 'Maillot utilisé lors de cette apparition, quand il est connu.';
 
@@ -4213,3 +4207,1485 @@ comment on table public.equipment_manufacturers is 'Référentiel des équipemen
 comment on column public.jerseys.manufacturer_id is 'Équipementier relationnel du maillot. Le champ manufacturer reste synchronisé pour compatibilité.';
 
 commit;
+
+-- ============================================================================
+-- V1.1.61.17 — FEUILLES VALIDÉES = SOURCE UNIQUE DES STATISTIQUES SPORTIVES
+-- ============================================================================
+begin;
+
+alter table public.matches
+  add column if not exists sheet_validation_status text not null default 'draft',
+  add column if not exists sheet_validated_at timestamptz,
+  add column if not exists sheet_validated_by uuid references public.profiles(id) on delete set null,
+  add column if not exists sheet_validation_revision integer not null default 0,
+  add column if not exists sheet_stadium_name text,
+  add column if not exists sheet_referee_name text,
+  add column if not exists sheet_coach_name text,
+  add column if not exists sheet_competition_name text,
+  add column if not exists sheet_competition_family_id uuid references public.competition_families(id) on delete set null;
+
+alter table public.matches drop constraint if exists matches_sheet_validation_status_check;
+alter table public.matches add constraint matches_sheet_validation_status_check
+check (sheet_validation_status = any(array['draft','needs_validation','validated']::text[]));
+create index if not exists matches_sheet_competition_family_idx on public.matches(sheet_competition_family_id);
+
+alter table public.match_appearances
+  add column if not exists id uuid default gen_random_uuid(),
+  add column if not exists player_name text,
+  add column if not exists appeared boolean not null default false,
+  add column if not exists replaced_by_player_id uuid references public.players(id) on delete set null,
+  add column if not exists replaced_by_name text;
+
+update public.match_appearances ma set player_name=p.display_name
+from public.players p
+where ma.player_id=p.id and nullif(trim(coalesce(ma.player_name,'')),'') is null;
+update public.match_appearances set id=gen_random_uuid() where id is null;
+
+alter table public.match_appearances drop constraint if exists match_appearances_pkey;
+alter table public.match_appearances alter column id set not null;
+alter table public.match_appearances alter column player_id drop not null;
+alter table public.match_appearances add constraint match_appearances_pkey primary key(id);
+alter table public.match_appearances drop constraint if exists match_appearances_match_player_key;
+alter table public.match_appearances add constraint match_appearances_match_player_key unique(match_id,player_id);
+create index if not exists match_appearances_match_idx on public.match_appearances(match_id);
+create index if not exists match_appearances_replaced_by_idx on public.match_appearances(replaced_by_player_id);
+
+create table if not exists public.validated_match_player_stats(
+  match_id uuid not null references public.matches(id) on delete cascade,
+  player_id uuid not null references public.players(id) on delete cascade,
+  selection_id uuid not null references public.selection_teams(id) on delete cascade,
+  appeared boolean not null default false,
+  starter boolean not null default false,
+  minutes integer,
+  goals integer not null default 0,
+  shirt_number integer,
+  position_id uuid references public.football_positions(id) on delete set null,
+  position_text text,
+  captain boolean not null default false,
+  result_code text,
+  validated_at timestamptz not null default now(),
+  primary key(match_id,player_id),
+  check(result_code is null or result_code=any(array['V','N','D']::text[]))
+);
+create index if not exists validated_match_player_stats_player_idx on public.validated_match_player_stats(player_id,selection_id);
+create index if not exists validated_match_player_stats_position_idx on public.validated_match_player_stats(position_id);
+alter table public.validated_match_player_stats enable row level security;
+drop policy if exists validated_match_player_stats_read on public.validated_match_player_stats;
+create policy validated_match_player_stats_read on public.validated_match_player_stats for select to anon,authenticated using(true);
+drop policy if exists validated_match_player_stats_insert on public.validated_match_player_stats;
+create policy validated_match_player_stats_insert on public.validated_match_player_stats for insert to authenticated with check(public.can_edit());
+drop policy if exists validated_match_player_stats_update on public.validated_match_player_stats;
+create policy validated_match_player_stats_update on public.validated_match_player_stats for update to authenticated using(public.can_edit()) with check(public.can_edit());
+drop policy if exists validated_match_player_stats_delete on public.validated_match_player_stats;
+create policy validated_match_player_stats_delete on public.validated_match_player_stats for delete to authenticated using(public.can_edit());
+grant select on public.validated_match_player_stats to anon,authenticated;
+grant insert,update,delete on public.validated_match_player_stats to authenticated;
+
+create or replace function public.sheet_name_key(p_value text)
+returns text language sql immutable parallel safe set search_path=public as $$
+  select regexp_replace(
+    translate(lower(trim(coalesce(p_value,''))),
+      'àáâäãåçèéêëìíîïñòóôöõùúûüýÿ',
+      'aaaaaaceeeeiiiinooooouuuuyy'),
+    '[^a-z0-9]+','','g'
+  )
+$$;
+
+create or replace function public.resolve_or_create_sheet_player(p_name text,p_gender text,p_selection_id uuid)
+returns uuid language plpgsql security definer set search_path=public as $$
+declare v_name text:=trim(coalesce(p_name,''));v_key text;v_id uuid;v_tag uuid;v_slug text;
+begin
+  if v_name='' then return null; end if;
+  v_key:=public.sheet_name_key(v_name);
+  select p.id into v_id from public.players p
+  where public.sheet_name_key(p.display_name)=v_key and (p_gender is null or p.gender=p_gender)
+  order by p.active desc,p.created_at asc limit 1;
+  if v_id is null then
+    v_id:=gen_random_uuid();
+    v_slug:=trim(both '-' from regexp_replace(lower(v_name),'[^a-z0-9]+','-','g'))||'-'||substr(v_id::text,1,8);
+    insert into public.players(id,display_name,last_name,gender,france_eligibility,active,active_source,name_normalized,profile_slug,data_status)
+    values(v_id,v_name,v_name,coalesce(nullif(p_gender,''),'M'),true,true,true,lower(v_name),v_slug,'validated_match_sheet');
+  end if;
+  if p_selection_id is not null then
+    insert into public.player_selection_stats(player_id,selection_id,selections,goals,wins,draws,losses,starts,minutes,appearance_status,data_status,updated_at)
+    values(v_id,p_selection_id,0,0,0,0,0,0,0,'called_only','sheet_rebuild_pending',now())
+    on conflict(player_id,selection_id) do nothing;
+    select team_tag_id into v_tag from public.selection_teams where id=p_selection_id;
+    if v_tag is not null then
+      insert into public.entity_tags(entity_type,entity_id,tag_id,added_by)
+      values('player',v_id,v_tag,null::uuid) on conflict(entity_type,entity_id,tag_id) do nothing;
+    end if;
+  end if;
+  return v_id;
+end
+$$;
+revoke all on function public.resolve_or_create_sheet_player(text,text,uuid) from public,anon,authenticated;
+
+create or replace function public.resolve_or_create_sheet_personnel(p_name text,p_type text)
+returns uuid language plpgsql security invoker set search_path=public as $$
+declare v_id uuid;
+begin
+  if nullif(trim(coalesce(p_name,'')),'') is null then return null; end if;
+  select id into v_id from public.personnel
+  where person_type=p_type and public.sheet_name_key(display_name)=public.sheet_name_key(p_name)
+  order by created_at limit 1;
+  if v_id is null then insert into public.personnel(display_name,person_type,active) values(trim(p_name),p_type,true) returning id into v_id; end if;
+  return v_id;
+end
+$$;
+
+create or replace function public.resolve_or_create_sheet_place(p_name text)
+returns uuid language plpgsql security invoker set search_path=public as $$
+declare v_id uuid;
+begin
+  if nullif(trim(coalesce(p_name,'')),'') is null then return null; end if;
+  select id into v_id from public.places
+  where place_type='stadium' and public.sheet_name_key(name)=public.sheet_name_key(p_name)
+  order by created_at limit 1;
+  if v_id is null then insert into public.places(place_type,name) values('stadium',trim(p_name)) returning id into v_id; end if;
+  return v_id;
+end
+$$;
+
+create or replace function public.refresh_player_from_validated_sheets(p_player_id uuid)
+returns void language plpgsql security definer set search_path=public as $$
+declare v_cap_id uuid;
+begin
+  if p_player_id is null then return; end if;
+  update public.player_selection_stats set selections=0,goals=0,wins=0,draws=0,losses=0,starts=0,minutes=0,data_status='validated_match_sheets',updated_at=now() where player_id=p_player_id;
+  insert into public.player_selection_stats(player_id,selection_id,selections,goals,wins,draws,losses,starts,minutes,appearance_status,first_year,last_year,first_selection_date,data_status,updated_at)
+  select s.player_id,s.selection_id,count(*) filter(where s.appeared)::integer,coalesce(sum(s.goals),0)::integer,
+    count(*) filter(where s.result_code='V')::integer,count(*) filter(where s.result_code='N')::integer,count(*) filter(where s.result_code='D')::integer,
+    count(*) filter(where s.starter)::integer,coalesce(sum(s.minutes),0)::integer,'capped',min(extract(year from m.match_date))::integer,max(extract(year from m.match_date))::integer,min(m.match_date)::date,'validated_match_sheets',now()
+  from public.validated_match_player_stats s join public.matches m on m.id=s.match_id
+  where s.player_id=p_player_id and s.appeared=true group by s.player_id,s.selection_id
+  on conflict(player_id,selection_id) do update set selections=excluded.selections,goals=excluded.goals,wins=excluded.wins,draws=excluded.draws,losses=excluded.losses,starts=excluded.starts,minutes=excluded.minutes,appearance_status='capped',first_year=excluded.first_year,last_year=excluded.last_year,first_selection_date=excluded.first_selection_date,data_status='validated_match_sheets',updated_at=now();
+  delete from public.player_jersey_numbers where player_id=p_player_id;
+  insert into public.player_jersey_numbers(player_id,selection_id,shirt_number,first_match_date,last_match_date,appearances_count,notes_short)
+  select s.player_id,s.selection_id,s.shirt_number,min(m.match_date)::date,max(m.match_date)::date,count(*)::integer,'Calculé depuis les feuilles de match validées.'
+  from public.validated_match_player_stats s join public.matches m on m.id=s.match_id
+  where s.player_id=p_player_id and s.appeared=true and s.shirt_number is not null group by s.player_id,s.selection_id,s.shirt_number;
+  update public.players set
+    primary_position=(select coalesce(fp.label_text,s.position_text) from public.validated_match_player_stats s left join public.football_positions fp on fp.id=s.position_id join public.matches m on m.id=s.match_id where s.player_id=p_player_id and s.appeared=true and coalesce(fp.label_text,s.position_text) is not null group by coalesce(fp.label_text,s.position_text) order by count(*) desc,min(m.match_date),coalesce(fp.label_text,s.position_text) limit 1),
+    secondary_positions=coalesce((select array_agg(x.label order by x.n desc,x.first_seen,x.label) from (select coalesce(fp.label_text,s.position_text) label,count(*) n,min(m.match_date) first_seen from public.validated_match_player_stats s left join public.football_positions fp on fp.id=s.position_id join public.matches m on m.id=s.match_id where s.player_id=p_player_id and s.appeared=true and coalesce(fp.label_text,s.position_text) is not null group by coalesce(fp.label_text,s.position_text)) x where x.label is distinct from (select coalesce(fp2.label_text,s2.position_text) from public.validated_match_player_stats s2 left join public.football_positions fp2 on fp2.id=s2.position_id join public.matches m2 on m2.id=s2.match_id where s2.player_id=p_player_id and s2.appeared=true and coalesce(fp2.label_text,s2.position_text) is not null group by coalesce(fp2.label_text,s2.position_text) order by count(*) desc,min(m2.match_date),coalesce(fp2.label_text,s2.position_text) limit 1)),array[]::text[]),updated_at=now()
+  where id=p_player_id;
+  delete from public.entity_tags et using public.tags t where et.entity_type='player' and et.entity_id=p_player_id and et.tag_id=t.id and t.reference_scope='position';
+  insert into public.entity_tags(entity_type,entity_id,tag_id,added_by)
+  select distinct 'player',s.player_id,fp.tag_id,null::uuid from public.validated_match_player_stats s join public.football_positions fp on fp.id=s.position_id where s.player_id=p_player_id and s.appeared=true on conflict(entity_type,entity_id,tag_id) do nothing;
+  select id into v_cap_id from public.achievements where slug='capitanat';
+  if v_cap_id is not null then
+    delete from public.player_achievements where player_id=p_player_id and achievement_id=v_cap_id;
+    insert into public.player_achievements(player_id,selection_id,achievement_id,achievement_value,notes_short,added_by)
+    select s.player_id,s.selection_id,v_cap_id,count(*)::integer,'Calculé depuis les feuilles de match validées.',auth.uid()
+    from public.validated_match_player_stats s where s.player_id=p_player_id and s.captain=true and s.appeared=true group by s.player_id,s.selection_id
+    on conflict(player_id,achievement_id,selection_id) do update set achievement_value=excluded.achievement_value,notes_short=excluded.notes_short;
+  end if;
+end
+$$;
+revoke all on function public.refresh_player_from_validated_sheets(uuid) from public,anon,authenticated;
+
+create or replace function public.refresh_validated_player_stats(p_player_id uuid)
+returns void language plpgsql security definer set search_path=public as $$
+begin
+  if auth.uid() is null or not public.can_edit() then raise exception 'Modification non autorisée'; end if;
+  perform public.refresh_player_from_validated_sheets(p_player_id);
+end
+$$;
+revoke all on function public.refresh_validated_player_stats(uuid) from public,anon;
+grant execute on function public.refresh_validated_player_stats(uuid) to authenticated;
+
+create or replace function public.sync_player_position_tags(p_player_id uuid)
+returns void language plpgsql security invoker set search_path=public as $$
+begin
+  if p_player_id is null then return; end if;
+  delete from public.entity_tags et using public.tags t where et.entity_type='player' and et.entity_id=p_player_id and et.tag_id=t.id and t.reference_scope='position';
+  insert into public.entity_tags(entity_type,entity_id,tag_id,added_by)
+  select distinct 'player',p_player_id,fp.tag_id,null::uuid from public.validated_match_player_stats vs join public.football_positions fp on fp.id=vs.position_id where vs.player_id=p_player_id and vs.appeared=true on conflict(entity_type,entity_id,tag_id) do nothing;
+end
+$$;
+
+create or replace function public.mark_match_sheet_child_dirty()
+returns trigger language plpgsql security invoker set search_path=public as $$
+declare v_match_id uuid;
+begin
+  v_match_id:=case when tg_op='DELETE' then old.match_id else new.match_id end;
+  update public.matches set sheet_validation_status=case when sheet_validation_status='validated' then 'needs_validation' else sheet_validation_status end,updated_at=now() where id=v_match_id;
+  return case when tg_op='DELETE' then old else new end;
+end
+$$;
+drop trigger if exists trg_match_appearances_sheet_dirty on public.match_appearances;
+create trigger trg_match_appearances_sheet_dirty after insert or update or delete on public.match_appearances for each row execute function public.mark_match_sheet_child_dirty();
+drop trigger if exists trg_match_goals_sheet_dirty on public.match_goal_events;
+create trigger trg_match_goals_sheet_dirty after insert or update or delete on public.match_goal_events for each row execute function public.mark_match_sheet_child_dirty();
+drop trigger if exists trg_match_cards_sheet_dirty on public.match_card_events;
+create trigger trg_match_cards_sheet_dirty after insert or update or delete on public.match_card_events for each row execute function public.mark_match_sheet_child_dirty();
+
+create or replace function public.mark_match_sheet_match_dirty()
+returns trigger language plpgsql security invoker set search_path=public as $$
+begin
+  if old.sheet_validation_status='validated' and (old.france_score is distinct from new.france_score or old.opponent_score is distinct from new.opponent_score or old.selection_team_id is distinct from new.selection_team_id or old.competition_id is distinct from new.competition_id or old.place_id is distinct from new.place_id or old.coach_id is distinct from new.coach_id) then new.sheet_validation_status:='needs_validation'; end if;
+  return new;
+end
+$$;
+drop trigger if exists trg_matches_sheet_dirty on public.matches;
+create trigger trg_matches_sheet_dirty before update of france_score,opponent_score,selection_team_id,competition_id,place_id,coach_id on public.matches for each row execute function public.mark_match_sheet_match_dirty();
+
+-- La V1.1.61.17 repart volontairement de zéro pour ces seuls agrégats.
+update public.player_selection_stats set selections=0,goals=0,wins=0,draws=0,losses=0,starts=0,minutes=0,data_status='sheet_rebuild_pending',updated_at=now();
+delete from public.player_jersey_numbers;
+delete from public.player_achievements where achievement_id in(select id from public.achievements where slug='capitanat');
+update public.players set primary_position=null,secondary_positions=array[]::text[],updated_at=now();
+delete from public.entity_tags et using public.tags t where et.tag_id=t.id and et.entity_type='player' and t.reference_scope='position';
+
+commit;
+
+
+-- ============================================================================
+-- V1.1.61.18 — MATCH SHEET UX / FORMATIONS / DROITS ADMIN
+-- ============================================================================
+begin;
+
+alter table public.matches add column if not exists sheet_formation text;
+alter table public.match_appearances add column if not exists lineup_slot integer;
+create index if not exists match_appearances_lineup_slot_idx on public.match_appearances(match_id,starter,lineup_slot);
+
+create or replace function public.can_edit() returns boolean
+language sql stable security definer set search_path=public as $$
+  select public.current_role() in ('admin','superadmin')
+$$;
+
+create or replace function public.can_edit_selections() returns boolean
+language sql stable security definer set search_path=public as $$
+  select public.current_role() in ('admin','superadmin')
+$$;
+
+create or replace function public.can_contribute() returns boolean
+language sql stable security definer set search_path=public as $$
+  select public.current_role() in ('admin','superadmin')
+$$;
+
+comment on column public.matches.sheet_formation is 'Formation tactique de la feuille de match, conservée pour rendu futur et statistiques de schéma.';
+comment on column public.match_appearances.lineup_slot is 'Ordre/slot de la composition, utilisé pour reconstruire le schéma tactique.';
+
+create or replace function public.mark_match_sheet_child_dirty()
+returns trigger language plpgsql security invoker set search_path=public as $$
+declare v_match_id uuid;
+begin
+  if tg_op='UPDATE' and new is not distinct from old then return new; end if;
+  v_match_id:=case when tg_op='DELETE' then old.match_id else new.match_id end;
+  update public.matches
+  set sheet_validation_status=case when sheet_validation_status='validated' then 'needs_validation' else sheet_validation_status end,updated_at=now()
+  where id=v_match_id;
+  return case when tg_op='DELETE' then old else new end;
+end
+$$;
+
+commit;
+
+
+-- V1.1.61.20 — FINALISATION FRANCE A MASCULINE UNIQUEMENT
+-- Le projet 3615 Bleus ne publie plus que la sélection FRA-A-M.
+DO $$
+DECLARE v_a uuid;
+DECLARE v_tag uuid;
+BEGIN
+  SELECT id,team_tag_id INTO v_a,v_tag FROM public.selection_teams WHERE code='FRA-A-M' LIMIT 1;
+  IF v_a IS NOT NULL THEN
+    DELETE FROM public.calendar_events WHERE NOT (gender='M' AND selection_category='A');
+    DELETE FROM public.callups WHERE NOT (gender='M' AND selection_category='A');
+    DELETE FROM public.kits WHERE NOT (gender='M' AND selection_category='A');
+    DELETE FROM public.matches WHERE NOT (gender='M' AND selection_category='A');
+    DELETE FROM public.selection_teams WHERE id<>v_a;
+    DELETE FROM public.tags WHERE reference_scope='selection' AND id<>v_tag AND upper(label_text)<>'VENU SANS JOUER';
+  END IF;
+END $$;
+
+-- V1.1.61.20 — PURGE CANONIQUE A-ONLY POUR INSTALLATION NEUVE
+-- À ce stade FRA-A-M est la seule sélection active conservée.
+BEGIN;
+
+CREATE TEMP TABLE _a_keep_players ON COMMIT DROP AS
+SELECT DISTINCT player_id AS id FROM public.player_selection_stats pss
+JOIN public.selection_teams st ON st.id=pss.selection_id AND st.code='FRA-A-M'
+UNION
+SELECT DISTINCT ma.player_id FROM public.match_appearances ma
+JOIN public.matches m ON m.id=ma.match_id
+WHERE m.gender='M' AND m.selection_category='A' AND ma.player_id IS NOT NULL
+UNION
+SELECT id FROM public.players WHERE gender='M' AND senior_a_called=true;
+
+DELETE FROM public.players WHERE id NOT IN (SELECT id FROM _a_keep_players);
+
+CREATE TEMP TABLE _a_keep_entities ON COMMIT DROP AS
+SELECT DISTINCT cet.competition_entity_id AS id
+FROM public.competition_entity_tags cet
+JOIN public.selection_teams st ON st.team_tag_id=cet.tag_id AND st.code='FRA-A-M'
+UNION
+SELECT DISTINCT c.canonical_entity_id FROM public.competitions c
+JOIN public.matches m ON m.competition_id=c.id
+WHERE m.gender='M' AND m.selection_category='A' AND c.canonical_entity_id IS NOT NULL;
+
+CREATE TEMP TABLE _a_keep_editions ON COMMIT DROP AS
+SELECT DISTINCT cet.competition_edition_id AS id
+FROM public.competition_edition_tags cet
+JOIN public.selection_teams st ON st.team_tag_id=cet.tag_id AND st.code='FRA-A-M'
+UNION
+SELECT ce.id FROM public.competition_editions ce WHERE ce.competition_entity_id IN (SELECT id FROM _a_keep_entities);
+
+CREATE TEMP TABLE _a_keep_families ON COMMIT DROP AS
+SELECT DISTINCT family_id AS id FROM public.competition_family_entities
+WHERE competition_entity_id IN (SELECT id FROM _a_keep_entities);
+
+DELETE FROM public.competitions
+WHERE NOT (gender='M' AND selection_category='A')
+  AND id NOT IN (SELECT DISTINCT competition_id FROM public.matches WHERE competition_id IS NOT NULL);
+DELETE FROM public.competition_family_entities
+WHERE competition_entity_id NOT IN (SELECT id FROM _a_keep_entities)
+   OR family_id NOT IN (SELECT id FROM _a_keep_families);
+DELETE FROM public.competition_editions WHERE id NOT IN (SELECT id FROM _a_keep_editions);
+DELETE FROM public.competition_entities WHERE id NOT IN (SELECT id FROM _a_keep_entities);
+DELETE FROM public.competition_families WHERE id NOT IN (SELECT id FROM _a_keep_families);
+
+DELETE FROM public.opponents o
+WHERE NOT EXISTS (SELECT 1 FROM public.matches m WHERE m.opponent_id=o.id);
+DELETE FROM public.places p
+WHERE NOT EXISTS (SELECT 1 FROM public.matches m WHERE m.place_id=p.id)
+  AND NOT EXISTS (SELECT 1 FROM public.callups c WHERE c.place_id=p.id);
+DELETE FROM public.personnel p
+WHERE NOT EXISTS (SELECT 1 FROM public.matches m WHERE m.coach_id=p.id)
+  AND NOT EXISTS (SELECT 1 FROM public.match_officials mo WHERE mo.person_id=p.id)
+  AND NOT EXISTS (SELECT 1 FROM public.callups c WHERE c.coach_id=p.id);
+
+DELETE FROM public.jerseys j
+WHERE NOT EXISTS (
+  SELECT 1 FROM public.jersey_selection_teams jst
+  JOIN public.selection_teams st ON st.id=jst.selection_team_id
+  WHERE jst.jersey_id=j.id AND st.code='FRA-A-M'
+)
+AND NOT EXISTS (
+  SELECT 1 FROM public.match_jerseys mj
+  JOIN public.matches m ON m.id=mj.match_id
+  WHERE mj.jersey_id=j.id AND m.gender='M' AND m.selection_category='A'
+);
+
+DELETE FROM public.broadcast_channels bc
+WHERE NOT EXISTS (
+  SELECT 1 FROM public.match_broadcast_channels mbc
+  JOIN public.matches m ON m.id=mbc.match_id
+  WHERE mbc.broadcast_channel_id=bc.id AND m.gender='M' AND m.selection_category='A'
+);
+
+DELETE FROM public.player_match_performances pmp
+WHERE NOT EXISTS (SELECT 1 FROM public.players p WHERE p.id=pmp.player_id);
+DELETE FROM public.ladder_snapshots ls
+WHERE NOT EXISTS (SELECT 1 FROM public.players p WHERE p.id=ls.player_id);
+DELETE FROM public.entity_sources es
+WHERE (es.entity_type='player' AND NOT EXISTS (SELECT 1 FROM public.players p WHERE p.id=es.entity_id))
+   OR (es.entity_type='match' AND NOT EXISTS (SELECT 1 FROM public.matches m WHERE m.id=es.entity_id))
+   OR (es.entity_type='personnel' AND NOT EXISTS (SELECT 1 FROM public.personnel p WHERE p.id=es.entity_id))
+   OR (es.entity_type='selection' AND NOT EXISTS (SELECT 1 FROM public.selection_teams st WHERE st.id=es.entity_id));
+DELETE FROM public.entity_sources WHERE field_scope='France Espoirs · statistiques';
+DELETE FROM public.sources s WHERE NOT EXISTS (SELECT 1 FROM public.entity_sources es WHERE es.source_id=s.id);
+
+UPDATE public.players
+SET external_ids=external_ids-'u17_source_id'-'u17_source_url'-'espoirs_player_id'
+WHERE external_ids ? 'u17_source_id' OR external_ids ? 'u17_source_url' OR external_ids ? 'espoirs_player_id';
+
+COMMIT;
+
+-- ============================================================
+-- V1.1.61.22 — RASSEMBLEMENTS FRANCE A
+-- ============================================================
+BEGIN;
+
+ALTER TABLE public.callups
+  ADD COLUMN IF NOT EXISTS selection_team_id uuid REFERENCES public.selection_teams(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'planned',
+  ADD COLUMN IF NOT EXISTS calendar_visible boolean NOT NULL DEFAULT true,
+  ADD COLUMN IF NOT EXISTS source_url text;
+
+ALTER TABLE public.callups DROP CONSTRAINT IF EXISTS callups_status_check;
+ALTER TABLE public.callups ADD CONSTRAINT callups_status_check
+CHECK (status = ANY(ARRAY['planned','announced','closed','cancelled']::text[]));
+
+UPDATE public.callups
+SET selection_team_id=(SELECT id FROM public.selection_teams WHERE code='FRA-A-M' LIMIT 1)
+WHERE selection_team_id IS NULL AND gender='M' AND selection_category='A';
+
+CREATE INDEX IF NOT EXISTS callups_selection_team_idx ON public.callups(selection_team_id);
+CREATE INDEX IF NOT EXISTS callups_announcement_date_idx ON public.callups(announcement_date);
+CREATE INDEX IF NOT EXISTS callups_start_date_idx ON public.callups(start_date);
+
+ALTER TABLE public.callup_players
+  ADD COLUMN IF NOT EXISTS sort_order integer NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS notes_short text,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
+
+ALTER TABLE public.callup_players DROP CONSTRAINT IF EXISTS callup_players_status_check;
+ALTER TABLE public.callup_players ADD CONSTRAINT callup_players_status_check
+CHECK (status = ANY(ARRAY['called','withdrawn','replacement','reserve']::text[]));
+
+CREATE INDEX IF NOT EXISTS callup_players_player_idx ON public.callup_players(player_id);
+CREATE INDEX IF NOT EXISTS callup_players_status_idx ON public.callup_players(callup_id,status);
+
+CREATE TABLE IF NOT EXISTS public.callup_matches(
+  callup_id uuid NOT NULL REFERENCES public.callups(id) ON DELETE CASCADE,
+  match_id uuid NOT NULL REFERENCES public.matches(id) ON DELETE CASCADE,
+  sort_order integer NOT NULL DEFAULT 0,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY(callup_id,match_id),
+  UNIQUE(match_id)
+);
+
+ALTER TABLE public.callup_matches ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS callup_matches_read ON public.callup_matches;
+CREATE POLICY callup_matches_read ON public.callup_matches
+FOR SELECT TO anon,authenticated USING(true);
+DROP POLICY IF EXISTS callup_matches_insert ON public.callup_matches;
+CREATE POLICY callup_matches_insert ON public.callup_matches
+FOR INSERT TO authenticated WITH CHECK((SELECT public.can_edit()));
+DROP POLICY IF EXISTS callup_matches_update ON public.callup_matches;
+CREATE POLICY callup_matches_update ON public.callup_matches
+FOR UPDATE TO authenticated USING((SELECT public.can_edit())) WITH CHECK((SELECT public.can_edit()));
+DROP POLICY IF EXISTS callup_matches_delete ON public.callup_matches;
+CREATE POLICY callup_matches_delete ON public.callup_matches
+FOR DELETE TO authenticated USING((SELECT public.can_edit()));
+
+GRANT SELECT ON public.callup_matches TO anon,authenticated;
+GRANT INSERT,UPDATE,DELETE ON public.callup_matches TO authenticated;
+
+CREATE INDEX IF NOT EXISTS callup_matches_match_idx ON public.callup_matches(match_id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS calendar_events_callup_unique
+ON public.calendar_events(callup_id)
+WHERE callup_id IS NOT NULL;
+
+CREATE OR REPLACE FUNCTION public.sync_gathering_calendar_event()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path=public
+AS $$
+DECLARE
+  v_date date;
+  v_event_ts timestamptz;
+  v_subtitle text;
+BEGIN
+  DELETE FROM public.calendar_events WHERE callup_id=new.id;
+  IF coalesce(new.calendar_visible,true)=false OR new.status='cancelled' THEN RETURN new; END IF;
+  v_date:=coalesce(new.announcement_date,new.start_date,new.end_date);
+  IF v_date IS NULL THEN RETURN new; END IF;
+  v_event_ts := (v_date::timestamp + time '12:00') AT TIME ZONE 'Europe/Paris';
+  v_subtitle := CASE WHEN new.announcement_date IS NOT NULL THEN 'Annonce de la liste · France A masculine' ELSE 'Rassemblement · France A masculine' END;
+  INSERT INTO public.calendar_events(event_date,event_type,title,subtitle,gender,selection_category,callup_id,competition_id,place_id,updated_at)
+  VALUES(v_event_ts,'gathering',new.title,v_subtitle,'M','A',new.id,new.competition_id,new.place_id,now());
+  RETURN new;
+END
+$$;
+
+DROP TRIGGER IF EXISTS trg_callups_calendar_sync ON public.callups;
+CREATE TRIGGER trg_callups_calendar_sync
+AFTER INSERT OR UPDATE OF title,announcement_date,start_date,end_date,status,calendar_visible,competition_id,place_id
+ON public.callups
+FOR EACH ROW EXECUTE FUNCTION public.sync_gathering_calendar_event();
+
+COMMIT;
+
+
+-- ============================================================
+-- V1.1.61.23 — Photo en match des Internationaux A
+-- ============================================================
+alter table public.players
+  add column if not exists action_photo_path text;
+comment on column public.players.action_photo_path is
+  'Photo du joueur en match, utilisée comme fond visuel de la fiche joueur déployée.';
+
+-- ============================================================
+-- V1.1.61.24 — SMART SEARCH · indexation et sémantique des buts
+-- ============================================================
+create index if not exists match_goal_events_player_match_idx
+  on public.match_goal_events(player_id,match_id);
+create index if not exists match_goal_events_assist_match_idx
+  on public.match_goal_events(assist_player_id,match_id);
+create index if not exists match_card_events_player_match_idx
+  on public.match_card_events(player_id,match_id);
+create index if not exists match_appearances_player_match_idx
+  on public.match_appearances(player_id,match_id);
+create index if not exists match_appearances_replacement_match_idx
+  on public.match_appearances(replaced_by_player_id,match_id);
+
+alter table public.match_goal_events
+  add column if not exists goal_type text,
+  add column if not exists body_part text,
+  add column if not exists is_penalty boolean not null default false,
+  add column if not exists is_own_goal boolean not null default false;
+
+alter table public.match_goal_events drop constraint if exists match_goal_events_goal_type_check;
+alter table public.match_goal_events add constraint match_goal_events_goal_type_check
+check (goal_type is null or goal_type = any(array['open_play','header','free_kick','penalty','other']::text[]));
+
+alter table public.match_goal_events drop constraint if exists match_goal_events_body_part_check;
+alter table public.match_goal_events add constraint match_goal_events_body_part_check
+check (body_part is null or body_part = any(array['right_foot','left_foot','head','other']::text[]));
+
+create index if not exists match_goal_events_type_idx on public.match_goal_events(goal_type);
+create index if not exists match_goal_events_body_part_idx on public.match_goal_events(body_part);
+
+comment on column public.match_goal_events.goal_type is 'Type de but : jeu, tête, coup franc, penalty ou autre.';
+comment on column public.match_goal_events.body_part is 'Partie du corps utilisée pour marquer.';
+
+-- ============================================================
+-- V1.1.61.25 — Mode Formation / schémas tactiques
+-- ============================================================
+create table if not exists public.tactical_formations(
+  id uuid primary key default gen_random_uuid(),
+  slug text not null unique,
+  name text not null,
+  description text,
+  is_default boolean not null default false,
+  is_active boolean not null default true,
+  is_system boolean not null default false,
+  sort_order integer not null default 0,
+  created_by uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.tactical_formation_slots(
+  id uuid primary key default gen_random_uuid(),
+  formation_id uuid not null references public.tactical_formations(id) on delete cascade,
+  slot_number integer not null check(slot_number between 1 and 11),
+  position_id uuid not null references public.football_positions(id) on delete restrict,
+  x numeric(5,2) not null check(x between 0 and 100),
+  y numeric(5,2) not null check(y between 0 and 100),
+  label text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique(formation_id,slot_number)
+);
+
+alter table public.matches
+  add column if not exists sheet_formation_id uuid references public.tactical_formations(id) on delete set null,
+  add column if not exists sheet_formation_snapshot jsonb;
+
+create index if not exists matches_sheet_formation_id_idx on public.matches(sheet_formation_id);
+create index if not exists tactical_formation_slots_formation_idx on public.tactical_formation_slots(formation_id,slot_number);
+
+alter table public.tactical_formations enable row level security;
+alter table public.tactical_formation_slots enable row level security;
+
+drop policy if exists tactical_formations_read on public.tactical_formations;
+create policy tactical_formations_read on public.tactical_formations for select to anon,authenticated using(true);
+drop policy if exists tactical_formations_insert on public.tactical_formations;
+create policy tactical_formations_insert on public.tactical_formations for insert to authenticated with check((select public.can_edit()));
+drop policy if exists tactical_formations_update on public.tactical_formations;
+create policy tactical_formations_update on public.tactical_formations for update to authenticated using((select public.can_edit())) with check((select public.can_edit()));
+drop policy if exists tactical_formations_delete on public.tactical_formations;
+create policy tactical_formations_delete on public.tactical_formations for delete to authenticated using((select public.can_edit()));
+
+drop policy if exists tactical_formation_slots_read on public.tactical_formation_slots;
+create policy tactical_formation_slots_read on public.tactical_formation_slots for select to anon,authenticated using(true);
+drop policy if exists tactical_formation_slots_insert on public.tactical_formation_slots;
+create policy tactical_formation_slots_insert on public.tactical_formation_slots for insert to authenticated with check((select public.can_edit()));
+drop policy if exists tactical_formation_slots_update on public.tactical_formation_slots;
+create policy tactical_formation_slots_update on public.tactical_formation_slots for update to authenticated using((select public.can_edit())) with check((select public.can_edit()));
+drop policy if exists tactical_formation_slots_delete on public.tactical_formation_slots;
+create policy tactical_formation_slots_delete on public.tactical_formation_slots for delete to authenticated using((select public.can_edit()));
+
+grant select on public.tactical_formations,public.tactical_formation_slots to anon,authenticated;
+grant insert,update,delete on public.tactical_formations,public.tactical_formation_slots to authenticated;
+
+insert into public.tactical_formations(slug,name,is_default,is_active,is_system,sort_order)
+values
+ ('4-3-3','4-3-3',true,true,true,10),
+ ('4-4-2','4-4-2',false,true,true,20),
+ ('4-2-3-1','4-2-3-1',false,true,true,30),
+ ('3-5-2','3-5-2',false,true,true,40),
+ ('3-4-3','3-4-3',false,true,true,50),
+ ('5-3-2','5-3-2',false,true,true,60),
+ ('4-1-4-1','4-1-4-1',false,true,true,70)
+on conflict(slug) do update set name=excluded.name,is_active=true,is_system=true,sort_order=excluded.sort_order;
+
+with seed(formation_slug,slot_number,position_slug,x,y) as (
+values
+ ('4-3-3',1,'gardien',50,92),('4-3-3',2,'lateral-gauche',10,73),('4-3-3',3,'defenseur-central',36,73),('4-3-3',4,'defenseur-central',64,73),('4-3-3',5,'lateral-droit',90,73),('4-3-3',6,'milieu-central-8',19,49),('4-3-3',7,'milieu-defensif-6',50,49),('4-3-3',8,'milieu-central-8',81,49),('4-3-3',9,'ailier-gauche',19,24),('4-3-3',10,'avant-centre-9',50,24),('4-3-3',11,'ailier-droit',81,24),
+ ('4-4-2',1,'gardien',50,92),('4-4-2',2,'lateral-gauche',10,73),('4-4-2',3,'defenseur-central',36,73),('4-4-2',4,'defenseur-central',64,73),('4-4-2',5,'lateral-droit',90,73),('4-4-2',6,'demi-gauche',10,49),('4-4-2',7,'milieu-central-8',36,49),('4-4-2',8,'milieu-central-8',64,49),('4-4-2',9,'demi-droit',90,49),('4-4-2',10,'avant-centre-9',32,24),('4-4-2',11,'deuxieme-attaquant',68,24),
+ ('4-2-3-1',1,'gardien',50,92),('4-2-3-1',2,'lateral-gauche',10,76),('4-2-3-1',3,'defenseur-central',36,76),('4-2-3-1',4,'defenseur-central',64,76),('4-2-3-1',5,'lateral-droit',90,76),('4-2-3-1',6,'milieu-defensif-6',32,59),('4-2-3-1',7,'milieu-defensif-6',68,59),('4-2-3-1',8,'ailier-gauche',19,41),('4-2-3-1',9,'milieu-offensif-axial-10',50,41),('4-2-3-1',10,'ailier-droit',81,41),('4-2-3-1',11,'avant-centre-9',50,21),
+ ('3-5-2',1,'gardien',50,92),('3-5-2',2,'defenseur-central',19,73),('3-5-2',3,'libero',50,73),('3-5-2',4,'defenseur-central',81,73),('3-5-2',5,'piston-gauche',9,49),('3-5-2',6,'milieu-central-8',29.5,49),('3-5-2',7,'milieu-defensif-6',50,49),('3-5-2',8,'milieu-central-8',70.5,49),('3-5-2',9,'piston-droit',91,49),('3-5-2',10,'avant-centre-9',32,24),('3-5-2',11,'deuxieme-attaquant',68,24),
+ ('3-4-3',1,'gardien',50,92),('3-4-3',2,'defenseur-central',19,73),('3-4-3',3,'libero',50,73),('3-4-3',4,'defenseur-central',81,73),('3-4-3',5,'piston-gauche',10,49),('3-4-3',6,'milieu-central-8',36,49),('3-4-3',7,'milieu-central-8',64,49),('3-4-3',8,'piston-droit',90,49),('3-4-3',9,'ailier-gauche',19,24),('3-4-3',10,'avant-centre-9',50,24),('3-4-3',11,'ailier-droit',81,24),
+ ('5-3-2',1,'gardien',50,92),('5-3-2',2,'lateral-gauche',9,73),('5-3-2',3,'defenseur-central',29.5,73),('5-3-2',4,'libero',50,73),('5-3-2',5,'defenseur-central',70.5,73),('5-3-2',6,'lateral-droit',91,73),('5-3-2',7,'milieu-central-8',19,49),('5-3-2',8,'milieu-defensif-6',50,49),('5-3-2',9,'milieu-central-8',81,49),('5-3-2',10,'avant-centre-9',32,24),('5-3-2',11,'deuxieme-attaquant',68,24),
+ ('4-1-4-1',1,'gardien',50,92),('4-1-4-1',2,'lateral-gauche',10,76),('4-1-4-1',3,'defenseur-central',36,76),('4-1-4-1',4,'defenseur-central',64,76),('4-1-4-1',5,'lateral-droit',90,76),('4-1-4-1',6,'milieu-defensif-6',50,59),('4-1-4-1',7,'demi-gauche',10,41),('4-1-4-1',8,'milieu-central-8',36,41),('4-1-4-1',9,'milieu-central-8',64,41),('4-1-4-1',10,'demi-droit',90,41),('4-1-4-1',11,'avant-centre-9',50,21)
+)
+insert into public.tactical_formation_slots(formation_id,slot_number,position_id,x,y,label)
+select f.id,s.slot_number,p.id,s.x,s.y,p.label_text
+from seed s
+join public.tactical_formations f on f.slug=s.formation_slug
+join public.football_positions p on p.slug=s.position_slug
+on conflict(formation_id,slot_number) do update set position_id=excluded.position_id,x=excluded.x,y=excluded.y,label=excluded.label,updated_at=now();
+create unique index if not exists tactical_formations_one_default_idx on public.tactical_formations ((is_default)) where is_default=true;
+
+-- 3615 Bleus V1.1.61.28 — tags Compétitions canoniques : ENTITÉ → ÉDITION
+-- Règle métier :
+--   • le tag ENTITÉ est le seul tag compétition visible sur les tuiles ;
+--   • le tag ÉDITION est le lien technique précis pour matchs, feuilles de match, maillots, filtres et statistiques ;
+--   • une édition hérite obligatoirement de son entité via tags.parent_tag_id ;
+--   • les anciens tags compétition doublons sont réaffectés vers le tag canonique puis désactivés.
+
+begin;
+
+alter table public.tags
+  add column if not exists competition_tag_level text,
+  add column if not exists parent_tag_id uuid references public.tags(id) on delete set null;
+
+alter table public.tags drop constraint if exists tags_competition_tag_level_check;
+alter table public.tags add constraint tags_competition_tag_level_check
+  check (competition_tag_level is null or competition_tag_level in ('entity','edition'));
+create index if not exists tags_parent_tag_idx on public.tags(parent_tag_id);
+create index if not exists tags_competition_level_idx on public.tags(competition_tag_level) where competition_tag_level is not null;
+
+alter table public.competition_editions
+  add column if not exists edition_tag_id uuid references public.tags(id) on delete set null;
+create unique index if not exists competition_editions_edition_tag_uidx
+  on public.competition_editions(edition_tag_id) where edition_tag_id is not null;
+
+alter table public.tag_reference_links drop constraint if exists tag_reference_links_reference_type_check;
+alter table public.tag_reference_links add constraint tag_reference_links_reference_type_check
+check (reference_type in ('selection','competition','competition_entity','competition_edition','opponent','place','personnel','equipment','bibliography','match','callup','broadcast'));
+
+create or replace function public.competition_tag_key(p_value text) returns text
+language sql immutable parallel safe set search_path=public as $$
+  select regexp_replace(
+    translate(lower(coalesce(p_value,'')),'àáâäãåçèéêëìíîïñòóôöõùúûüýÿ','aaaaaaceeeeiiiinooooouuuuyy'),
+    '[^a-z0-9]+','','g'
+  )
+$$;
+
+-- Rapproche d'abord l'ancienne couche competitions avec les entités canoniques.
+-- Priorité au tag déjà partagé, puis au nom / aux alias normalisés.
+with candidates as (
+  select c.id as competition_id,ce.id as entity_id,
+         row_number() over(partition by c.id order by
+           case when c.tag_id=ce.competition_tag_id then 0
+                when public.competition_tag_key(c.name)=public.competition_tag_key(ce.name) then 1
+                else 2 end,
+           ce.created_at,ce.id) as rn
+  from public.competitions c
+  join public.competition_entities ce
+    on (c.gender is null or ce.gender is null or c.gender=ce.gender)
+   and (
+     c.tag_id=ce.competition_tag_id
+     or public.competition_tag_key(c.name)=public.competition_tag_key(ce.name)
+     or exists(select 1 from unnest(coalesce(ce.aliases,array[]::text[])) a where public.competition_tag_key(c.name)=public.competition_tag_key(a))
+   )
+  where c.canonical_entity_id is null
+)
+update public.competitions c
+set canonical_entity_id=x.entity_id,updated_at=now()
+from candidates x
+where x.rn=1 and c.id=x.competition_id;
+
+-- Une ancienne compétition peut déjà représenter une édition qui n'existe pas encore dans le catalogue
+-- (ex. "2026-2027"). On crée l'édition canonique à partir de la première année rencontrée.
+with legacy_years as (
+  select c.id,c.canonical_entity_id,c.edition,
+         coalesce(
+           nullif(substring(coalesce(c.edition,'') from '((?:19|20)[0-9]{2})'),'')::integer,
+           extract(year from c.start_date)::integer,
+           extract(year from min(m.match_date))::integer
+         ) as edition_year
+  from public.competitions c
+  left join public.matches m on m.competition_id=c.id
+  where c.canonical_entity_id is not null
+  group by c.id,c.canonical_entity_id,c.edition,c.start_date
+)
+insert into public.competition_editions(competition_entity_id,edition_year,edition_label,notes)
+select y.canonical_entity_id,y.edition_year,coalesce(nullif(y.edition,''),y.edition_year::text),'Édition raccordée automatiquement depuis la couche historique competitions.'
+from legacy_years y
+where y.edition_year is not null
+on conflict(competition_entity_id,edition_year) do nothing;
+
+with legacy_years as (
+  select c.id,c.canonical_entity_id,
+         coalesce(
+           nullif(substring(coalesce(c.edition,'') from '((?:19|20)[0-9]{2})'),'')::integer,
+           extract(year from c.start_date)::integer,
+           extract(year from min(m.match_date))::integer
+         ) as edition_year
+  from public.competitions c
+  left join public.matches m on m.competition_id=c.id
+  where c.canonical_entity_id is not null
+  group by c.id,c.canonical_entity_id,c.edition,c.start_date
+)
+update public.competitions c
+set canonical_edition_id=ed.id,updated_at=now()
+from legacy_years y
+join public.competition_editions ed on ed.competition_entity_id=y.canonical_entity_id and ed.edition_year=y.edition_year
+where c.id=y.id and c.canonical_edition_id is distinct from ed.id;
+
+-- Les matchs historiques héritent immédiatement de l'édition canonique de leur ancienne compétition.
+update public.matches m
+set competition_edition_id=c.canonical_edition_id,updated_at=now()
+from public.competitions c
+where m.competition_id=c.id
+  and c.canonical_edition_id is not null
+  and m.competition_edition_id is distinct from c.canonical_edition_id;
+
+-- Les tags portés par les entités canoniques deviennent explicitement des tags ENTITÉ.
+update public.tags t
+set reference_scope='competition', competition_tag_level='entity', parent_tag_id=null, is_active=true, updated_at=now()
+from public.competition_entities ce
+where ce.competition_tag_id=t.id
+  and (t.reference_scope is distinct from 'competition' or t.competition_tag_level is distinct from 'entity' or t.parent_tag_id is not null or t.is_active is distinct from true);
+
+-- Table temporaire de fusion : vieux tag compétition -> tag ENTITÉ canonique.
+create temp table _competition_tag_merge(old_id uuid primary key,new_id uuid not null) on commit drop;
+
+insert into _competition_tag_merge(old_id,new_id)
+select distinct c.tag_id,ce.competition_tag_id
+from public.competitions c
+join public.competition_entities ce on ce.id=c.canonical_entity_id
+where c.tag_id is not null and c.tag_id<>ce.competition_tag_id
+on conflict(old_id) do update set new_id=excluded.new_id;
+
+-- Complète la fusion pour les doublons ayant le même libellé / alias que l'entité canonique.
+insert into _competition_tag_merge(old_id,new_id)
+select distinct dup.id,ce.competition_tag_id
+from public.tags dup
+join public.competition_entities ce on dup.id<>ce.competition_tag_id
+join public.tags canon on canon.id=ce.competition_tag_id
+where dup.competition_tag_level is null
+  and (
+    public.competition_tag_key(dup.label_text)=public.competition_tag_key(canon.label_text)
+    or public.competition_tag_key(dup.label_text)=public.competition_tag_key(ce.name)
+    or exists(select 1 from unnest(coalesce(ce.aliases,array[]::text[])) a where public.competition_tag_key(a)=public.competition_tag_key(dup.label_text))
+    or exists(select 1 from unnest(coalesce(dup.aliases,array[]::text[])) a where public.competition_tag_key(a)=public.competition_tag_key(ce.name))
+    or exists(select 1 from unnest(coalesce(dup.aliases,array[]::text[])) da cross join unnest(coalesce(ce.aliases,array[]::text[])) ca where public.competition_tag_key(da)=public.competition_tag_key(ca))
+  )
+on conflict(old_id) do nothing;
+
+-- Réécrit les tags génériques déjà posés sur des tuiles sans perdre la relation.
+insert into public.entity_tags(entity_type,entity_id,tag_id,added_by,created_at)
+select et.entity_type,et.entity_id,m.new_id,et.added_by,et.created_at
+from public.entity_tags et join _competition_tag_merge m on m.old_id=et.tag_id
+on conflict(entity_type,entity_id,tag_id) do nothing;
+delete from public.entity_tags et using _competition_tag_merge m where et.tag_id=m.old_id;
+
+-- Réécrit les associations Tags ↔ Référentiels.
+insert into public.tag_reference_links(tag_id,reference_type,reference_id,relation_kind,created_by,created_at)
+select m.new_id,l.reference_type,l.reference_id,l.relation_kind,l.created_by,l.created_at
+from public.tag_reference_links l join _competition_tag_merge m on m.old_id=l.tag_id
+on conflict(tag_id,reference_type,reference_id,relation_kind) do nothing;
+delete from public.tag_reference_links l using _competition_tag_merge m where l.tag_id=m.old_id;
+
+-- L'ancienne couche public.competitions pointe toujours vers le tag ENTITÉ canonique.
+update public.competitions c
+set tag_id=ce.competition_tag_id,updated_at=now()
+from public.competition_entities ce
+where c.canonical_entity_id=ce.id and c.tag_id is distinct from ce.competition_tag_id;
+
+-- Les overrides historiques de matchs ne doivent plus ressusciter un doublon.
+update public.matches m
+set manual_overrides=jsonb_set(coalesce(m.manual_overrides,'{}'::jsonb),'{competition_tag_id}',to_jsonb(ce.competition_tag_id::text),true),updated_at=now()
+from public.competitions c
+join public.competition_entities ce on ce.id=c.canonical_entity_id
+where m.competition_id=c.id
+  and coalesce(m.manual_overrides,'{}'::jsonb) ? 'competition_tag_id'
+  and (m.manual_overrides->>'competition_tag_id') is distinct from ce.competition_tag_id::text;
+
+-- Garantit aussi les liens de l'ancienne couche vers le tag canonique.
+delete from public.tag_reference_links l
+using public.competitions c,public.competition_entities ce
+where l.reference_type='competition' and l.reference_id=c.id and c.canonical_entity_id=ce.id and l.tag_id<>ce.competition_tag_id;
+insert into public.tag_reference_links(tag_id,reference_type,reference_id,relation_kind,created_by)
+select ce.competition_tag_id,'competition',c.id,'membership',null::uuid
+from public.competitions c join public.competition_entities ce on ce.id=c.canonical_entity_id
+on conflict(tag_id,reference_type,reference_id,relation_kind) do nothing;
+
+-- Métadonnées de liaison des tags ENTITÉ dans le gestionnaire de tags.
+insert into public.tag_reference_links(tag_id,reference_type,reference_id,relation_kind,created_by)
+select ce.competition_tag_id,'competition_entity',ce.id,'membership',null::uuid
+from public.competition_entities ce
+on conflict(tag_id,reference_type,reference_id,relation_kind) do nothing;
+
+-- Création déterministe d'un tag ÉDITION pour chaque édition canonique.
+insert into public.tags(
+  slug,kind,label_text,icon_text,aliases,appearance,color_start,color_end,gradient_colors,text_color,border_color,
+  gradient_angle,border_radius,border_width,created_by,is_active,reference_scope,competition_tag_level,parent_tag_id
+)
+select
+  left('competition-edition-'||ce.slug||'-'||ed.edition_year::text,96),
+  'tag',
+  left(ce.name||' '||coalesce(nullif(ed.edition_label,''),ed.edition_year::text),40),
+  coalesce(nullif(parent.icon_text,''),'🏆'),
+  array[ce.name||' '||coalesce(nullif(ed.edition_label,''),ed.edition_year::text),ce.name,ed.edition_year::text],
+  parent.appearance,parent.color_start,parent.color_end,parent.gradient_colors,parent.text_color,parent.border_color,
+  parent.gradient_angle,parent.border_radius,parent.border_width,null::uuid,true,'competition','edition',ce.competition_tag_id
+from public.competition_editions ed
+join public.competition_entities ce on ce.id=ed.competition_entity_id
+join public.tags parent on parent.id=ce.competition_tag_id
+on conflict(slug) do update set
+  reference_scope='competition',competition_tag_level='edition',parent_tag_id=excluded.parent_tag_id,is_active=true,
+  aliases=(select coalesce(array_agg(distinct v order by v),array[]::text[]) from unnest(coalesce(public.tags.aliases,array[]::text[])||excluded.aliases) v),
+  updated_at=now();
+
+update public.competition_editions ed
+set edition_tag_id=t.id,updated_at=now()
+from public.competition_entities ce, public.tags t
+where ed.competition_entity_id=ce.id
+  and t.slug=left('competition-edition-'||ce.slug||'-'||ed.edition_year::text,96)
+  and ed.edition_tag_id is distinct from t.id;
+
+insert into public.tag_reference_links(tag_id,reference_type,reference_id,relation_kind,created_by)
+select ed.edition_tag_id,'competition_edition',ed.id,'membership',null::uuid
+from public.competition_editions ed where ed.edition_tag_id is not null
+on conflict(tag_id,reference_type,reference_id,relation_kind) do nothing;
+
+-- À l'avenir, toute nouvelle édition reçoit automatiquement son tag ÉDITION hérité du tag ENTITÉ.
+create or replace function public.assign_competition_edition_tag() returns trigger
+language plpgsql security definer set search_path=public as $$
+declare
+  v_entity public.competition_entities%rowtype;
+  v_parent public.tags%rowtype;
+  v_tag uuid;
+  v_slug text;
+  v_full_label text;
+begin
+  select * into v_entity from public.competition_entities where id=new.competition_entity_id;
+  if v_entity.id is null then return new; end if;
+  select * into v_parent from public.tags where id=v_entity.competition_tag_id;
+  if v_parent.id is null then return new; end if;
+  v_slug:=left('competition-edition-'||v_entity.slug||'-'||new.edition_year::text,96);
+  v_full_label:=v_entity.name||' '||coalesce(nullif(new.edition_label,''),new.edition_year::text);
+  insert into public.tags(slug,kind,label_text,icon_text,aliases,appearance,color_start,color_end,gradient_colors,text_color,border_color,gradient_angle,border_radius,border_width,created_by,is_active,reference_scope,competition_tag_level,parent_tag_id)
+  values(v_slug,'tag',left(v_full_label,40),coalesce(nullif(v_parent.icon_text,''),'🏆'),array[v_full_label,v_entity.name,new.edition_year::text],v_parent.appearance,v_parent.color_start,v_parent.color_end,v_parent.gradient_colors,v_parent.text_color,v_parent.border_color,v_parent.gradient_angle,v_parent.border_radius,v_parent.border_width,null,true,'competition','edition',v_entity.competition_tag_id)
+  on conflict(slug) do update set reference_scope='competition',competition_tag_level='edition',parent_tag_id=v_entity.competition_tag_id,is_active=true,updated_at=now()
+  returning id into v_tag;
+  new.edition_tag_id:=v_tag;
+  return new;
+end $$;
+
+drop trigger if exists trg_competition_editions_assign_tag on public.competition_editions;
+create trigger trg_competition_editions_assign_tag
+before insert or update of competition_entity_id,edition_year,edition_label on public.competition_editions
+for each row execute function public.assign_competition_edition_tag();
+
+create or replace function public.sync_competition_tag_reference_links() returns trigger
+language plpgsql security definer set search_path=public as $$
+begin
+  if tg_table_name='competition_entities' then
+    update public.tags set reference_scope='competition',competition_tag_level='entity',parent_tag_id=null,is_active=true,updated_at=now() where id=new.competition_tag_id;
+    insert into public.tag_reference_links(tag_id,reference_type,reference_id,relation_kind,created_by)
+    values(new.competition_tag_id,'competition_entity',new.id,'membership',null)
+    on conflict(tag_id,reference_type,reference_id,relation_kind) do nothing;
+  else
+    if new.edition_tag_id is not null then
+      insert into public.tag_reference_links(tag_id,reference_type,reference_id,relation_kind,created_by)
+      values(new.edition_tag_id,'competition_edition',new.id,'membership',null)
+      on conflict(tag_id,reference_type,reference_id,relation_kind) do nothing;
+    end if;
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists trg_competition_entities_tag_link on public.competition_entities;
+create trigger trg_competition_entities_tag_link after insert or update of competition_tag_id on public.competition_entities
+for each row execute function public.sync_competition_tag_reference_links();
+drop trigger if exists trg_competition_editions_tag_link on public.competition_editions;
+create trigger trg_competition_editions_tag_link after insert or update of edition_tag_id on public.competition_editions
+for each row execute function public.sync_competition_tag_reference_links();
+
+-- Ces fonctions sont réservées au moteur de triggers : pas d'appel direct via Data API.
+revoke execute on function public.assign_competition_edition_tag() from public,anon,authenticated;
+revoke execute on function public.sync_competition_tag_reference_links() from public,anon,authenticated;
+
+-- Empêche l'ancienne table competitions de réintroduire un tag différent de celui de son entité canonique.
+create or replace function public.sync_legacy_competition_entity_tag() returns trigger
+language plpgsql security invoker set search_path=public as $$
+declare v_tag uuid;
+begin
+  if new.canonical_entity_id is not null then
+    select competition_tag_id into v_tag from public.competition_entities where id=new.canonical_entity_id;
+    if v_tag is not null then new.tag_id:=v_tag; end if;
+  end if;
+  return new;
+end $$;
+drop trigger if exists trg_competitions_sync_entity_tag on public.competitions;
+create trigger trg_competitions_sync_entity_tag
+before insert or update of canonical_entity_id,tag_id on public.competitions
+for each row execute function public.sync_legacy_competition_entity_tag();
+
+-- Relation Maillots ↔ ÉDITIONS. L'affichage remontera ensuite automatiquement au tag ENTITÉ.
+create table if not exists public.jersey_competition_editions(
+  jersey_id uuid not null references public.jerseys(id) on delete cascade,
+  competition_edition_id uuid not null references public.competition_editions(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key(jersey_id,competition_edition_id)
+);
+create index if not exists jersey_competition_editions_edition_idx on public.jersey_competition_editions(competition_edition_id);
+alter table public.jersey_competition_editions enable row level security;
+drop policy if exists jersey_competition_editions_public_read on public.jersey_competition_editions;
+create policy jersey_competition_editions_public_read on public.jersey_competition_editions for select to anon,authenticated using(true);
+drop policy if exists jersey_competition_editions_edit on public.jersey_competition_editions;
+drop policy if exists jersey_competition_editions_insert on public.jersey_competition_editions;
+drop policy if exists jersey_competition_editions_update on public.jersey_competition_editions;
+drop policy if exists jersey_competition_editions_delete on public.jersey_competition_editions;
+create policy jersey_competition_editions_insert on public.jersey_competition_editions for insert to authenticated with check(public.can_edit());
+create policy jersey_competition_editions_update on public.jersey_competition_editions for update to authenticated using(public.can_edit()) with check(public.can_edit());
+create policy jersey_competition_editions_delete on public.jersey_competition_editions for delete to authenticated using(public.can_edit());
+grant select on public.jersey_competition_editions to anon,authenticated;
+grant insert,update,delete on public.jersey_competition_editions to authenticated;
+
+insert into public.jersey_competition_editions(jersey_id,competition_edition_id)
+select distinct jc.jersey_id,c.canonical_edition_id
+from public.jersey_competitions jc
+join public.competitions c on c.id=jc.competition_id
+where c.canonical_edition_id is not null
+on conflict do nothing;
+
+-- Les anciens tags réellement fusionnés restent dans l'historique mais ne polluent plus les sélecteurs.
+update public.tags t
+set is_active=false,updated_at=now()
+where exists(select 1 from _competition_tag_merge m where m.old_id=t.id)
+  and not exists(select 1 from public.competition_entities ce where ce.competition_tag_id=t.id)
+  and not exists(select 1 from public.competition_editions ed where ed.edition_tag_id=t.id);
+
+comment on column public.tags.competition_tag_level is 'entity = tag compétition visible ; edition = tag technique enfant utilisé pour relationner une édition précise.';
+comment on column public.tags.parent_tag_id is 'Pour un tag édition, pointe vers le tag entité compétition parent.';
+comment on column public.competition_editions.edition_tag_id is 'Tag canonique de l édition, enfant du tag entité.';
+comment on table public.jersey_competition_editions is 'Affiliation précise Maillot ↔ édition canonique ; l UI affiche le tag entité parent.';
+
+commit;
+
+
+-- ============================================================
+-- V1.1.61.30 — ÉVÉNEMENTS RASSEMBLEMENTS / ACCUEIL 3 BLOCS
+-- ============================================================
+-- 3615 Bleus V1.1.61.30 — Bloc événements des rassemblements
+
+begin;
+
+create table if not exists public.callup_events (
+  id uuid primary key default gen_random_uuid(),
+  callup_id uuid not null references public.callups(id) on delete cascade,
+  event_date timestamptz not null default now(),
+  event_type text not null default 'update',
+  title text not null,
+  description text,
+  player_id uuid references public.players(id) on delete set null,
+  related_player_id uuid references public.players(id) on delete set null,
+  source_url text,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint callup_events_type_check check (
+    event_type = any(array[
+      'announcement','news','withdrawal','replacement','reinforcement','update'
+    ]::text[])
+  )
+);
+
+create index if not exists callup_events_callup_idx
+  on public.callup_events(callup_id,event_date desc);
+create index if not exists callup_events_date_idx
+  on public.callup_events(event_date desc);
+create index if not exists callup_events_player_idx
+  on public.callup_events(player_id)
+  where player_id is not null;
+
+alter table public.callup_events enable row level security;
+
+drop policy if exists callup_events_read on public.callup_events;
+create policy callup_events_read on public.callup_events
+for select to anon,authenticated using(true);
+
+drop policy if exists callup_events_insert on public.callup_events;
+create policy callup_events_insert on public.callup_events
+for insert to authenticated with check((select public.can_edit()));
+
+drop policy if exists callup_events_update on public.callup_events;
+create policy callup_events_update on public.callup_events
+for update to authenticated using((select public.can_edit())) with check((select public.can_edit()));
+
+drop policy if exists callup_events_delete on public.callup_events;
+create policy callup_events_delete on public.callup_events
+for delete to authenticated using((select public.can_edit()));
+
+grant select on public.callup_events to anon,authenticated;
+grant insert,update,delete on public.callup_events to authenticated;
+
+comment on table public.callup_events is
+  'Événements datés liés à un rassemblement : actualités, forfaits, remplacements, renforts et mises à jour.';
+
+commit;
+-- 3615 Bleus V1.1.61.33 — Couleurs éditoriales des pays
+-- Déjà appliquée sur le projet Supabase bleus3000 le 28/09/2026.
+
+create table if not exists public.country_display_colors (
+  country_code text primary key,
+  country_name text not null,
+  primary_color text not null,
+  secondary_color text,
+  text_color text,
+  updated_by uuid references public.profiles(id) on delete set null,
+  updated_at timestamptz not null default now(),
+  constraint country_display_colors_code_check check (country_code ~ '^[a-z0-9-]{2,12}$'),
+  constraint country_display_colors_primary_check check (primary_color ~ '^#[0-9A-Fa-f]{6}$'),
+  constraint country_display_colors_secondary_check check (secondary_color is null or secondary_color ~ '^#[0-9A-Fa-f]{6}$'),
+  constraint country_display_colors_text_check check (text_color is null or text_color ~ '^#[0-9A-Fa-f]{6}$')
+);
+
+alter table public.country_display_colors enable row level security;
+drop policy if exists country_display_colors_read on public.country_display_colors;
+create policy country_display_colors_read on public.country_display_colors for select to anon,authenticated using (true);
+drop policy if exists country_display_colors_insert on public.country_display_colors;
+create policy country_display_colors_insert on public.country_display_colors for insert to authenticated with check ((select public.can_edit()));
+drop policy if exists country_display_colors_update on public.country_display_colors;
+create policy country_display_colors_update on public.country_display_colors for update to authenticated using ((select public.can_edit())) with check ((select public.can_edit()));
+drop policy if exists country_display_colors_delete on public.country_display_colors;
+create policy country_display_colors_delete on public.country_display_colors for delete to authenticated using ((select public.can_edit()));
+grant select on public.country_display_colors to anon,authenticated;
+grant insert,update,delete on public.country_display_colors to authenticated;
+
+comment on table public.country_display_colors is
+'Overrides éditoriaux des couleurs de pays pour les scoreboards. Sans ligne : maillot France / couleur dominante du drapeau adverse.';
+-- 3615 Bleus V1.1.61.36 — Maillots : bibliothèque d'équipement complète
+begin;
+
+alter table public.jerseys
+  add column if not exists family_key text,
+  add column if not exists flocking_example_name text,
+  add column if not exists flocking_example_number integer,
+  add column if not exists flocking_example_photo_url text;
+
+create index if not exists jerseys_family_key_idx on public.jerseys(family_key) where family_key is not null;
+
+create table if not exists public.kit_components (
+  id uuid primary key default gen_random_uuid(),
+  component_type text not null,
+  title text not null,
+  selection_team_id uuid references public.selection_teams(id) on delete set null,
+  season_label text,
+  year_start integer,
+  year_end integer,
+  usage_type text,
+  primary_color text,
+  secondary_color text,
+  image_path text,
+  image_url text,
+  notes_short text,
+  source_urls text[] not null default '{}',
+  active boolean not null default true,
+  created_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint kit_components_type_check check (component_type in ('short','socks'))
+);
+create index if not exists kit_components_type_year_idx on public.kit_components(component_type,year_start,year_end);
+create index if not exists kit_components_team_idx on public.kit_components(selection_team_id);
+
+create table if not exists public.jersey_kit_components (
+  jersey_id uuid not null references public.jerseys(id) on delete cascade,
+  component_id uuid not null references public.kit_components(id) on delete cascade,
+  is_default boolean not null default false,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  primary key(jersey_id,component_id)
+);
+create index if not exists jersey_kit_components_component_idx on public.jersey_kit_components(component_id);
+
+create table if not exists public.jersey_variants (
+  id uuid primary key default gen_random_uuid(),
+  jersey_id uuid not null references public.jerseys(id) on delete cascade,
+  label text not null,
+  variant_kind text not null default 'sleeve',
+  usage_type text,
+  sleeve_type text,
+  primary_color text,
+  secondary_color text,
+  image_path text,
+  image_url text,
+  notes_short text,
+  is_default boolean not null default false,
+  active boolean not null default true,
+  created_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint jersey_variants_kind_check check (variant_kind in ('sleeve','usage','goalkeeper','special'))
+);
+create index if not exists jersey_variants_jersey_idx on public.jersey_variants(jersey_id,variant_kind);
+
+create table if not exists public.jersey_opponents (
+  jersey_id uuid not null references public.jerseys(id) on delete cascade,
+  opponent_id uuid not null references public.opponents(id) on delete cascade,
+  priority integer not null default 0,
+  created_at timestamptz not null default now(),
+  primary key(jersey_id,opponent_id)
+);
+create index if not exists jersey_opponents_opponent_idx on public.jersey_opponents(opponent_id);
+
+create table if not exists public.competition_patches (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  image_path text,
+  image_url text,
+  valid_from date,
+  valid_to date,
+  notes_short text,
+  source_urls text[] not null default '{}',
+  active boolean not null default true,
+  created_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.competition_patch_tags (
+  patch_id uuid not null references public.competition_patches(id) on delete cascade,
+  tag_id uuid not null references public.tags(id) on delete cascade,
+  relation_kind text not null default 'competition',
+  created_at timestamptz not null default now(),
+  primary key(patch_id,tag_id)
+);
+create index if not exists competition_patch_tags_tag_idx on public.competition_patch_tags(tag_id);
+
+create table if not exists public.jersey_patches (
+  jersey_id uuid not null references public.jerseys(id) on delete cascade,
+  patch_id uuid not null references public.competition_patches(id) on delete cascade,
+  placement text,
+  is_default boolean not null default false,
+  created_at timestamptz not null default now(),
+  primary key(jersey_id,patch_id)
+);
+create index if not exists jersey_patches_patch_idx on public.jersey_patches(patch_id);
+
+alter table public.match_jerseys
+  add column if not exists short_component_id uuid references public.kit_components(id) on delete set null,
+  add column if not exists socks_component_id uuid references public.kit_components(id) on delete set null,
+  add column if not exists jersey_variant_id uuid references public.jersey_variants(id) on delete set null;
+
+create index if not exists match_jerseys_short_idx on public.match_jerseys(short_component_id) where short_component_id is not null;
+create index if not exists match_jerseys_socks_idx on public.match_jerseys(socks_component_id) where socks_component_id is not null;
+create index if not exists match_jerseys_variant_idx on public.match_jerseys(jersey_variant_id) where jersey_variant_id is not null;
+
+create table if not exists public.match_jersey_patches (
+  match_id uuid not null,
+  jersey_id uuid not null,
+  role text not null default 'outfield',
+  patch_id uuid not null references public.competition_patches(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key(match_id,jersey_id,role,patch_id),
+  constraint match_jersey_patches_kit_fk foreign key(match_id,jersey_id,role)
+    references public.match_jerseys(match_id,jersey_id,role) on delete cascade
+);
+create index if not exists match_jersey_patches_patch_idx on public.match_jersey_patches(patch_id);
+
+alter table public.kit_components enable row level security;
+alter table public.jersey_kit_components enable row level security;
+alter table public.jersey_variants enable row level security;
+alter table public.jersey_opponents enable row level security;
+alter table public.competition_patches enable row level security;
+alter table public.competition_patch_tags enable row level security;
+alter table public.jersey_patches enable row level security;
+alter table public.match_jersey_patches enable row level security;
+
+-- Lecture publique ; écriture ADMIN / SUPERADMIN via public.can_edit().
+do $$
+declare t text;
+begin
+  foreach t in array array['kit_components','jersey_kit_components','jersey_variants','jersey_opponents','competition_patches','competition_patch_tags','jersey_patches','match_jersey_patches'] loop
+    execute format('drop policy if exists %I_public_read on public.%I',t,t);
+    execute format('create policy %I_public_read on public.%I for select to anon,authenticated using(true)',t,t);
+    execute format('drop policy if exists %I_insert on public.%I',t,t);
+    execute format('create policy %I_insert on public.%I for insert to authenticated with check((select public.can_edit()))',t,t);
+    execute format('drop policy if exists %I_update on public.%I',t,t);
+    execute format('create policy %I_update on public.%I for update to authenticated using((select public.can_edit())) with check((select public.can_edit()))',t,t);
+    execute format('drop policy if exists %I_delete on public.%I',t,t);
+    execute format('create policy %I_delete on public.%I for delete to authenticated using((select public.can_edit()))',t,t);
+    execute format('grant select on public.%I to anon,authenticated',t);
+    execute format('grant insert,update,delete on public.%I to authenticated',t);
+  end loop;
+end $$;
+
+comment on table public.kit_components is 'Bibliothèque réutilisable des shorts et chaussettes des sélections françaises.';
+comment on table public.jersey_kit_components is 'Associations multiples maillot ↔ shorts / chaussettes.';
+comment on table public.jersey_variants is 'Variantes directement rattachées à un maillot : manches, usage, gardien, édition spéciale.';
+comment on table public.jersey_opponents is 'Adversaires pour lesquels un maillot est recommandé ou documenté.';
+comment on table public.competition_patches is 'Bibliothèque des patchs compétition sans duplication.';
+comment on table public.competition_patch_tags is 'Relation patch ↔ tag compétition ENTITÉ ou ÉDITION.';
+comment on table public.jersey_patches is 'Patchs compatibles / documentés pour un maillot.';
+comment on table public.match_jersey_patches is 'Patchs réellement portés avec le maillot sur un match.';
+comment on column public.match_jerseys.short_component_id is 'Short réellement porté pour ce match.';
+comment on column public.match_jerseys.socks_component_id is 'Chaussettes réellement portées pour ce match.';
+comment on column public.match_jerseys.jersey_variant_id is 'Variante de maillot réellement portée (ex. manches longues).';
+
+commit;
+-- 3615 Bleus V1.1.61.40 — Rassemblements enrichis
+-- Historique immuable, liste annoncée, éditions, diffusions multiples et PDF FFF.
+
+begin;
+
+alter table public.callups add column if not exists fff_pdf_url text;
+
+alter table public.callup_players drop constraint if exists callup_players_status_check;
+alter table public.callup_players add constraint callup_players_status_check
+check (status = any(array['called','withdrawn','replacement','reserve','reinforcement']::text[]));
+
+alter table public.callup_events drop constraint if exists callup_events_type_check;
+alter table public.callup_events add constraint callup_events_type_check
+check (event_type = any(array['announcement','news','withdrawal','replacement','reinforcement','conference','update']::text[]));
+
+create table if not exists public.callup_announced_players(
+  callup_id uuid not null references public.callups(id) on delete cascade,
+  player_id uuid not null references public.players(id) on delete cascade,
+  position_group text,
+  first_callup boolean not null default false,
+  sort_order integer not null default 0,
+  captured_at timestamptz not null default now(),
+  primary key(callup_id,player_id)
+);
+create index if not exists callup_announced_players_player_idx on public.callup_announced_players(player_id);
+
+create table if not exists public.callup_roster_history(
+  id uuid primary key default gen_random_uuid(),
+  callup_id uuid not null references public.callups(id) on delete cascade,
+  event_date timestamptz not null default now(),
+  change_type text not null,
+  player_id uuid references public.players(id) on delete set null,
+  related_player_id uuid references public.players(id) on delete set null,
+  previous_status text,
+  new_status text,
+  note text,
+  created_by uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  constraint callup_roster_history_type_check check (
+    change_type = any(array['added','removed','withdrawal','replacement','reinforcement','reserve','status_change']::text[])
+  )
+);
+create index if not exists callup_roster_history_callup_idx on public.callup_roster_history(callup_id,event_date desc);
+create index if not exists callup_roster_history_player_idx on public.callup_roster_history(player_id);
+
+create table if not exists public.callup_competition_editions(
+  callup_id uuid not null references public.callups(id) on delete cascade,
+  competition_edition_id uuid not null references public.competition_editions(id) on delete cascade,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  primary key(callup_id,competition_edition_id)
+);
+create index if not exists callup_competition_editions_edition_idx on public.callup_competition_editions(competition_edition_id);
+
+create table if not exists public.callup_broadcast_channels(
+  id uuid primary key default gen_random_uuid(),
+  callup_id uuid not null references public.callups(id) on delete cascade,
+  broadcast_channel_id uuid not null references public.broadcast_channels(id) on delete cascade,
+  broadcast_kind text not null default 'press_conference',
+  broadcast_url text,
+  scheduled_at timestamptz,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  constraint callup_broadcast_kind_check check (
+    broadcast_kind = any(array['press_conference','announcement','training','other']::text[])
+  )
+);
+create index if not exists callup_broadcast_channels_callup_idx on public.callup_broadcast_channels(callup_id,sort_order);
+create index if not exists callup_broadcast_channels_channel_idx on public.callup_broadcast_channels(broadcast_channel_id);
+
+alter table public.callup_announced_players enable row level security;
+alter table public.callup_roster_history enable row level security;
+alter table public.callup_competition_editions enable row level security;
+alter table public.callup_broadcast_channels enable row level security;
+
+drop policy if exists callup_announced_players_read on public.callup_announced_players;
+create policy callup_announced_players_read on public.callup_announced_players for select to anon,authenticated using(true);
+drop policy if exists callup_announced_players_insert on public.callup_announced_players;
+create policy callup_announced_players_insert on public.callup_announced_players for insert to authenticated with check((select public.can_edit()));
+drop policy if exists callup_announced_players_update on public.callup_announced_players;
+create policy callup_announced_players_update on public.callup_announced_players for update to authenticated using((select public.is_superadmin())) with check((select public.is_superadmin()));
+drop policy if exists callup_announced_players_delete on public.callup_announced_players;
+create policy callup_announced_players_delete on public.callup_announced_players for delete to authenticated using((select public.is_superadmin()));
+
+drop policy if exists callup_roster_history_read on public.callup_roster_history;
+create policy callup_roster_history_read on public.callup_roster_history for select to anon,authenticated using(true);
+drop policy if exists callup_roster_history_insert on public.callup_roster_history;
+create policy callup_roster_history_insert on public.callup_roster_history for insert to authenticated with check((select public.can_edit()));
+drop policy if exists callup_roster_history_update on public.callup_roster_history;
+create policy callup_roster_history_update on public.callup_roster_history for update to authenticated using((select public.is_superadmin())) with check((select public.is_superadmin()));
+drop policy if exists callup_roster_history_delete on public.callup_roster_history;
+create policy callup_roster_history_delete on public.callup_roster_history for delete to authenticated using((select public.is_superadmin()));
+
+drop policy if exists callup_competition_editions_read on public.callup_competition_editions;
+create policy callup_competition_editions_read on public.callup_competition_editions for select to anon,authenticated using(true);
+drop policy if exists callup_competition_editions_insert on public.callup_competition_editions;
+create policy callup_competition_editions_insert on public.callup_competition_editions for insert to authenticated with check((select public.can_edit()));
+drop policy if exists callup_competition_editions_update on public.callup_competition_editions;
+create policy callup_competition_editions_update on public.callup_competition_editions for update to authenticated using((select public.can_edit())) with check((select public.can_edit()));
+drop policy if exists callup_competition_editions_delete on public.callup_competition_editions;
+create policy callup_competition_editions_delete on public.callup_competition_editions for delete to authenticated using((select public.can_edit()));
+
+drop policy if exists callup_broadcast_channels_read on public.callup_broadcast_channels;
+create policy callup_broadcast_channels_read on public.callup_broadcast_channels for select to anon,authenticated using(true);
+drop policy if exists callup_broadcast_channels_insert on public.callup_broadcast_channels;
+create policy callup_broadcast_channels_insert on public.callup_broadcast_channels for insert to authenticated with check((select public.can_edit()));
+drop policy if exists callup_broadcast_channels_update on public.callup_broadcast_channels;
+create policy callup_broadcast_channels_update on public.callup_broadcast_channels for update to authenticated using((select public.can_edit())) with check((select public.can_edit()));
+drop policy if exists callup_broadcast_channels_delete on public.callup_broadcast_channels;
+create policy callup_broadcast_channels_delete on public.callup_broadcast_channels for delete to authenticated using((select public.can_edit()));
+
+grant select on public.callup_announced_players,public.callup_roster_history,public.callup_competition_editions,public.callup_broadcast_channels to anon,authenticated;
+grant insert,update,delete on public.callup_announced_players,public.callup_roster_history,public.callup_competition_editions,public.callup_broadcast_channels to authenticated;
+
+insert into public.callup_announced_players(callup_id,player_id,position_group,first_callup,sort_order)
+select cp.callup_id,cp.player_id,cp.position_group,cp.first_callup,cp.sort_order
+from public.callup_players cp
+join public.callups c on c.id=cp.callup_id
+where c.announcement_date is not null
+  and not exists(select 1 from public.callup_announced_players ap where ap.callup_id=cp.callup_id)
+on conflict do nothing;
+
+create or replace function public.capture_announced_callup_roster()
+returns trigger language plpgsql security invoker set search_path=public as $$
+begin
+  insert into public.callup_announced_players(callup_id,player_id,position_group,first_callup,sort_order)
+  select cp.callup_id,cp.player_id,cp.position_group,cp.first_callup,cp.sort_order
+  from public.callup_players cp
+  join (select distinct callup_id from new_callup_rows) n on n.callup_id=cp.callup_id
+  join public.callups c on c.id=cp.callup_id
+  where c.announcement_date is not null
+    and not exists(select 1 from public.callup_announced_players ap where ap.callup_id=cp.callup_id)
+  on conflict do nothing;
+  return null;
+end $$;
+
+drop trigger if exists trg_capture_announced_callup_roster on public.callup_players;
+create trigger trg_capture_announced_callup_roster
+after insert on public.callup_players
+referencing new table as new_callup_rows
+for each statement execute function public.capture_announced_callup_roster();
+
+comment on column public.callups.fff_pdf_url is 'Lien PDF officiel FFF de la convocation.';
+comment on table public.callup_announced_players is 'Instantané immuable de la liste initialement annoncée.';
+comment on table public.callup_roster_history is 'Historique structuré des modifications de liste après annonce.';
+comment on table public.callup_competition_editions is 'Éditions de compétition reliées au rassemblement, sans duplication des joueurs.';
+comment on table public.callup_broadcast_channels is 'Diffusions liées au rassemblement, notamment conférence de presse, avec plusieurs chaînes possibles.';
+
+commit;
+
+-- V1.1.61.41 — Rassemblements : forfait explicitement non remplacé
+alter table public.callup_players
+  add column if not exists not_replaced boolean not null default false;
+
+
+-- 3615 Bleus V1.1.61.44 — médias reliés aux matchs
+create table if not exists public.match_media_assets (
+  id uuid primary key default gen_random_uuid(),
+  match_id uuid not null references public.matches(id) on delete cascade,
+  asset_type text not null,
+  title text,
+  url text,
+  image_path text,
+  image_url text,
+  source_url text,
+  sort_order integer not null default 0,
+  created_by uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint match_media_assets_type_check check (asset_type = any(array['newspaper_front','ticket','youtube']::text[]))
+);
+create index if not exists match_media_assets_match_idx on public.match_media_assets(match_id,sort_order,created_at);
+alter table public.match_media_assets enable row level security;
+drop policy if exists match_media_assets_read on public.match_media_assets;
+create policy match_media_assets_read on public.match_media_assets for select to anon,authenticated using(true);
+drop policy if exists match_media_assets_insert on public.match_media_assets;
+create policy match_media_assets_insert on public.match_media_assets for insert to authenticated with check((select public.can_edit()));
+drop policy if exists match_media_assets_update on public.match_media_assets;
+create policy match_media_assets_update on public.match_media_assets for update to authenticated using((select public.can_edit())) with check((select public.can_edit()));
+drop policy if exists match_media_assets_delete on public.match_media_assets;
+create policy match_media_assets_delete on public.match_media_assets for delete to authenticated using((select public.can_edit()));
+grant select on public.match_media_assets to anon,authenticated;
+grant insert,update,delete on public.match_media_assets to authenticated;
+comment on table public.match_media_assets is 'Médias reliés à une tuile match : une de journal, billet historique ou vidéo YouTube.';
+
+
+-- ===== V1.1.66 — réconciliation événements / liste courante =====
+-- 3615 Bleus V1.1.66 — réconciliation événements / liste courante des rassemblements
+-- Rend persistants les statuts dérivés des événements de forfait/remplacement/renfort.
+
+begin;
+
+with repl as (
+  select distinct on (e.callup_id,e.related_player_id)
+    e.callup_id, e.related_player_id as player_id, e.player_id as replacement_for,
+    e.description, e.event_date
+  from public.callup_events e
+  where e.event_type='replacement' and e.related_player_id is not null
+  order by e.callup_id,e.related_player_id,e.event_date desc
+)
+insert into public.callup_players (callup_id,player_id,position_group,status,first_callup,replacement_for,not_replaced,sort_order,notes_short,updated_at)
+select r.callup_id,r.player_id,
+       coalesce((select a.position_group from public.callup_announced_players a where a.callup_id=r.callup_id and a.player_id=r.player_id limit 1),
+                (select cp.position_group from public.callup_players cp where cp.callup_id=r.callup_id and cp.player_id=r.replacement_for limit 1),
+                p.primary_position),
+       'replacement',false,r.replacement_for,false,
+       coalesce((select max(cp.sort_order)+1 from public.callup_players cp where cp.callup_id=r.callup_id),0),
+       r.description,coalesce(r.event_date,now())
+from repl r join public.players p on p.id=r.player_id
+on conflict (callup_id,player_id) do update set
+  status='replacement', replacement_for=excluded.replacement_for,
+  position_group=coalesce(public.callup_players.position_group,excluded.position_group),
+  notes_short=coalesce(public.callup_players.notes_short,excluded.notes_short),
+  updated_at=greatest(public.callup_players.updated_at,excluded.updated_at);
+
+with reinf as (
+  select distinct on (e.callup_id,coalesce(e.player_id,e.related_player_id))
+    e.callup_id,coalesce(e.player_id,e.related_player_id) as player_id,e.description,e.event_date
+  from public.callup_events e
+  where e.event_type='reinforcement' and coalesce(e.player_id,e.related_player_id) is not null
+  order by e.callup_id,coalesce(e.player_id,e.related_player_id),e.event_date desc
+)
+insert into public.callup_players (callup_id,player_id,position_group,status,first_callup,replacement_for,not_replaced,sort_order,notes_short,updated_at)
+select r.callup_id,r.player_id,
+       coalesce((select a.position_group from public.callup_announced_players a where a.callup_id=r.callup_id and a.player_id=r.player_id limit 1),p.primary_position),
+       'reinforcement',false,null,false,
+       coalesce((select max(cp.sort_order)+1 from public.callup_players cp where cp.callup_id=r.callup_id),0),
+       r.description,coalesce(r.event_date,now())
+from reinf r join public.players p on p.id=r.player_id
+on conflict (callup_id,player_id) do update set
+  status='reinforcement',
+  position_group=coalesce(public.callup_players.position_group,excluded.position_group),
+  notes_short=coalesce(public.callup_players.notes_short,excluded.notes_short),
+  updated_at=greatest(public.callup_players.updated_at,excluded.updated_at);
+
+with outs as (
+  select distinct on (callup_id,player_id) callup_id,player_id,description,event_date
+  from (
+    select callup_id,player_id,description,event_date from public.callup_events where event_type='withdrawal' and player_id is not null
+    union all
+    select callup_id,player_id,description,event_date from public.callup_events where event_type='replacement' and player_id is not null
+  ) q
+  order by callup_id,player_id,event_date desc
+)
+insert into public.callup_players (callup_id,player_id,position_group,status,first_callup,replacement_for,not_replaced,sort_order,notes_short,updated_at)
+select o.callup_id,o.player_id,
+       coalesce((select a.position_group from public.callup_announced_players a where a.callup_id=o.callup_id and a.player_id=o.player_id limit 1),p.primary_position),
+       'withdrawn',false,null,false,
+       coalesce((select max(cp.sort_order)+1 from public.callup_players cp where cp.callup_id=o.callup_id),0),
+       o.description,coalesce(o.event_date,now())
+from outs o join public.players p on p.id=o.player_id
+on conflict (callup_id,player_id) do update set
+  status='withdrawn', replacement_for=null, not_replaced=false,
+  position_group=coalesce(public.callup_players.position_group,excluded.position_group),
+  notes_short=coalesce(public.callup_players.notes_short,excluded.notes_short),
+  updated_at=greatest(public.callup_players.updated_at,excluded.updated_at);
+
+commit;
+
+
+-- V1.1.67 — dégradés éditoriaux des couleurs pays
+alter table if exists public.country_display_colors
+  add column if not exists display_mode text not null default 'gradient',
+  add column if not exists gradient_angle integer not null default 180;
+
+do $$ begin
+  alter table public.country_display_colors drop constraint if exists country_display_colors_display_mode_check;
+  alter table public.country_display_colors add constraint country_display_colors_display_mode_check check (display_mode in ('solid','gradient'));
+  alter table public.country_display_colors drop constraint if exists country_display_colors_gradient_angle_check;
+  alter table public.country_display_colors add constraint country_display_colors_gradient_angle_check check (gradient_angle between 0 and 360);
+exception when undefined_table then null; end $$;
