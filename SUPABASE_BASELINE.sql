@@ -3132,12 +3132,15 @@ on conflict do nothing;
 
 create table if not exists public.competition_entities(
  id uuid primary key default gen_random_uuid(),slug text not null unique,name text not null,aliases text[] not null default '{}',
- gender text,competition_type text,competition_tag_id uuid not null references public.tags(id) on delete restrict,notes text,
+ gender text,competition_type text,competition_tag_id uuid not null references public.tags(id) on delete restrict,notes text,icon_text text,logo_path text,
  created_at timestamptz not null default now(),updated_at timestamptz not null default now()
 );
+alter table public.competition_entities add column if not exists icon_text text;
+alter table public.competition_entities add column if not exists logo_path text;
+alter table public.competition_editions add column if not exists logo_path text;
 create table if not exists public.competition_editions(
  id uuid primary key default gen_random_uuid(),competition_entity_id uuid not null references public.competition_entities(id) on delete cascade,
- edition_year integer not null,edition_label text,notes text,created_at timestamptz not null default now(),updated_at timestamptz not null default now(),
+ edition_year integer not null,edition_label text,notes text,logo_path text,created_at timestamptz not null default now(),updated_at timestamptz not null default now(),
  unique(competition_entity_id,edition_year)
 );
 create table if not exists public.competition_entity_tags(
@@ -5587,7 +5590,7 @@ create table if not exists public.match_media_assets (
   created_by uuid references public.profiles(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  constraint match_media_assets_type_check check (asset_type = any(array['newspaper_front','ticket','youtube']::text[]))
+  constraint match_media_assets_type_check check (asset_type = any(array['newspaper_front','ticket','youtube','ball']::text[]))
 );
 create index if not exists match_media_assets_match_idx on public.match_media_assets(match_id,sort_order,created_at);
 alter table public.match_media_assets enable row level security;
@@ -5601,7 +5604,7 @@ drop policy if exists match_media_assets_delete on public.match_media_assets;
 create policy match_media_assets_delete on public.match_media_assets for delete to authenticated using((select public.can_edit()));
 grant select on public.match_media_assets to anon,authenticated;
 grant insert,update,delete on public.match_media_assets to authenticated;
-comment on table public.match_media_assets is 'Médias reliés à une tuile match : une de journal, billet historique ou vidéo YouTube.';
+comment on table public.match_media_assets is 'Médias reliés à une tuile match : une de journal, ballon, billet historique ou lien vidéo YouTube.';
 
 
 -- ===== V1.1.66 — réconciliation événements / liste courante =====
@@ -5689,3 +5692,23 @@ do $$ begin
   alter table public.country_display_colors drop constraint if exists country_display_colors_gradient_angle_check;
   alter table public.country_display_colors add constraint country_display_colors_gradient_angle_check check (gradient_angle between 0 and 360);
 exception when undefined_table then null; end $$;
+
+
+-- V1.1.89 — surlignages pays avancés + logos compétitions
+alter table if exists public.country_display_colors
+  add column if not exists highlight_colors text[] not null default '{}',
+  add column if not exists highlight_gradient_type text not null default 'linear',
+  add column if not exists highlight_opacity numeric not null default 0.28,
+  add column if not exists highlight_height integer not null default 82;
+
+do $$ begin
+  alter table public.country_display_colors drop constraint if exists country_display_colors_highlight_gradient_type_check;
+  alter table public.country_display_colors add constraint country_display_colors_highlight_gradient_type_check check (highlight_gradient_type in ('linear','radial'));
+  alter table public.country_display_colors drop constraint if exists country_display_colors_highlight_opacity_check;
+  alter table public.country_display_colors add constraint country_display_colors_highlight_opacity_check check (highlight_opacity between 0.05 and 0.95);
+  alter table public.country_display_colors drop constraint if exists country_display_colors_highlight_height_check;
+  alter table public.country_display_colors add constraint country_display_colors_highlight_height_check check (highlight_height between 35 and 120);
+exception when undefined_table then null; end $$;
+
+alter table if exists public.competition_entities add column if not exists logo_path text;
+alter table if exists public.competition_editions add column if not exists logo_path text;

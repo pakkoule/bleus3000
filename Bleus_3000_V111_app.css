@@ -137,9 +137,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 @media(max-width:760px){.selection-grid{grid-template-columns:1fr}.selection-editor-form{grid-template-columns:1fr}.selection-editor-photo{align-items:center}.selection-editor-fields{grid-template-columns:1fr}.selection-editor-stat-fields{grid-template-columns:repeat(2,1fr)}.selection-editor-fields>label{grid-column:1!important}}
 
 /* Bleus 3000 V1.1.9 — numéros de maillot visuels France 1998 */
-.selection-jersey-field{min-height:66px}.selection-jersey-slot{display:flex;align-items:center;min-height:46px;overflow:visible!important}.selection-jersey-list{display:flex!important;align-items:center;gap:4px;flex-wrap:wrap;overflow:visible!important;white-space:normal!important}.selection-jersey-list.is-compact{flex-wrap:nowrap;gap:2px}.selection-jersey-visual{position:relative;display:inline-grid!important;place-items:center;flex:0 0 auto;overflow:visible!important;white-space:normal!important}.selection-jersey-visual.is-tile{width:40px;height:40px}.selection-jersey-visual.is-editor{width:78px;height:78px}.selection-jersey-back{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block}.selection-jersey-digits{position:absolute;z-index:2;top:18%;left:50%;transform:translateX(-50%);height:35%;max-width:51%;display:flex!important;align-items:stretch;justify-content:center;gap:0;filter:drop-shadow(1px 2px 0 #071b52);overflow:visible!important}.selection-jersey-digits img{display:block!important;height:100%!important;width:auto!important;min-width:0;object-fit:contain;margin-left:-1px}.selection-jersey-digits img:first-child{margin-left:0}.selection-jersey-more{display:grid!important;place-items:center;width:28px;height:28px;border-radius:999px;background:#e8f0ff;color:#1c55ab;font-size:9px!important;font-weight:900}.selection-jersey-empty{font-size:10px!important;color:#7c8da3!important}.selection-jersey-remove{position:absolute;z-index:4;right:-3px;top:-3px;width:20px!important;height:20px!important;border:1px solid #e98b96!important;border-radius:999px!important;background:#fff!important;color:#b51f31!important;font-size:13px!important;font-weight:900!important;line-height:1!important;padding:0!important;cursor:pointer;box-shadow:0 2px 5px rgba(22,43,75,.13)}
-.selection-editor-jersey-field{grid-column:1/-1;display:grid;gap:7px;border:1px solid #d1deed;border-radius:10px;padding:10px;background:#f8fbff}.selection-editor-jersey-field>label{font-size:10px;font-weight:800;color:#435e7e}.selection-editor-jersey-field>small{font-size:9px;color:#7186a1}.selection-jersey-picker{display:grid;grid-template-columns:minmax(110px,180px) auto;gap:7px;align-items:center}.selection-jersey-picker select{border:1px solid #bdcfe4;border-radius:8px;padding:9px;background:#fff;color:#173a68;font-weight:800}.selection-editor-jersey-list{display:flex;align-items:center;gap:7px;flex-wrap:wrap;min-height:82px;padding:8px;border:1px dashed #c4d5e8;border-radius:9px;background:#fff}.selection-editor-jersey-list .selection-jersey-empty{padding:8px}.selection-linked-fields>div:first-child{overflow:visible}.selection-linked-fields>div:first-child .selection-jersey-slot{margin-top:3px}
-@media(max-width:760px){.selection-jersey-picker{grid-template-columns:1fr auto}.selection-jersey-visual.is-editor{width:70px;height:70px}}
 
 
 /* Bleus 3000 V1.1.12 — filtres / tris + statut Convocation */
@@ -297,7 +294,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 /* V1.1.26 · Référentiels relationnels Espoirs */
 .rel-ref-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;width:100%}
 .rel-ref-tile{min-width:0;border:1px solid #bdd5f4;border-radius:16px;background:#fff;padding:14px;box-shadow:0 5px 16px rgba(13,56,112,.07);display:flex;flex-direction:column;gap:11px}
-.rel-ref-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.rel-ref-head h3{margin:2px 0 3px;color:#17385f;font-size:17px;line-height:1.25}.rel-ref-head small,.rel-ref-head .subtitle{color:#6884a8;font-size:12px;font-weight:700}.rel-score{display:inline-flex;min-width:52px;justify-content:center;padding:3px 7px;border-radius:8px;background:#edf5ff;color:#17385f;font-weight:900}.rel-score.is-win,.rel-result.is-win{background:#e7f8ef;color:#177447}.rel-score.is-draw,.rel-result.is-draw{background:#edf3fb;color:#496786}.rel-score.is-loss,.rel-result.is-loss{background:#fff0f2;color:#b4233b}.rel-result{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:#eef5ff;color:#1e5fb9;font-weight:1000}.rel-facts{display:flex;flex-wrap:wrap;gap:6px 10px;color:#4b678c;font-size:12px}.rel-facts span{background:#f5f9ff;border:1px solid #dae8fa;border-radius:8px;padding:5px 7px}.rel-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto}.rel-tag-fallback{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border:1px solid #123b8f;border-radius:10px;background:#2563eb;color:#fff;font-weight:900;font-size:10px}.rel-person-tile{position:relative;padding-left:76px;min-height:150px}.rel-person-avatar{position:absolute;left:14px;top:14px;width:50px;height:50px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,#123b8f,#2f6dff);color:#fff;font-weight:1000;font-size:17px;border:2px solid #d7e8ff}.rel-stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.rel-stat-grid.one{grid-template-columns:minmax(120px,190px)}.rel-stat-grid span{display:grid;gap:2px;padding:7px;border:1px solid #d7e6f8;border-radius:9px;background:#f8fbff}.rel-stat-grid small{font-size:10px;color:#6d87a8;font-weight:800}.rel-stat-grid strong{font-size:16px;color:#17385f}.selection-context-tag{font:inherit}.selection-context-tag.is-active{outline:2px solid #2f6dff;outline-offset:1px}.selection-context-tag:focus-visible{outline:2px solid #59b9ff;outline-offset:2px}
+.rel-ref-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.rel-ref-head h3{margin:2px 0 3px;color:#17385f;font-size:17px;line-height:1.25}.rel-ref-head small,.rel-ref-head .subtitle{color:#6884a8;font-size:12px;font-weight:700}.rel-score{display:inline-flex;min-width:52px;justify-content:center;padding:3px 7px;border-radius:8px;background:#edf5ff;color:#17385f;font-weight:900}.rel-score.is-win,.rel-result.is-win{background:#e7f8ef;color:#177447}.rel-score.is-draw,.rel-result.is-draw{background:#edf3fb;color:#496786}.rel-score.is-loss,.rel-result.is-loss{background:#fff0f2;color:#b4233b}.rel-result{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:#eef5ff;color:#1e5fb9;font-weight:1000}.rel-facts{display:flex;flex-wrap:wrap;gap:6px 10px;color:#4b678c;font-size:12px}.rel-facts span{background:#f5f9ff;border:1px solid #dae8fa;border-radius:8px;padding:5px 7px}.rel-facts .rel-fact-link{appearance:none;font:inherit;color:inherit;background:#f5f9ff;border:1px solid #dae8fa;border-radius:8px;padding:5px 7px;cursor:pointer}.rel-facts .rel-fact-link:hover{background:#edf5ff;border-color:#9fc2ec;color:#174f8d}.rel-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto}.rel-tag-fallback{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border:1px solid #123b8f;border-radius:10px;background:#2563eb;color:#fff;font-weight:900;font-size:10px}.rel-person-tile{position:relative;padding-left:76px;min-height:150px}.rel-person-avatar{position:absolute;left:14px;top:14px;width:50px;height:50px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,#123b8f,#2f6dff);color:#fff;font-weight:1000;font-size:17px;border:2px solid #d7e8ff}.rel-stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.rel-stat-grid.one{grid-template-columns:minmax(120px,190px)}.rel-stat-grid span{display:grid;gap:2px;padding:7px;border:1px solid #d7e6f8;border-radius:9px;background:#f8fbff}.rel-stat-grid small{font-size:10px;color:#6d87a8;font-weight:800}.rel-stat-grid strong{font-size:16px;color:#17385f}.selection-context-tag{font:inherit}.selection-context-tag.is-active{outline:2px solid #2f6dff;outline-offset:1px}.selection-context-tag:focus-visible{outline:2px solid #59b9ff;outline-offset:2px}
 @media(max-width:850px){.rel-ref-grid{grid-template-columns:1fr}.rel-person-tile{padding-left:14px;padding-top:76px}.rel-person-avatar{top:14px}}
 
 /* V1.1.35 · Matchs : grille pleine largeur + filtres */
@@ -635,21 +632,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 @media(max-width:620px){.top-header{min-height:112px}.home-search-heading{padding:12px}.home-search-heading strong{font-size:14px}.home-search-heading small{font-size:9px}.home-search-hint{display:none}.home-universal-search-shell.universal-search-shell{margin:10px!important}.home-search-bar{grid-template-columns:86px minmax(0,1fr);min-height:62px}.home-search-3615{padding:8px}.home-search-3615 img{height:38px}.home-search-input-zone{gap:8px;padding:0 10px}.home-search-input-zone .universal-search-icon{width:20px;height:20px}.home-universal-search-shell.universal-search-shell input{height:58px;font-size:12px}.home-universal-search-shell .universal-search-shortcut{display:none!important}.home-universal-search-shell .universal-search-result{grid-template-columns:42px minmax(0,1fr) 18px;min-height:54px;padding:6px}.home-universal-search-shell .universal-search-result-icon{width:42px;height:40px}.home-universal-search-shell .universal-search-result-title{font-size:10px}.home-search-help{padding:0 12px 12px}}
 
 
-/* V1.1.61.26 — scoreboards et faits de jeu minitel */
-.minitel-scoreboard{display:grid;grid-template-columns:minmax(84px,1fr) auto minmax(84px,1fr);align-items:stretch;gap:0;overflow:hidden;border:3px solid #0c2354;border-radius:10px;background:#fff;box-shadow:inset 0 0 0 2px #4167b4,0 4px 0 rgba(12,35,84,.08)}
-.minitel-scoreboard.is-compact{grid-template-columns:minmax(64px,1fr) auto minmax(64px,1fr);border-width:2px;border-radius:8px}
-.minitel-side,.minitel-score{min-height:48px;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 10px}
-.minitel-scoreboard.is-compact .minitel-side,.minitel-scoreboard.is-compact .minitel-score{min-height:34px;padding:0 8px;gap:6px}
-.minitel-side{position:relative;color:var(--minitel-team-fg,#fff);background:var(--minitel-team-bg,linear-gradient(180deg,#153f9e,#0b2b72));text-transform:uppercase;font:900 20px/1 "Poppins",Arial,sans-serif;letter-spacing:.08em;transition:background .2s ease,color .2s ease}
-.minitel-side.is-left{background:var(--minitel-team-bg,linear-gradient(180deg,#153f9e,#0b2b72))}
-.minitel-side.is-right{background:var(--minitel-team-bg,linear-gradient(180deg,#315f9a,#173b6b))}
-.minitel-score{background:linear-gradient(180deg,#fffef6,#ece8d8);color:#09245c;font:900 26px/1 "Courier New",monospace;letter-spacing:.08em;white-space:nowrap;border-left:3px solid #0c2354;border-right:3px solid #0c2354}
-.minitel-scoreboard.is-vs .minitel-score{font-size:18px;letter-spacing:.16em}
-.minitel-scoreboard.is-compact .minitel-side{font-size:14px}.minitel-scoreboard.is-compact .minitel-score{font-size:18px}.minitel-scoreboard.is-compact.is-vs .minitel-score{font-size:12px}
-.minitel-flag{display:grid;place-items:center;flex:0 0 auto;width:34px;height:26px;padding:2px;border:2px solid rgba(255,255,255,.78);border-radius:4px;background:rgba(255,255,255,.08)}
-.minitel-scoreboard.is-compact .minitel-flag{width:26px;height:20px;padding:1px;border-width:1.5px}
-.minitel-flag .calendar-svg-flag,.minitel-flag .rel-svg-flag{width:100%!important;height:100%!important;border-radius:1px!important;box-shadow:none!important;display:block}
-.minitel-code{display:block;white-space:nowrap}
+/* V1.1.73 — statuts Minitel et faits de jeu (scoreboard déplacé dans V130_calendar.css) */
 .minitel-status-badge{display:inline-flex;align-items:center;gap:7px;padding:4px 8px;border:2px solid #0c2354;border-radius:8px;background:#09245c;color:#fff;font:900 10px/1 "Courier New",monospace;letter-spacing:.06em;white-space:nowrap;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}
 .minitel-status-kicker{opacity:.78}.minitel-status-value{font-size:11px;letter-spacing:.08em}
 .calendar-live.minitel-status-badge{background:linear-gradient(180deg,#0d224f,#08204a);color:#ff4a5a}
@@ -657,9 +640,15 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .calendar-finished.minitel-status-badge,.match-sheet-validation-badge.is-validated{background:linear-gradient(180deg,#0e2f72,#0a214f);color:#f4f7ff;border-color:#0b2459}
 .calendar-postponed.minitel-status-badge{background:linear-gradient(180deg,#fff4d2,#f5df9b);color:#704a00;border-color:#ac8b3c}
 .calendar-cancelled.minitel-status-badge{background:linear-gradient(180deg,#ffe2e5,#ffc4cc);color:#8f1f35;border-color:#c85a6d}
-.rel-ref-head-match{align-items:center}
-.rel-match-board-wrap{display:grid;gap:6px;margin:5px 0 4px}
-.rel-match-team-names{display:flex;justify-content:space-between;gap:10px;color:#6b83a3;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.rel-ref-head-match{align-items:center;justify-content:center;position:relative;text-align:center}
+.rel-match-tile .rel-ref-head-match>div{width:100%;display:grid;justify-items:center}
+.rel-match-tile .rel-ref-head-match>.rel-result{position:absolute;right:0;top:0}
+.rel-match-board-wrap{display:grid;justify-items:center;gap:6px;width:min(100%,920px);margin:5px auto 4px}
+.rel-match-team-names{display:flex;justify-content:center;gap:18px;width:100%;color:#6b83a3;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.rel-match-tile .rel-facts{justify-content:center;text-align:center}
+.rel-match-tile .rel-tags{justify-content:center;margin-top:0}
+.rel-match-tile .rel-match-bottom{justify-content:center;align-items:center;flex-direction:column;text-align:center}
+.rel-match-tile .rel-match-actions{justify-content:center}
 .match-event-row{grid-template-columns:46px 28px minmax(0,1fr) 28px}
 .match-event-minute{display:grid;place-items:center;min-height:24px;padding:2px 4px;border:1px solid #cedaed;border-radius:6px;background:#f7fbff;color:#113660}
 .match-event-kind-icon{display:grid;place-items:center;width:24px;height:24px;border:2px solid #0c2354;border-radius:6px;background:#fffef6;position:relative;overflow:hidden}
@@ -676,27 +665,65 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .match-sheet-validation-badge{border:2px solid #c9d7e6;border-radius:8px;background:#eef3fa;color:#526d8d;font-family:"Courier New",monospace;font-weight:900;letter-spacing:.06em}
 .match-sheet-validation-badge.is-needs_validation{background:linear-gradient(180deg,#fff0e4,#ffe0c7);color:#9b4b18;border-color:#e5af85}
 .match-sheet-validation-badge.is-draft{background:linear-gradient(180deg,#eef3fa,#dde8f7);color:#425c7d;border-color:#c7d6e7}
-@media(max-width:640px){.minitel-scoreboard{grid-template-columns:minmax(68px,1fr) auto minmax(68px,1fr)}.minitel-side{font-size:14px}.minitel-score{font-size:18px;min-width:62px}.minitel-flag{width:26px;height:20px}.rel-match-team-names{font-size:8px}}
-
-/* V1.1.61.33 — scoreboards affinés + noms de pays complets */
-.minitel-scoreboard{border-width:2px;border-radius:9px;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}
-.minitel-scoreboard.is-compact{border-width:2px;border-radius:8px}
-.minitel-side,.minitel-score{min-height:39px;padding:0 7px;gap:6px}
-.minitel-scoreboard.is-compact .minitel-side,.minitel-scoreboard.is-compact .minitel-score{min-height:31px;padding:0 6px;gap:5px}
-.minitel-side{font-size:11px;letter-spacing:.015em;text-transform:none;min-width:0}
-.minitel-country-name{display:block;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:none;letter-spacing:0;font-weight:850}
-.minitel-score{font-size:19px;min-width:62px;border-left-width:2px;border-right-width:2px}
-.minitel-scoreboard.is-vs .minitel-score{font-size:14px;letter-spacing:.08em}
-.minitel-scoreboard.is-compact .minitel-side{font-size:9px}
-.minitel-scoreboard.is-compact .minitel-score{font-size:15px;min-width:50px}
-.minitel-scoreboard.is-compact.is-vs .minitel-score{font-size:10px}
-.minitel-scoreboard .minitel-flag{width:22px;height:16px}
-.minitel-scoreboard.is-compact .minitel-flag{width:20px;height:15px}
-@media(max-width:640px){.minitel-side{font-size:9px}.minitel-score{font-size:16px;min-width:52px}.minitel-flag{width:20px;height:15px}.minitel-country-name{max-width:110px}}
-/* Les noms complets peuvent se répartir sur deux lignes sans recréer un cartouche haut. */
-.minitel-country-name{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;line-height:1.08!important;text-align:center!important;word-break:normal!important}
+@media(max-width:640px){.rel-match-team-names{font-size:8px}}
 
 /* V1.1.63 — header remonté contre le haut de page */
 body{padding-top:0!important}
 .top-header{margin-top:0!important}
 @media(max-width:720px){body{padding-top:0!important}.top-header{margin-top:0!important}}
+
+.selection-linked-fields.is-achievements-only{grid-template-columns:1fr}.selection-linked-fields.is-achievements-only>div{min-height:58px}
+
+/* V1.1.79 — Référentiel Matchs : une tuile par page */
+.rel-match-main-pagination{display:flex;align-items:center;justify-content:center;gap:10px;margin:8px 0 10px;padding:6px 8px;border:1px solid #d6e2ef;border-radius:10px;background:#f8fbff}
+.rel-match-main-pagination button{width:31px;height:29px;border:1px solid #bfd2e8;border-radius:8px;background:#fff;color:#245487;font:900 13px Poppins,Arial;cursor:pointer}
+.rel-match-main-pagination button:disabled{opacity:.35;cursor:default}
+.rel-match-main-pagination span{min-width:100px;text-align:center;color:#476784;font:850 9px Poppins,Arial}
+
+/* V1.1.80 — Compétitions : icône par entité principale */
+.rel-competition-head{align-items:center}
+.rel-competition-head-main{display:flex;align-items:center;gap:10px;min-width:0}
+.rel-competition-icon{display:grid;place-items:center;width:44px;height:44px;flex:0 0 44px;border:1px solid #c7d9ed;border-radius:12px;background:linear-gradient(145deg,#f7fbff,#e8f1ff);font-size:23px;box-shadow:0 3px 10px rgba(13,56,112,.08)}
+.rel-competition-head-actions{display:flex;align-items:center;gap:6px;flex:0 0 auto}
+@media(max-width:600px){.rel-competition-icon{width:38px;height:38px;flex-basis:38px;font-size:20px}}
+
+
+/* V1.1.81 — pagination Matchs centrée + éditeur Compétitions */
+.rel-match-main-pagination{width:max-content;max-width:100%;margin:10px auto!important;justify-content:center!important}
+.competition-editor-dialog{width:min(720px,calc(100vw - 28px))}
+.competition-editor-form{display:grid;gap:14px}.competition-editor-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.competition-editor-grid label,.competition-editor-icon-block>label{display:grid;gap:4px;color:#56708e;font-size:8px;font-weight:850}.competition-editor-grid input,.competition-editor-grid select,.competition-editor-icon-block input{width:100%;min-height:34px;border:1px solid #c7d7e9;border-radius:8px;background:#fff;color:#17375e;padding:0 9px;font:800 9px Poppins,Arial;box-sizing:border-box}.competition-editor-icon-block{display:grid;gap:8px;padding:10px;border:1px solid #d8e4f0;border-radius:10px;background:#f8fbff}.competition-editor-icon-block>strong{color:#17375e;font-size:9px}.competition-icon-presets{display:flex;gap:6px;flex-wrap:wrap}.competition-icon-presets button{width:34px;height:34px;border:1px solid #c7d7e9;border-radius:8px;background:#fff;font-size:17px;cursor:pointer}.competition-icon-presets button:hover{border-color:#2f6dff;background:#edf5ff}.rel-competition-edit{width:29px;height:29px;border:1px solid #c7d7e9;border-radius:8px;background:#fff;color:#174f9f;font:900 12px Poppins,Arial;cursor:pointer}.rel-competition-edit:hover{border-color:#2f6dff;background:#edf5ff}
+@media(max-width:640px){.competition-editor-grid{grid-template-columns:1fr}}
+
+/* V1.1.82 — édition canonique des compétitions */
+.competition-catalog-head-actions,.competition-edition-actions{display:flex;align-items:center;gap:6px;flex:0 0 auto}
+.competition-canonical-edit-btn{min-height:28px;padding:0 8px;border:1px solid #bfd2e9;border-radius:8px;background:#fff;color:#1857a5;font:850 7px Poppins,Arial;cursor:pointer;white-space:nowrap}
+.competition-canonical-edit-btn:hover{background:#edf5ff;border-color:#7aa8de}
+.competition-canonical-entities{display:grid;gap:5px;margin-top:8px}
+.competition-canonical-entity-row{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:7px;align-items:center;padding:6px 7px;border:1px solid #dce7f2;border-radius:8px;background:#f8fbff}
+.competition-canonical-entity-icon{display:grid;place-items:center;width:24px;height:24px;border-radius:7px;background:#fff;border:1px solid #d2dfed;font-size:13px}
+.competition-canonical-entity-row>strong{min-width:0;color:#17375e;font-size:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.competition-edition-actions .competition-edition-expand{flex:0 0 auto}
+.competition-canonical-edit-dialog{width:min(680px,calc(100vw - 24px))!important}
+.competition-canonical-edit-dialog textarea{width:100%;box-sizing:border-box;resize:vertical;border:1px solid #c9d6e7;border-radius:8px;padding:9px 10px;font:600 11px Poppins,Arial;color:#203650;background:#fff}
+@media(max-width:680px){.competition-catalog-head{align-items:stretch}.competition-catalog-head-actions{flex-direction:column;align-items:flex-end}.competition-canonical-entity-row{grid-template-columns:24px minmax(0,1fr)}.competition-canonical-entity-row .competition-canonical-edit-btn{grid-column:1/-1}.competition-edition-row{align-items:flex-start}.competition-edition-actions{flex-direction:column}}
+
+/* V1.1.89 — configuration Compétitions + logos entités/éditions */
+.competition-config-gear{width:30px;height:30px;display:grid;place-items:center;flex:0 0 30px;border:1px solid #bfd2e9;border-radius:8px;background:#fff;color:#1857a5;font:900 14px Poppins,Arial;cursor:pointer}.competition-config-gear:hover{background:#edf5ff;border-color:#7aa8de}.competition-logo{display:grid;place-items:center;flex:0 0 auto;border:1px solid #d2dfed;border-radius:8px;background:#fff;overflow:hidden}.competition-logo img{display:block;width:100%;height:100%;object-fit:contain}.competition-logo.is-entity{width:34px;height:34px}.competition-logo.is-edition{width:32px;height:32px}.competition-logo.is-config{width:42px;height:42px}.competition-canonical-entity-row{grid-template-columns:34px minmax(0,1fr)!important}.competition-edition-row{min-width:0}.competition-edition-tags{min-width:0}.competition-config-dialog{width:min(720px,calc(100vw - 24px))!important}.competition-config-section{display:grid;gap:7px;margin-bottom:14px}.competition-config-section h3{margin:0 0 2px;color:#17375e;font-size:10px}.competition-config-row{width:100%;display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:9px;align-items:center;padding:8px;border:1px solid #d8e4f0;border-radius:10px;background:#fff;color:#17375e;text-align:left;cursor:pointer}.competition-config-row:hover{background:#f1f7ff;border-color:#9fc0e6}.competition-config-row>span{min-width:0}.competition-config-row strong{display:block;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.competition-config-row small{display:block;margin-top:2px;color:#71849c;font-size:7px}.competition-config-row>b{color:#2e65a9;font-size:7px}.competition-config-placeholder{display:grid;place-items:center;width:42px;height:42px;border:1px solid #d4e1ef;border-radius:8px;background:#f7fbff;font-size:20px}.competition-logo-editor{display:grid;gap:8px;padding:10px;border:1px solid #d8e4f0;border-radius:10px;background:#f8fbff}.competition-logo-editor>strong{color:#17375e;font-size:9px}.competition-logo-editor-grid{display:grid;grid-template-columns:86px minmax(0,1fr);gap:10px;align-items:center}.competition-logo-preview{display:grid;place-items:center;width:86px;height:86px;border:1px dashed #adc5df;border-radius:12px;background:#fff;overflow:hidden;color:#6d87a4;font-size:26px}.competition-logo-preview img{width:100%;height:100%;object-fit:contain}.competition-logo-fields{display:grid;gap:7px;min-width:0}.competition-logo-fields label{display:grid;gap:4px;color:#56708e;font-size:8px;font-weight:850}.competition-logo-fields input[type=file]{width:100%;min-width:0;font-size:8px}.competition-logo-remove{display:flex!important;grid-template-columns:auto minmax(0,1fr)!important;align-items:center;gap:6px}.competition-logo-fields small{color:#8291a4;font-size:7px}@media(max-width:600px){.competition-catalog-head{gap:6px}.competition-catalog-head-actions{flex-direction:row!important;align-items:center!important;flex-wrap:wrap;justify-content:flex-end}.competition-canonical-edit-btn{font-size:7px}.competition-logo-editor-grid{grid-template-columns:64px minmax(0,1fr)}.competition-logo-preview{width:64px;height:64px}.competition-config-row{grid-template-columns:38px minmax(0,1fr) auto}.competition-logo.is-config,.competition-config-placeholder{width:38px;height:38px}}
+
+
+/* V1.1.90 — logos compétitions / éditions */
+.competition-canonical-entities{display:flex!important;align-items:center!important;gap:8px!important;flex-wrap:wrap!important;margin-top:8px!important}
+.competition-canonical-entity-row{display:grid!important;place-items:center!important;width:64px!important;height:64px!important;padding:5px!important;border:1px solid #dce7f2!important;border-radius:12px!important;background:#fff!important;box-sizing:border-box!important}
+.competition-canonical-entity-row>strong{display:none!important}
+.competition-logo.is-entity,.competition-canonical-entity-icon{width:52px!important;height:52px!important;border-radius:10px!important}
+.competition-canonical-entity-icon{display:grid!important;place-items:center!important;font-size:28px!important}
+.competition-edition-row{display:grid!important;grid-template-columns:70px minmax(0,1fr) auto!important;align-items:start!important;gap:10px!important}
+.competition-edition-identity{display:grid!important;grid-template-rows:auto 58px!important;justify-items:center!important;gap:7px!important;min-width:0!important}
+.competition-edition-year{min-width:0!important;width:100%!important;text-align:center!important;font-size:10px!important;line-height:1.15!important}
+.competition-logo.is-edition,.competition-edition-logo-placeholder{display:grid!important;place-items:center!important;width:58px!important;height:58px!important;border:1px solid #d2dfed!important;border-radius:10px!important;background:#fff!important;overflow:hidden!important;box-sizing:border-box!important}
+.competition-logo.is-edition img{width:100%!important;height:100%!important;object-fit:contain!important}
+.competition-edition-logo-placeholder{font-size:24px!important;color:#6d87a4!important}
+.competition-edition-tags{align-self:start!important;padding-top:2px!important}
+.competition-edition-matches .rel-linked-match-main strong .b3k-svg-flag,
+.competition-edition-matches .rel-linked-match-tile .b3k-svg-flag{width:18px!important;height:12px!important;max-width:18px!important;max-height:12px!important;min-width:18px!important;object-fit:cover!important;display:inline-block!important;vertical-align:middle!important;flex:0 0 18px!important}
+@media(max-width:600px){.competition-canonical-entity-row{width:58px!important;height:58px!important}.competition-logo.is-entity,.competition-canonical-entity-icon{width:46px!important;height:46px!important}.competition-edition-row{grid-template-columns:62px minmax(0,1fr) auto!important}.competition-edition-identity{grid-template-rows:auto 50px!important}.competition-logo.is-edition,.competition-edition-logo-placeholder{width:50px!important;height:50px!important}}

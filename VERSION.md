@@ -1,5 +1,5 @@
 # 3615 Bleus
 
-Version : **V1.1.68**
+Version : **V1.1.92**
 
-Rassemblements : tous les matchs passés/futurs sont sélectionnables. Feuille de match : choix de short élargi à toute la bibliothèque. Points tactiques : 2 couleurs de remplissage + 1 halo indépendant. Couleurs pays : mode uni/dégradé avec angle configurable.
+Affichage Compétitions : logos d’entités agrandis sans texte, logo carré sous l’année des éditions, drapeaux de matchs liés normalisés.

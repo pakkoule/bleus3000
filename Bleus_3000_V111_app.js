@@ -87,16 +87,15 @@
 
   function playerOptions(){const list=window.BLEUS3000_PLAYER_REGISTRY||[];return `<option value="">— Choisir —</option>${list.map(p=>`<option value="${esc(p.name||p.display_name)}">${esc(p.name||p.display_name)}${p.international_number?` · n°${p.international_number}`:p.position?` · ${esc(p.position)}`:''}</option>`).join('')}`;}
   function openTool(kind){
-    if(kind==='formations'&&window.BLEUS3000_FORMATIONS?.open){window.BLEUS3000_FORMATIONS.open();return;}
-    if((kind==='xi'||kind==='five')&&window.BLEUS3000_TEAM_TOOLS?.open){window.BLEUS3000_TEAM_TOOLS.open(kind);}
-    else if(kind==='xi'||kind==='five'){const title=kind==='xi'?'Créateur de Onze':'Créateur de Five';$('#teamToolTitle').textContent=title;$('#teamToolSub').textContent=kind==='xi'?'Composition 11 joueurs · terrain plein':'Composition 5 joueurs · terrain réduit';buildPitch(kind);$('#teamToolModal').dataset.kind=kind;openModal('teamToolModal');}
+    if(kind==='xi'&&window.BLEUS3000_TEAM_TOOLS?.open){window.BLEUS3000_TEAM_TOOLS.open('xi');}
+    else if(kind==='xi'){$('#teamToolTitle').textContent='Créateur de Onze';$('#teamToolSub').textContent='Composition 11 joueurs · terrain plein';buildPitch('xi');$('#teamToolModal').dataset.kind='xi';openModal('teamToolModal');}
     if(kind==='list'&&window.BLEUS3000_SELECTION_LIST?.open){window.BLEUS3000_SELECTION_LIST.open();}
     else if(kind==='list'){buildListTool();openModal('listToolModal');}
   }
   function buildPitch(kind){
-    const n=kind==='xi'?11:5;const coords=kind==='xi'?[[3,5],[2,4],[3,4],[4,4],[5,4],[2,3],[4,3],[3,2],[2,1],[4,1],[3,1]]:[[3,5],[2,3],[4,3],[2,1],[4,1]];
-    $('#pitchSlots').innerHTML=coords.slice(0,n).map((c,i)=>`<div class="player-slot" style="grid-column:${c[0]};grid-row:${c[1]}"><label>${kind==='xi'?(i===0?'GB':i<5?'DEF':i<8?'MIL':'ATT'):(i===0?'GB':i<3?'DEF':'ATT')}</label><select data-lineup-slot="${i}">${playerOptions()}</select></div>`).join('');
-    $('#toolTitleInput').value=kind==='xi'?'Mon XI France':'Mon Five France';
+    const n=11,coords=[[3,5],[2,4],[3,4],[4,4],[5,4],[2,3],[4,3],[3,2],[2,1],[4,1],[3,1]];
+    $('#pitchSlots').innerHTML=coords.slice(0,n).map((c,i)=>`<div class="player-slot" style="grid-column:${c[0]};grid-row:${c[1]}"><label>${i===0?'GB':i<5?'DEF':i<8?'MIL':'ATT'}</label><select data-lineup-slot="${i}">${playerOptions()}</select></div>`).join('');
+    $('#toolTitleInput').value='Mon XI France';
   }
   function buildListTool(){
     const groups=[['Gardiens',3],['Défenseurs',8],['Milieux',7],['Attaquants',8]];$('#listBuilderGrid').innerHTML=groups.map(([name,n])=>`<section class="list-group"><h4>${name}</h4>${Array.from({length:n},(_,i)=>`<select data-list-slot="${esc(name)}-${i}">${playerOptions()}</select>`).join('')}</section>`).join('');

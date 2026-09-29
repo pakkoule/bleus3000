@@ -1,5 +1,5 @@
 
-/* 3615 Bleus V1.1.60 — correctifs visuels et flocages globaux */
+/* 3615 Bleus — correctifs visuels historiques */
 :root{--b3k-flock-sm:24px;--b3k-flock-md:32px;--b3k-flock-lg:44px}
 .b3k-flock-number{display:inline-flex;align-items:flex-end;gap:2px;min-height:1em}
 .b3k-flock-number.b3k-size-sm .b3k-flock-digit{height:var(--b3k-flock-sm)}
@@ -32,13 +32,12 @@ body.b3k-ref-statistiques #referenceEntries > * [class*='intro']{max-width:none!
   body.b3k-ref-maillots #referenceEntries{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))!important}
 }
 
-/* V1.1.60.1 — préférence de flocage centralisée dans Profil > Personnalisation */
-.c3k-flockage-style-card.is-real-png{display:flex;align-items:center;gap:14px;padding:10px 12px;border:1px solid #d5e2f2;border-radius:11px;background:linear-gradient(180deg,#fbfdff,#f1f6fd)}
-.c3k-flockage-real-number{display:flex;align-items:flex-end;justify-content:center;gap:1px;min-width:82px;height:74px;padding:7px 10px;border-radius:9px;background:#123b8f}
-.c3k-flockage-real-number img{display:block;height:60px;width:auto;max-width:42px;object-fit:contain}
-.c3k-flockage-style-meta{display:grid;gap:3px}.c3k-flockage-style-meta strong{font-size:8px;color:#17385f}.c3k-flockage-style-meta span{font-size:6.5px;color:#7187a2}
-.team-player-visual.is-jersey .team-jersey-num{position:absolute!important;top:22px!important;left:50%!important;transform:translateX(-50%);display:flex!important;align-items:flex-end;justify-content:center;gap:0;height:25px;max-width:72%;z-index:2}
-.team-player-visual.is-jersey .team-jersey-num .team-flock-digit{display:block;height:100%;width:auto;max-width:19px;object-fit:contain}
+
+
+
+
+
+
 
 /* V1.1.60.2 — les modules spécialisés doivent occuper toute la grille du référentiel */
 .ref-list > .jersey-reference-grid,

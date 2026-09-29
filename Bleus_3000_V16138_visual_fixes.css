@@ -60,24 +60,7 @@
       rgba(237,244,251,0) 86%)!important;
 }
 
-/* SCOREBOARDS : drapeau seul, sans cartouche blanc. */
-.minitel-scoreboard .minitel-flag,
-.minitel-scoreboard.is-compact .minitel-flag{
-  padding:0!important;
-  border:0!important;
-  background:transparent!important;
-  box-shadow:none!important;
-}
-.minitel-scoreboard .minitel-flag .calendar-svg-flag,
-.minitel-scoreboard .minitel-flag .rel-svg-flag,
-.minitel-scoreboard .calendar-svg-flag,
-.minitel-scoreboard .rel-svg-flag{
-  margin:0!important;
-  border:0!important;
-  outline:0!important;
-  box-shadow:none!important;
-  background:transparent!important;
-}
+/* V1.1.73 — règles scoreboard déplacées vers V130_calendar.css */
 
 @media(max-width:680px){
   .selection-player-row-detail .selection-tile-actions{

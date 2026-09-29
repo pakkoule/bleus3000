@@ -75,7 +75,7 @@
   }
   function formationPaletteHtml(row,compact=false){
     const colors=formationColors(row);
-    if(!colors.length)return `<span class="jersey-formation-colors-empty">Points formation à définir</span>`;
+    if(!colors.length)return `<span class="jersey-formation-colors-empty">Pastille de composition à définir</span>`;
     const halo=formationHaloColor(colors);
     return `<span class="jersey-formation-palette ${compact?'is-compact':''}" style="${formationMarkerStyle(colors)}" title="${esc(colors.join(' · '))}"></span><span class="jersey-formation-color-codes">${esc(colors.slice(0,2).join(' · '))}${halo?` · halo ${esc(halo)}`:''}</span>`;
   }
@@ -125,7 +125,7 @@
   function fields(r){
     return [
       ['Usage',usageLabels[r.usage_type]||r.usage_type||'—'],['Équipementier',r.manufacturer||'—'],['Saison',yearLabel(r)],['Référence',r.manufacturer_reference||r.template_name||'—'],
-      ['Col',r.collar_type||'—'],['Manches',r.sleeve_type||'—'],['Écusson',r.crest_description||'—'],['Flocage n°',r.number_font||'—'],['Version',r.version_type||'—']
+      ['Col',r.collar_type||'—'],['Manches',r.sleeve_type||'—'],['Écusson',r.crest_description||'—'],['Version',r.version_type||'—']
     ];
   }
   function sourcesFor(r){return Array.isArray(r.source_urls)?r.source_urls:(r.sources||[]);}
@@ -196,7 +196,7 @@
       if(filterState.competition!=='all'&&!competitionRelations(r).some(x=>String(x.id)===String(filterState.competition)))return false;
       if(!nq)return true;
       const rel=[...teamRelations(r).map(x=>x.name||x.label),...competitionRelations(r).map(x=>x.name||x.label)];
-      return norm([r.title,r.season_label,r.usage_type,r.manufacturer,r.manufacturer_reference,r.template_name,r.primary_color,r.secondary_color,r.collar_type,r.sleeve_type,r.pattern_description,r.number_font,r.version_type,r.notes_short,...rel].join(' ')).includes(nq);
+      return norm([r.title,r.season_label,r.usage_type,r.manufacturer,r.manufacturer_reference,r.template_name,r.primary_color,r.secondary_color,r.collar_type,r.sleeve_type,r.pattern_description,r.version_type,r.notes_short,...rel].join(' ')).includes(nq);
     });
   }
   function linkedMatchesFor(r,teamId='all'){
@@ -228,7 +228,7 @@
       <div class="jersey-photo-wrap"><button class="jersey-photo-stage" type="button" data-jersey-gallery="${esc(r.id)}">${photo?`<img src="${esc(photo)}" alt="Maillot ${esc(yearLabel(r))}" loading="lazy">`:`<div class="jersey-photo-placeholder"><svg viewBox="0 0 64 64"><path d="M22 12 14 17 7 29l10 6 4-6v23h22V29l4 6 10-6-7-12-8-5-5 7H27z"></path><path d="M27 19h10"></path></svg><strong>Photo à ajouter</strong></div>`}${count>1?`<span class="jersey-photo-count">▧ ${count}</span>`:''}</button>${canEdit()?`<button class="jersey-compact-edit" type="button" data-jersey-edit="${esc(r.id)}" title="Modifier le maillot">✎</button>`:''}</div>
       <div class="jersey-tile-body jersey-compact-body">
         <div class="jersey-compact-meta"><div><span>Année</span><strong>${esc(yearLabel(r))}</strong></div><div class="jersey-equipment-cell"><span>Équipementier</span><strong class="jersey-equipment-display">${equipmentHtml(r)}</strong></div></div>
-        <div class="jersey-formation-colors-card"><span class="jersey-relation-label">Points du schéma formation</span><div>${formationPaletteHtml(r,true)}</div></div>
+        
         <div class="jersey-relation-block jersey-compact-relations"><span class="jersey-relation-label">Équipes</span><div class="jersey-tag-row">${teams.length?teams.map(t=>chipForTeam(t,r.id)).join(''):'<span class="jersey-empty-relation">Aucune équipe reliée</span>'}</div><div class="jersey-tag-separator"></div><span class="jersey-relation-label">Compétitions</span><div class="jersey-tag-row">${comps.length?comps.map(chipForCompetition).join(''):'<span class="jersey-empty-relation">Aucune compétition reliée</span>'}</div></div>
         ${window.BLEUS3000_JERSEY_EQUIPMENT?.cardExtrasHtml?.(r)||''}
         <button class="jersey-expand-btn" type="button" data-jersey-expand="${esc(r.id)}" aria-expanded="false" title="Afficher les matchs liés"><span>+</span></button>
@@ -285,7 +285,7 @@
   function formationColorRow(color,label,kind){const c=validHex(color)||(kind==='halo'?'#FFFFFF':'#123B8F');return `<label class="jersey-formation-color-row is-${kind}"><span>${esc(label)}</span><input type="color" data-formation-color data-formation-kind="${esc(kind)}" value="${c}" aria-label="${esc(label)}"><code>${c}</code></label>`;}
   function formationColorEditorHtml(row={}){
     const colors=formationColors(row),fill1=colors[0]||'#123B8F',fill2=colors[1]||fill1,halo=colors[2]||'#FFFFFF',initial=[fill1,fill2,halo];
-    return `<section class="jersey-editor-section jersey-formation-color-editor"><div class="jersey-editor-section-head"><div><h3>Points du schéma formation</h3><small>Couleurs 1 et 2 = remplissage du point. Couleur 3 = contour / halo lumineux uniquement, indépendant des couleurs pays.</small></div></div><div class="jersey-formation-color-layout"><div class="jersey-formation-color-list" data-formation-color-list>${formationColorRow(fill1,'Couleur 1 · remplissage','fill1')}${formationColorRow(fill2,'Couleur 2 · remplissage','fill2')}${formationColorRow(halo,'Couleur 3 · halo lumineux','halo')}</div><div class="jersey-formation-color-preview"><span>APERÇU</span><i data-formation-color-preview style="${formationMarkerStyle(initial)}"></i><small data-formation-color-codes>${esc(fill1)} · ${esc(fill2)} · halo ${esc(halo)}</small></div></div><input type="hidden" name="formation_colors_json" value="${esc(JSON.stringify(initial))}"></section>`;
+    return `<section class="jersey-editor-section jersey-formation-color-editor"><div class="jersey-editor-section-head"><div><h3>Pastille de composition</h3><small>Couleurs 1 et 2 = remplissage derrière le numéro du maillot. Couleur 3 = contour / halo lumineux. Ce réglage est indépendant du halo des pays.</small></div></div><div class="jersey-formation-color-layout"><div class="jersey-formation-color-list" data-formation-color-list>${formationColorRow(fill1,'Couleur 1 · remplissage','fill1')}${formationColorRow(fill2,'Couleur 2 · remplissage','fill2')}${formationColorRow(halo,'Couleur 3 · halo lumineux','halo')}</div><div class="jersey-formation-color-preview"><span>APERÇU</span><i data-formation-color-preview style="${formationMarkerStyle(initial)}"></i><small data-formation-color-codes>${esc(fill1)} · ${esc(fill2)} · halo ${esc(halo)}</small></div></div><input type="hidden" name="formation_colors_json" value="${esc(JSON.stringify(initial))}"></section>`;
   }
   function bindFormationColorEditor(form){const list=$('[data-formation-color-list]',form),hidden=form.elements.formation_colors_json,preview=$('[data-formation-color-preview]',form),codes=$('[data-formation-color-codes]',form);if(!list||!hidden)return;const sync=()=>{const colors=$$('[data-formation-color]',list).map(x=>validHex(x.value)).filter(Boolean).slice(0,3);hidden.value=JSON.stringify(colors);if(preview)preview.setAttribute('style',formationMarkerStyle(colors));if(codes)codes.textContent=`${colors[0]||'—'} · ${colors[1]||'—'} · halo ${colors[2]||'—'}`;$$('.jersey-formation-color-row',list).forEach(row=>{const input=$('[data-formation-color]',row),code=$('code',row);if(code&&input)code.textContent=validHex(input.value)||input.value;});};list.addEventListener('input',e=>{if(e.target.matches('[data-formation-color]'))sync();});sync();}
   function editorHtml(row={}){

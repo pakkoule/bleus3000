@@ -444,3 +444,57 @@ input,select,textarea{scroll-margin-block:96px}
 @media(max-width:420px){
   .bleus-header-logo{width:112px}
 }
+
+/* V1.1.89 — responsive plus fluide + barre d'outils centrée */
+@media (max-width:1024px){
+  .top-header{
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-areas:"logo" "tools" "left"!important;
+    justify-items:stretch!important;
+    gap:9px!important;
+  }
+  .logo-wrap{justify-content:flex-start!important}
+  .top-header>.card-ghost-controls{
+    grid-area:tools!important;
+    width:100%!important;
+    justify-self:stretch!important;
+    align-self:center!important;
+    display:flex!important;
+    justify-content:center!important;
+  }
+  .top-header>.card-ghost-controls .toolbar-primary-actions{
+    width:max-content!important;
+    max-width:100%!important;
+    margin-inline:auto!important;
+    justify-content:center!important;
+    overflow-x:auto!important;
+    scrollbar-width:none;
+  }
+  .top-header>.card-ghost-controls .toolbar-primary-actions::-webkit-scrollbar{display:none}
+  .top-header>.card-ghost-controls .toolbar-drop-panel{
+    left:50%!important;
+    right:auto!important;
+    transform:translateX(-50%)!important;
+    width:min(360px,calc(100vw - 24px))!important;
+  }
+  .home-dashboard-grid,.dashboard-grid,.dashboard-secondary{min-width:0!important}
+  .home-dashboard-grid>* ,.dashboard-grid>* ,.dashboard-secondary>*{min-width:0!important;max-width:100%!important}
+  .calendar-home-match-tile,.home-event-card,.rel-ref-tile,.competition-catalog-tile{max-width:100%!important;min-width:0!important}
+  .modal-dialog{width:min(96vw,940px)!important;max-height:92dvh!important}
+  .modal-body{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+}
+@media (max-width:640px){
+  body{padding-inline:max(6px,var(--b3k-safe-left)) max(6px,var(--b3k-safe-right))!important}
+  .top-header{padding:9px!important;border-radius:14px!important}
+  .card-ghost-btn{width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important}
+  .toolbar-primary-actions{gap:6px!important;padding:5px!important}
+  .home-dashboard-grid{gap:8px!important}
+  .calendar-home,.home-events-panel,.home-search-panel{border-radius:11px!important}
+  .calendar-home-match-tile{padding-inline:8px!important}
+  .b3k-scoreline{gap:3px!important;padding-inline:0!important}
+  .b3k-scoreline-team{padding-inline:2px!important;gap:3px!important}
+  .b3k-scoreline-name{font-size:8.5px!important;padding-inline:3px!important}
+  .modal-backdrop{padding:6px!important;align-items:flex-end!important}
+  .modal-dialog{width:100%!important;max-width:100%!important;max-height:94dvh!important;border-radius:16px 16px 8px 8px!important}
+  .modal-head{position:sticky;top:0;z-index:3}
+}

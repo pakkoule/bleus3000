@@ -122,7 +122,7 @@
 }
 
 /* Derniers résultats */
-.calendar-recent-home .calendar-home-icon{background:#153f9e}
+.calendar-recent-home .calendar-home-icon{}
 .calendar-recent-home #calendarRecentList{display:grid;gap:7px;padding:8px;background:#f8fbff}
 .calendar-recent-home .calendar-home-head{grid-template-columns:minmax(0,1fr) auto!important}
 .calendar-recent-home .calendar-open-all{justify-self:end}
@@ -143,25 +143,7 @@
 .calendar-result-outcome.is-draw{background:#fff6d8;color:#715616;border-color:#ead58d}
 .calendar-result-outcome.is-loss{background:#fff0f0;color:#a9333d;border-color:#efc5c9}
 
-/* La case score devient le code couleur du résultat */
-.minitel-scoreboard.is-result-win .minitel-score{
-  background:linear-gradient(180deg,#238654,#17683f)!important;
-  color:#fff!important;
-  border-color:#0f4f31!important;
-  text-shadow:0 1px 0 rgba(0,0,0,.18);
-}
-.minitel-scoreboard.is-result-draw .minitel-score{
-  background:linear-gradient(180deg,#f5d95d,#e5b938)!important;
-  color:#1a2d49!important;
-  border-color:#9f7c18!important;
-  text-shadow:none;
-}
-.minitel-scoreboard.is-result-loss .minitel-score{
-  background:linear-gradient(180deg,#df4a55,#b82d3b)!important;
-  color:#fff!important;
-  border-color:#8f202c!important;
-  text-shadow:0 1px 0 rgba(0,0,0,.18);
-}
+/* V1.1.73 — couleurs de score déplacées vers le scoreboard canonique V130_calendar.css */
 
 /* Bloc Événements */
 .home-events-panel{

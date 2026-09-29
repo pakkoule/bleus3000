@@ -45,14 +45,12 @@
   const kitPill=(label,x)=>`<span class="jersey-kit-pill" title="${esc(x.title||label)}">${componentUrl(x)?`<img src="${esc(componentUrl(x))}" alt="">`:''}<b>${esc(label)}</b><span>${esc(x.title||'')}</span></span>`;
   function cardExtrasHtml(row){
     const sh=componentsFor(row.id,'short'),so=componentsFor(row.id,'socks'),vs=variantsFor(row.id),ps=patchesFor(row.id);
-    const flock=row.flocking_example_name||row.flocking_example_number||row.flocking_example_photo_url;
-    if(!sh.length&&!so.length&&!vs.length&&!ps.length&&!flock)return '';
+    if(!sh.length&&!so.length&&!vs.length&&!ps.length)return '';
     return `<div class="jersey-kit-summary">
       ${sh.length?`<div class="jersey-kit-summary-row"><span class="jersey-relation-label">Shorts associés</span><div class="jersey-kit-pills">${sh.slice(0,4).map(x=>kitPill('Short',x)).join('')}</div></div>`:''}
       ${so.length?`<div class="jersey-kit-summary-row"><span class="jersey-relation-label">Chaussettes associées</span><div class="jersey-kit-pills">${so.slice(0,4).map(x=>kitPill('Chaussettes',x)).join('')}</div></div>`:''}
       ${vs.length?`<div class="jersey-kit-summary-row"><span class="jersey-relation-label">Variantes</span><div class="jersey-kit-pills">${vs.slice(0,4).map(x=>`<span class="jersey-kit-pill is-text">${(x.image_url||storageUrl(x.image_path))?`<img src="${esc(x.image_url||storageUrl(x.image_path))}" alt="">`:''}<b>${esc(x.sleeve_type||x.usage_type||x.label)}</b><span>${esc(x.label)}</span></span>`).join('')}</div></div>`:''}
       ${ps.length?`<div class="jersey-kit-summary-row"><span class="jersey-relation-label">Patchs</span><div class="jersey-kit-pills">${ps.map(x=>`<span class="jersey-kit-pill is-text">${x.image_url?`<img src="${esc(x.image_url)}" alt="">`:''}<span>${esc(x.name)}</span></span>`).join('')}</div></div>`:''}
-      ${flock?`<div class="jersey-flocking-example">${row.flocking_example_photo_url?`<img src="${esc(row.flocking_example_photo_url)}" alt="Exemple de flocage">`:`<span class="jersey-flocking-number">${esc(row.flocking_example_number??'—')}</span>`}<div><small>Exemple de flocage</small><strong>${esc(row.flocking_example_name||'Nom joueur')} ${row.flocking_example_number?`· ${esc(row.flocking_example_number)}`:''}</strong></div></div>`:''}
     </div>`;
   }
 
@@ -63,7 +61,7 @@
     const patchSel=new Set(byJersey(jerseyPatchLinks,row.id).map(x=>String(x.patch_id)));
     const sh=components.filter(x=>x.component_type==='short'),so=components.filter(x=>x.component_type==='socks'),vs=variantsFor(row.id);
     return `<section class="jersey-editor-section jersey-equipment-editor"><div class="jersey-editor-section-head"><h3>Tenue complète & variantes</h3><button type="button" class="secondary-btn" data-kit-library-open>Bibliothèque shorts / chaussettes / patchs</button></div>
-      <div class="jersey-editor-grid"><label>Famille / génération<input name="family_key" maxlength="80" value="${esc(row.family_key||'')}" placeholder="Ex. france-2026-nike"></label><label>Nom exemple flocage<input name="flocking_example_name" maxlength="80" value="${esc(row.flocking_example_name||'')}" placeholder="Ex. MBAPPÉ"></label><label>N° exemple flocage<input name="flocking_example_number" type="number" min="0" max="99" value="${esc(row.flocking_example_number??'')}"></label><label class="jersey-editor-span-3">Image exemple flocage<input name="flocking_example_photo_url" type="url" value="${esc(row.flocking_example_photo_url||'')}" placeholder="https://…"></label></div>
+      <div class="jersey-editor-grid"><label>Famille / génération<input name="family_key" maxlength="80" value="${esc(row.family_key||'')}" placeholder="Ex. france-2026-nike"></label></div>
       <div class="jersey-equipment-columns"><div><span class="jersey-relation-label">Shorts compatibles · plusieurs possibles</span><div class="jersey-equipment-choice-list" data-kit-choice="short">${options(sh,kitSel,x=>`${x.title}${x.season_label?` · ${x.season_label}`:''}`)}</div></div><div><span class="jersey-relation-label">Chaussettes compatibles · plusieurs possibles</span><div class="jersey-equipment-choice-list" data-kit-choice="socks">${options(so,kitSel,x=>`${x.title}${x.season_label?` · ${x.season_label}`:''}`)}</div></div></div>
       <div class="jersey-editor-separator"></div><div class="jersey-editor-section-head"><h3>Variantes directement liées au maillot</h3><button type="button" class="secondary-btn" data-add-jersey-variant>＋ Variante</button></div><div class="jersey-variant-editor-list" data-jersey-variant-list>${vs.map(variantRow).join('')}</div>
     </section>
@@ -81,8 +79,7 @@
   }
   async function saveEditorExtras(jerseyId,form,fd){
     const c=client(); if(!c||!jerseyId)return;
-    const n=fd.get('flocking_example_number');
-    const {error:je}=await c.from('jerseys').update({family_key:String(fd.get('family_key')||'').trim()||null,flocking_example_name:String(fd.get('flocking_example_name')||'').trim()||null,flocking_example_number:n===''||n===null?null:Number(n),flocking_example_photo_url:String(fd.get('flocking_example_photo_url')||'').trim()||null,updated_at:new Date().toISOString()}).eq('id',jerseyId);if(je)throw je;
+    const {error:je}=await c.from('jerseys').update({family_key:String(fd.get('family_key')||'').trim()||null,updated_at:new Date().toISOString()}).eq('id',jerseyId);if(je)throw je;
     const compEls=$$('[data-kit-choice] input:checked',form),compIds=compEls.map(x=>x.value);
     const oppIds=$$('[data-opponent-choice] input:checked',form).map(x=>x.value);
     const patchIds=$$('[data-patch-choice] input:checked',form).map(x=>x.value);

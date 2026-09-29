@@ -45,3 +45,6 @@
 .jersey-equipment-cell .jersey-equipment-display{flex:1;width:100%;margin:0;display:grid!important;place-items:center;min-height:46px;overflow:visible;white-space:normal}
 .jersey-equipment-cell .equipment-compact,.jersey-equipment-cell .equipment-compact--logo-only{width:100%;height:100%;display:grid;place-items:center}
 .jersey-equipment-cell .equipment-compact img{max-width:112px;max-height:42px;margin:auto}
+
+/* V1.1.78 — lecture feuille : le maillot est une image seule ; la mise en page détaillée reste réservée à l'éditeur. */
+.match-sheet-kit-media-row .match-sheet-current-jersey>div{display:none!important}

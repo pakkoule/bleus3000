@@ -1,117 +1,19 @@
-/* 3615 Bleus V1.1.61.46 — Matchs / feuilles / tenues / joueurs */
+/* 3615 Bleus — affinages Matchs / feuilles / tenues / joueurs */
 
 /* Référentiel Matchs : une seule tuile par ligne. */
-.rel-match-grid{
-  grid-template-columns:minmax(0,1fr)!important;
-  width:100%!important;
-}
+.rel-match-grid{grid-template-columns:minmax(0,1fr)!important;width:100%!important}
 .rel-match-grid>.rel-match-tile{width:100%;min-width:0}
-.match-finished-only-filter{
-  display:inline-flex;align-items:center;gap:7px;min-height:32px;padding:0 10px;
-  border:1px solid #cbdced;border-radius:9px;background:#fff;color:#17375e;
-  font-size:8px;font-weight:800;white-space:nowrap
-}
+.match-finished-only-filter{display:inline-flex;align-items:center;gap:7px;min-height:32px;padding:0 10px;border:1px solid #cbdced;border-radius:9px;background:#fff;color:#17375e;font-size:8px;font-weight:800;white-space:nowrap}
 .match-finished-only-filter input{width:14px;height:14px;margin:0;accent-color:#1f62e8}
 
 /* Le maillot n'apparaît pas dans la tuile fermée : seulement dans la feuille dépliée. */
 .rel-match-jersey-preview{display:none!important}
 
 /* Tenue portée : relation maillot + short + chaussettes + variante. */
-.match-sheet-kit-summary-inline{
-  display:block;margin-top:3px;color:#657e9b;font-size:7px;font-weight:700;line-height:1.35
-}
+.match-sheet-kit-summary-inline{display:block;margin-top:3px;color:#657e9b;font-size:7px;font-weight:700;line-height:1.35}
 
-/* Chronologie compacte des faits de jeu, au-dessus du terrain tactique. */
-.match-sheet-facts-timeline{
-  position:relative;display:flex;align-items:flex-start;gap:10px;overflow-x:auto;
-  margin:10px 0 12px;padding:12px 8px 8px;scrollbar-width:thin
-}
-.match-sheet-facts-timeline-track{
-  position:absolute;left:12px;right:12px;top:22px;height:2px;background:#bfd2e9;border-radius:999px
-}
-.match-sheet-facts-timeline-event{
-  position:relative;z-index:1;flex:0 0 92px;min-width:92px;text-align:center;color:#24496f
-}
-.match-sheet-facts-timeline-event:before{
-  content:"";display:block;width:10px;height:10px;margin:5px auto 5px;border-radius:50%;
-  background:#2f6de0;border:2px solid #fff;box-shadow:0 0 0 2px #9dbce2
-}
-.match-sheet-facts-timeline-event.is-goal:before{background:#1e9b59}
-.match-sheet-facts-timeline-event.is-card:before{background:#f4c62f}
-.match-sheet-facts-timeline-event.is-sub:before{background:#5c78a5}
-.match-sheet-facts-timeline-event>b{display:block;font-size:8px;color:#173b69}
-.match-sheet-facts-timeline-event>span{display:block;margin-top:2px;font-size:7px;line-height:1.25;white-space:normal}
 
-/* Schéma tactique : uniquement I.Nom, aucun rappel du poste sous le nom. */
-.match-sheet-mini-token{min-width:48px;max-width:88px;padding:4px 6px}
-.match-sheet-mini-token b{font-size:8px;line-height:1.1;overflow:visible;text-overflow:clip}
-.match-sheet-mini-token span{display:none!important}
+@media(max-width:760px){.match-finished-only-filter{width:100%;justify-content:flex-start}}
 
-/* Compteur du nombre de matchs joués avec chaque numéro de maillot. */
-.selection-jersey-visual{position:relative}
-.selection-jersey-worn-count{
-  position:absolute;right:-5px;top:-5px;display:grid;place-items:center;min-width:20px;height:18px;padding:0 4px;
-  border-radius:999px;background:#0c2c5c;color:#fff;border:2px solid #eef5fc;
-  font-size:7px;font-weight:900;line-height:1;box-shadow:0 2px 6px rgba(7,31,66,.18)
-}
-
-@media(max-width:760px){
-  .match-finished-only-filter{width:100%;justify-content:flex-start}
-  .match-sheet-facts-timeline-event{flex-basis:82px;min-width:82px}
-}
-
-/* V1.1.61.47 — ajustements visuels feuille de match */
-/* Chronologie plus compacte pour afficher toute la séquence sans déborder. */
-.match-sheet-facts-timeline{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:4px;
-  overflow:visible;
-  padding:10px 2px 4px;
-}
-.match-sheet-facts-timeline-track{
-  left:10px;
-  right:10px;
-  top:18px;
-}
-.match-sheet-facts-timeline-event{
-  flex:1 1 0;
-  min-width:0;
-  max-width:none;
-}
-.match-sheet-facts-timeline-event:before{
-  width:9px;
-  height:9px;
-  margin:3px auto 4px;
-}
-.match-sheet-facts-timeline-event>b{
-  font-size:7px;
-  line-height:1.05;
-}
-.match-sheet-facts-timeline-event>span{
-  font-size:6px;
-  line-height:1.15;
-  overflow-wrap:anywhere;
-}
-
-/* Schéma centré et sans ligne médiane. */
-.match-sheet-tactical-preview{
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  padding:12px;
-}
-.match-sheet-mini-pitch{
-  width:min(100%,460px);
-  margin:0 auto;
-}
-.match-sheet-mini-pitch:after{
-  display:none;
-}
-
-@media(max-width:900px){
-  .match-sheet-facts-timeline{flex-wrap:wrap;justify-content:center;row-gap:8px;padding-top:4px}
-  .match-sheet-facts-timeline-track{display:none}
-  .match-sheet-facts-timeline-event{flex:0 1 72px;min-width:72px}
-}
+/* V1.1.73 — bouton Modifier la feuille : règle canonique */
+.match-sheet-edit-btn{pointer-events:auto!important;position:relative!important;z-index:5!important;cursor:pointer!important}
