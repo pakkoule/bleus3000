@@ -22,7 +22,7 @@
     if(!selectionIds.length)return [];
     const out=[];let from=0;const chunk=1000;
     while(true){
-      const {data,error}=await client.from('player_selection_stats').select(`player_id,selection_id,appearance_status,selections,international_number,player:players!player_selection_stats_player_id_fkey(id,display_name,last_name,primary_position,secondary_positions,birth_date,photo_path,gender)`).in('selection_id',selectionIds).range(from,from+chunk-1);
+      const {data,error}=await client.from('player_selection_stats').select(`player_id,selection_id,appearance_status,selections,international_number,player:players!player_selection_stats_player_id_fkey(id,display_name,last_name,primary_position,secondary_positions,birth_date,death_date,photo_path,gender)`).in('selection_id',selectionIds).range(from,from+chunk-1);
       if(error)throw error;const rows=data||[];out.push(...rows);if(rows.length<chunk)break;from+=chunk;
     }
     return out;
@@ -52,7 +52,7 @@
       international_number:p.teams.find(t=>t.code==='FRA-A-M')?.international_number||null,
       selection_code:'FRA-A-M',selection_names:p.teams.map(t=>t.name),team_codes:p.teams.map(t=>t.code),
       team_tag_ids:(p.teamTags||[]).map(x=>x.tag.id),team_tag_labels:(p.teamTags||[]).map(x=>x.tag.label_text),
-      jersey_numbers:p.jerseyNumbers||[],birth_date:p.birth_date,photo_path:p.photo_path
+      jersey_numbers:p.jerseyNumbers||[],birth_date:p.birth_date,death_date:p.death_date||null,photo_path:p.photo_path
     })).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
     window.BLEUS3000_PLAYER_REGISTRY_ALL=reg;
     window.BLEUS3000_PLAYER_REGISTRY=reg;
@@ -75,7 +75,7 @@
     for(const row of stats){
       const team=teamMap.get(String(row.selection_id)),p=row.player||{};if(!team||!p.id)continue;
       let item=map.get(String(p.id));
-      if(!item){const cleanName=String(p.display_name||'Joueur').replace(/\s+/g,' ').trim();item={id:p.id,name:cleanName,last_name:String(p.last_name||'').replace(/\s+/g,' ').trim(),nameVariants:nameVariants(cleanName,p.last_name||''),position:p.primary_position||'',positions:[...new Set([p.primary_position,...(p.secondary_positions||[])].filter(Boolean))],birth_date:p.birth_date||null,gender:p.gender||'',photo_path:p.photo_path||null,teams:[]};map.set(String(p.id),item);}
+      if(!item){const cleanName=String(p.display_name||'Joueur').replace(/\s+/g,' ').trim();item={id:p.id,name:cleanName,last_name:String(p.last_name||'').replace(/\s+/g,' ').trim(),nameVariants:nameVariants(cleanName,p.last_name||''),position:p.primary_position||'',positions:[...new Set([p.primary_position,...(p.secondary_positions||[])].filter(Boolean))],birth_date:p.birth_date||null,death_date:p.death_date||null,gender:p.gender||'',photo_path:p.photo_path||null,teams:[]};map.set(String(p.id),item);}
       if(!item.teams.some(x=>String(x.id)===String(team.id)))item.teams.push({...team,appearance_status:row.appearance_status,international_number:row.international_number,selections:row.selections});
     }
     players=[...map.values()];

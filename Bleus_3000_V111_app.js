@@ -12,7 +12,7 @@
   let activeSearchIndex=-1, activeSearchItems=[];
 
 
-  function refEmoji(key){return ({selections:'👤',staff:'👔',matchs:'⚽',competitions:'🏆',adversaires:'🌍',arbitres:'🟨',maillots:'👕',statistiques:'📊',lieux:'🏟️',rassemblements:'📋'})[key]||'▦';}
+  function refEmoji(key){return ({selections:'👤',staff:'👔',matchs:'⚽',competitions:'🏆',adversaires:'🌍',arbitres:'🟨',maillots:'👕',statistiques:'📊',lieux:'🏟️',rassemblements:'📋',livres:'📚',buts:'🥅',panini:'🟨'})[key]||'▦';}
 
   function renderDashboard(){
     // V1.1.14 : l'accueil est désormais occupé par la base globale des joueurs.
@@ -29,14 +29,81 @@
   function openModal(id){const m=$('#'+id);if(!m)return;m.hidden=false;document.body.style.overflow='hidden';}
   function closeModal(id){const m=$('#'+id);if(!m)return;m.hidden=true;if(!$$('.modal-backdrop:not([hidden]),.c3k-v8-panel-backdrop:not([hidden])').length)document.body.style.overflow='';}
 
-  function setupToolbar(){
-    $$('.toolbar-group-toggle').forEach(btn=>btn.addEventListener('click',e=>{
-      e.stopPropagation();const key=btn.dataset.toolbarMenu;$$('.toolbar-drop-panel').forEach(p=>{const own=p.dataset.toolbarPanel===key;p.hidden=own?!p.hidden:true;});$$('.toolbar-group-toggle').forEach(x=>x.classList.toggle('is-active',x===btn&&!$(`[data-toolbar-panel="${key}"]`).hidden));
-    }));
-    document.addEventListener('click',e=>{if(!e.target.closest('.card-ghost-controls')){$$('.toolbar-drop-panel').forEach(p=>p.hidden=true);$$('.toolbar-group-toggle').forEach(x=>x.classList.remove('is-active'));}});
-    $$('[data-tool-open]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.toolOpen;$$('.toolbar-drop-panel').forEach(p=>p.hidden=true);openTool(k);}));
-    $$('[data-reference-open]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.referenceOpen;$$('.toolbar-drop-panel').forEach(p=>p.hidden=true);openReferences(k);}));
+  let navigationOverlay=null;
+  function navigationItemsHtml(){
+    const refs=[
+      ['selections','👤','Internationaux A'],['staff','👔','Staff'],['matchs','⚽','Matchs'],
+      ['rassemblements','📋','Rassemblements'],['livres','📚','Livres'],['buts','🥅','Buts'],['panini','🟨','Panini'],['competitions','🏆','Compétitions'],
+      ['adversaires','🌍','Adversaires'],['arbitres','🟨','Arbitres'],['maillots','👕','Maillots'],
+      ['statistiques','📊','Statistiques'],['lieux','🏟️','Stades']
+    ];
+    return `<section class="c3k-navigation-section"><h3>Outils</h3><div class="c3k-navigation-grid is-tools"><button type="button" data-navigation-tool="xi"><span class="c3k-navigation-icon" aria-hidden="true">•</span><strong>Mon Onze</strong><small>Créer une composition</small></button><button type="button" data-navigation-tool="list"><span class="c3k-navigation-icon" aria-hidden="true">•</span><strong>Liste sélectionneur</strong><small>Composer une liste</small></button></div></section><section class="c3k-navigation-section"><h3>Référentiels</h3><div class="c3k-navigation-grid">${refs.map(([key,icon,label])=>`<button type="button" data-navigation-reference="${key}"><span class="c3k-navigation-icon" aria-hidden="true">•</span><strong>${label}</strong></button>`).join('')}</div></section>`;
   }
+  function ensureNavigationOverlay(){
+    if(navigationOverlay&&document.body.contains(navigationOverlay))return navigationOverlay;
+    navigationOverlay=document.createElement('div');
+    navigationOverlay.id='c3kNavigationOverlay';
+    navigationOverlay.className='c3k-navigation-overlay';
+    navigationOverlay.hidden=true;
+    navigationOverlay.setAttribute('role','navigation');
+    navigationOverlay.setAttribute('aria-label','Navigation 3615 Bleus');
+    navigationOverlay.innerHTML=`<div class="c3k-navigation-body">${navigationItemsHtml()}</div>`;
+    document.body.appendChild(navigationOverlay);
+    navigationOverlay.addEventListener('click',e=>{
+      const tool=e.target.closest('[data-navigation-tool]');if(tool){const kind=tool.dataset.navigationTool;closeNavigation();openTool(kind);return;}
+      const ref=e.target.closest('[data-navigation-reference]');if(ref){const key=ref.dataset.navigationReference;closeNavigation();openReferences(key);}
+    });
+    return navigationOverlay;
+  }
+  function positionNavigation(){
+    const launcher=$('#c3kNavigationLauncher'),toggle=launcher?.querySelector('[data-navigation-open]'),overlay=ensureNavigationOverlay();
+    if(!toggle||overlay.hidden)return;
+    const r=toggle.getBoundingClientRect(),margin=10,maxW=340;
+    const available=Math.max(280,window.innerWidth-margin*2);
+    const width=Math.min(maxW,available);
+    let left=Math.min(Math.max(margin,r.left),window.innerWidth-width-margin);
+    if(window.innerWidth<=720)left=margin;
+    const top=Math.min(r.bottom+7,window.innerHeight-90);
+    overlay.style.width=`${width}px`;
+    overlay.style.left=`${Math.round(left)}px`;
+    overlay.style.top=`${Math.round(top)}px`;
+    overlay.style.maxHeight=`${Math.max(180,Math.round(window.innerHeight-top-margin))}px`;
+  }
+  function openNavigation(){
+    const overlay=ensureNavigationOverlay(),launcher=$('#c3kNavigationLauncher'),toggle=launcher?.querySelector('[data-navigation-open]');
+    if(!toggle)return;
+    overlay.hidden=false;
+    launcher.classList.add('is-open');
+    toggle.setAttribute('aria-expanded','true');
+    positionNavigation();
+    requestAnimationFrame(()=>overlay.classList.add('is-visible'));
+  }
+  function closeNavigation(){
+    const overlay=ensureNavigationOverlay(),launcher=$('#c3kNavigationLauncher'),toggle=launcher?.querySelector('[data-navigation-open]');
+    overlay.classList.remove('is-visible');
+    launcher?.classList.remove('is-open');
+    toggle?.setAttribute('aria-expanded','false');
+    window.setTimeout(()=>{if(!overlay.classList.contains('is-visible'))overlay.hidden=true;},120);
+  }
+  function toggleNavigation(){const overlay=ensureNavigationOverlay();overlay.hidden||!overlay.classList.contains('is-visible')?openNavigation():closeNavigation();}
+  function mountNavigationLauncher(afterNode){
+    const rail=afterNode?.parentElement||$('#c3kTopLeftRail');if(!rail)return null;
+    let launcher=$('#c3kNavigationLauncher');
+    if(!launcher){launcher=document.createElement('section');launcher.id='c3kNavigationLauncher';launcher.className='c3k-navigation-launcher';launcher.innerHTML='<button type="button" class="c3k-navigation-toggle" data-navigation-open aria-expanded="false"><span>☰ Navigation</span><b>▾</b></button>';}
+    if(afterNode?.parentElement===rail){afterNode.insertAdjacentElement('afterend',launcher);}else rail.appendChild(launcher);
+    return launcher;
+  }
+  function setupNavigation(){
+    ensureNavigationOverlay();
+    document.addEventListener('click',e=>{
+      const open=e.target.closest('[data-navigation-open]');if(open){e.preventDefault();e.stopPropagation();toggleNavigation();return;}
+      if(navigationOverlay&&!navigationOverlay.hidden&&!e.target.closest('#c3kNavigationOverlay')&&!e.target.closest('#c3kNavigationLauncher'))closeNavigation();
+    });
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'&&navigationOverlay&&!navigationOverlay.hidden)closeNavigation();});
+    window.addEventListener('resize',positionNavigation,{passive:true});
+    window.addEventListener('scroll',positionNavigation,{passive:true,capture:true});
+  }
+  window.BLEUS3000_NAVIGATION={mount:mountNavigationLauncher,open:openNavigation,close:closeNavigation};
 
   function entriesFor(key){return D.referenceEntries?.[key]||[];}
   const facetConfigs={};
@@ -52,9 +119,9 @@
     return rows.filter(row=>cfg.every(f=>{const val=st[f.key]||'all';return val==='all'||facetValues(row,f).includes(val);}));
   }
 
-  function canAddReference(key){return canAdminEdit()&&['selections','matchs','rassemblements','maillots','competitions','adversaires','staff','arbitres','lieux'].includes(key);}
+  function canAddReference(key){return canAdminEdit()&&['selections','matchs','rassemblements','maillots','competitions','adversaires','staff','arbitres','lieux','livres','panini','buts'].includes(key);}
   function openReferences(key='selections'){
-    refState.key=key;refState.query='';const rs=$('#referenceSearch');if(rs){rs.value='';rs.placeholder=`Rechercher dans ${D.references.find(x=>x.key===key)?.title||'ce référentiel'}…`;rs.hidden=false;}hideReferenceFacetBar();renderReferenceEntries();openModal('referenceModal');
+    refState.key=key;refState.query='';if(key==='buts')window.BLEUS3000_COLLECTIONS?.invalidateGoals?.();const refModal=$('#referenceModal');if(refModal)refModal.dataset.referenceKind=key;const rs=$('#referenceSearch');if(rs){rs.value='';rs.placeholder=`Rechercher dans ${D.references.find(x=>x.key===key)?.title||'ce référentiel'}…`;rs.hidden=false;}hideReferenceFacetBar();renderReferenceEntries();openModal('referenceModal');
   }
   function renderReferenceEntries(){
     const addBtn=$('#addReferenceEntry');if(addBtn)addBtn.hidden=!canAddReference(refState.key);hideReferenceFacetBar();const matchBar=$('#matchReferenceFilters');if(matchBar)matchBar.hidden=true;
@@ -64,6 +131,7 @@
     if((refState.key==='matchs'||refState.key==='adversaires'||refState.key==='staff'||refState.key==='arbitres'||refState.key==='lieux')&&window.BLEUS3000_RELATIONAL_REFS){window.BLEUS3000_RELATIONAL_REFS.render(refState.key,refState.query);return;}
     if(refState.key==='statistiques'&&window.BLEUS3000_STATISTICS){window.BLEUS3000_STATISTICS.render(refState.query);return;}
     if(refState.key==='maillots'&&window.BLEUS3000_JERSEYS){window.BLEUS3000_JERSEYS.render(refState.query);return;}
+    if(['livres','buts','panini'].includes(refState.key)&&window.BLEUS3000_COLLECTIONS){window.BLEUS3000_COLLECTIONS.render(refState.key,refState.query);return;}
     const cat=$('#selectionCategoryTabs');if(cat)cat.hidden=true;const sf=$('#selectionFilterBar');if(sf)sf.hidden=true;const add=$('#addReferenceEntry');if(add)add.hidden=!canAddReference(refState.key);
     const q=refState.query.trim().toLowerCase();const allRows=entriesFor(refState.key);let rows=allRows.filter(x=>!q||JSON.stringify(x).toLowerCase().includes(q));rows=renderStaticFacetBar(refState.key,rows);
     const ref=D.references.find(x=>x.key===refState.key);$('#referenceModalTitle').textContent=ref?.title||'Référentiel';$('#referenceModalSub').textContent=ref?.description||'';$('#referenceCount').textContent=`${rows.length} tuile${rows.length>1?'s':''}`;
@@ -81,6 +149,7 @@
     if(refState.key==='rassemblements'&&window.BLEUS3000_GATHERINGS?.openNew){window.BLEUS3000_GATHERINGS.openNew();return;}
     if(refState.key==='maillots'&&window.BLEUS3000_JERSEYS?.openNew){window.BLEUS3000_JERSEYS.openNew();return;}
     if(refState.key==='competitions'&&window.BLEUS3000_V161?.openNewCompetition){window.BLEUS3000_V161.openNewCompetition();return;}
+    if(['livres','panini','buts'].includes(refState.key)&&window.BLEUS3000_COLLECTIONS?.openNew){window.BLEUS3000_COLLECTIONS.openNew(refState.key);return;}
     if(['adversaires','staff','arbitres','lieux'].includes(refState.key)&&window.BLEUS3000_RELATIONAL_REFS?.openNew){window.BLEUS3000_RELATIONAL_REFS.openNew(refState.key);return;}
     alert('Aucun formulaire Supabase n’est disponible pour ce référentiel.');
   }
@@ -121,6 +190,20 @@
     return `<span class="universal-search-result-icon">${r?.icon||'▦'}</span>`;
   }
 
+  function searchCopyText(type,list,interpretation=''){
+    const header=[interpretation||'',`${type} · ${list.length} résultat${list.length>1?'s':''}`].filter(Boolean).join('\n');
+    const lines=list.map((r,i)=>`${i+1}. ${String(r.title||'').trim()}${r.meta?` — ${String(r.meta).trim()}`:''}`);
+    return [header,...lines].filter(Boolean).join('\n');
+  }
+  async function copySearchGroup(type,list,interpretation,button){
+    const text=searchCopyText(type,list,interpretation);if(!text)return;
+    try{
+      if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(text);
+      else{const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();}
+      if(button){const before=button.textContent;button.textContent='Copié ✓';button.classList.add('is-copied');setTimeout(()=>{button.textContent=before;button.classList.remove('is-copied');},1400);}
+    }catch(err){console.warn('Copie résultats 3615',err);if(button)button.textContent='Copie impossible';}
+  }
+
   function searchDataset(q){
     const out=[],seenPlayers=new Set(),reg=window.BLEUS3000_PLAYER_REGISTRY||[];
     for(const p of reg){
@@ -129,7 +212,11 @@
       if(score<=.48){seenPlayers.add(p.id);out.push({type:'Joueurs',icon:'👤',image:searchPlayerPhoto(p),title:p.name||p.display_name,meta:`${(p.selection_names||[]).slice(0,3).join(' · ')||'Sélections'}${(p.positions||[]).length?' · '+p.positions.join(' / '):p.position?' · '+p.position:''}`,score,action:()=>{const db=window.BLEUS3000_PLAYERS_DB;if(db?.openPlayer)return db.openPlayer(p.id);openReferences('selections');setTimeout(()=>{const inp=$('#referenceSearch');if(inp){inp.value=p.name||p.display_name;inp.dispatchEvent(new Event('input',{bubbles:true}));}},100);}});}
     }
     for(const r of (D.references||[])){const score=fuzzyEntityScore(q,[r.title,r.description,...(r.tags||[])]);if(score<=.48)out.push({type:'Référentiels',icon:refEmoji(r.key),title:r.title,meta:r.description,score:score+.08,action:()=>openReferences(r.key)});}
-    return out.sort((a,b)=>(a.score??9)-(b.score??9)||String(a.title).localeCompare(String(b.title),'fr',{sensitivity:'base'})).slice(0,35);
+    const modules=[window.BLEUS3000_RELATIONAL_REFS?.search?.(q)||[],window.BLEUS3000_GATHERINGS?.search?.(q)||[],window.BLEUS3000_JERSEYS?.search?.(q)||[],window.BLEUS3000_COLLECTIONS?.search?.(q)||[]];
+    modules.flat().forEach(r=>out.push(r));
+    const seen=new Set(),unique=[];
+    for(const r of out.sort((a,b)=>(a.score??9)-(b.score??9)||String(a.title).localeCompare(String(b.title),'fr',{sensitivity:'base'}))){const key=`${r.type||''}|${r.title||''}|${r.meta||''}`;if(seen.has(key))continue;seen.add(key);unique.push(r);if(unique.length>=70)break;}
+    return unique;
   }
   let searchRenderSeq=0,searchTimer=null;
   function renderSearchRows(box,rows,interpretation=''){
@@ -140,14 +227,21 @@
       box.hidden=false;return;
     }
     const grouped=rows.reduce((m,r)=>((m[r.type]??=[]).push(r),m),{}),displayRows=[];
-    box.innerHTML=`${interpretation?`<div class="smart-search-interpretation"><span>3615 comprend</span><strong>${esc(interpretation)}</strong></div>`:''}`+Object.entries(grouped).map(([type,list])=>`<section class="universal-search-section"><div class="universal-search-section-title"><span>${esc(type)}</span><b>${list.length}</b></div>${list.map(r=>{const index=displayRows.push(r)-1;return `<button class="universal-search-result${r.smart?' is-smart':''}" data-search-index="${index}" type="button" role="option">${searchResultVisual(r)}<span class="universal-search-result-copy"><span class="universal-search-result-title">${esc(r.title)}</span><span class="universal-search-result-meta">${esc(r.meta||type)}</span></span><span class="universal-search-result-arrow">›</span></button>`;}).join('')}</section>`).join('');
+    const groupedEntries=Object.entries(grouped);
+    box.innerHTML=`${interpretation?`<div class="smart-search-interpretation"><span>3615 comprend</span><strong>${esc(interpretation)}</strong></div>`:''}`+groupedEntries.map(([type,list],groupIndex)=>`<section class="universal-search-section"><div class="universal-search-section-title"><span>${esc(type)}</span><div class="universal-search-section-actions"><b>${list.length}</b><button class="universal-search-copy-btn" data-search-copy-group="${groupIndex}" type="button" title="Copier toute cette liste">⧉ Copier</button></div></div>${list.map(r=>{const index=displayRows.push(r)-1;return `<button class="universal-search-result${r.smart?' is-smart':''}" data-search-index="${index}" type="button" role="option">${searchResultVisual(r)}<span class="universal-search-result-copy"><span class="universal-search-result-title">${esc(r.title)}</span><span class="universal-search-result-meta">${esc(r.meta||type)}</span></span><span class="universal-search-result-arrow">›</span></button>`;}).join('')}</section>`).join('');
     activeSearchItems=displayRows;box.hidden=false;
     $$('[data-search-index]',box).forEach(b=>b.addEventListener('click',()=>{const row=activeSearchItems[Number(b.dataset.searchIndex)];box.hidden=true;row?.action?.();}));
+    $$('[data-search-copy-group]',box).forEach(b=>b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const entry=groupedEntries[Number(b.dataset.searchCopyGroup)];if(entry)copySearchGroup(entry[0],entry[1],interpretation,b);}));
+  }
+  async function ensureSearchEverywhereLoaded(){
+    await Promise.allSettled([window.BLEUS3000_RELATIONAL_REFS?.load?.(),window.BLEUS3000_GATHERINGS?.load?.(),window.BLEUS3000_JERSEYS?.load?.()]);
   }
   async function renderSearch(q){
     const box=$('#universalSearchResults');if(!box)return;
     const query=String(q||'').trim(),seq=++searchRenderSeq;
     if(!query){box.hidden=true;box.innerHTML='';activeSearchItems=[];activeSearchIndex=-1;return;}
+    box.hidden=false;box.innerHTML='<div class="smart-search-loading"><span class="smart-search-pulse">3615</span><span>Recherche dans tous les blocs…</span></div>';
+    await ensureSearchEverywhereLoaded();if(seq!==searchRenderSeq)return;
     const smart=window.BLEUS3000_SMART_SEARCH;
     if(smart?.shouldHandle?.(query)){
       box.hidden=false;box.innerHTML='<div class="smart-search-loading"><span class="smart-search-pulse">3615</span><span>Analyse de la requête statistique…</span></div>';
@@ -185,7 +279,74 @@
   }
 
 
+  const mobileFilterMedia=window.matchMedia('(max-width:760px)');
+  function countActiveMobileFilters(bar){
+    let count=0;
+    bar.querySelectorAll('select').forEach(sel=>{
+      const val=String(sel.value||'').trim();
+      if(val&&val!=='all')count++;
+    });
+    bar.querySelectorAll('input[type="checkbox"]').forEach(input=>{if(input.checked)count++;});
+    return count;
+  }
+  function syncMobileFilterToggle(bar){
+    const toggle=bar?._mobileFilterToggle;
+    if(!toggle)return;
+    const mobile=mobileFilterMedia.matches;
+    const hidden=!!(bar.hidden||bar.closest('[hidden]'));
+    const expanded=bar.dataset.mobileExpanded==='1';
+    const activeCount=countActiveMobileFilters(bar);
+    const nextHidden=!mobile||hidden;if(toggle.hidden!==nextHidden)toggle.hidden=nextHidden;
+    bar.classList.toggle('is-mobile-collapsed',mobile&&!expanded);
+    toggle.setAttribute('aria-expanded',String(!mobile||expanded));
+    toggle.classList.toggle('is-open',!mobile||expanded);
+    toggle.innerHTML=`<span class="filter-collapse-toggle-copy"><span>Filtres</span>${activeCount?`<span class="filter-collapse-toggle-badge">${activeCount}</span>`:''}</span><span class="filter-collapse-toggle-caret">${mobile&&expanded?'▴':'▾'}</span>`;
+  }
+  function ensureMobileFilterToggle(bar){
+    if(!bar||bar._mobileFilterBound)return;
+    bar._mobileFilterBound=true;
+    if(bar.dataset.mobileExpanded==null)bar.dataset.mobileExpanded=mobileFilterMedia.matches?'0':'1';
+    const toggle=document.createElement('button');
+    toggle.type='button';
+    toggle.className='filter-collapse-toggle';
+    toggle.addEventListener('click',()=>{
+      if(!mobileFilterMedia.matches)return;
+      bar.dataset.mobileExpanded=bar.dataset.mobileExpanded==='1'?'0':'1';
+      syncMobileFilterToggle(bar);
+    });
+    bar._mobileFilterToggle=toggle;
+    bar.parentNode?.insertBefore(toggle,bar);
+    bar.addEventListener('change',()=>syncMobileFilterToggle(bar));
+    bar.addEventListener('input',()=>syncMobileFilterToggle(bar));
+    syncMobileFilterToggle(bar);
+  }
+  function setupMobileFilterToggles(root=document){
+    root.querySelectorAll('.reference-filter-bar,.selection-filter-bar').forEach(ensureMobileFilterToggle);
+    root.querySelectorAll('.reference-filter-bar,.selection-filter-bar').forEach(syncMobileFilterToggle);
+  }
+  function setupMobileFilterObserver(){
+    setupMobileFilterToggles(document);
+    let frame=0;
+    const schedule=()=>{if(frame)return;frame=requestAnimationFrame(()=>{frame=0;setupMobileFilterToggles(document);});};
+    const obs=new MutationObserver(muts=>{
+      for(const m of muts){
+        if(m.type==='attributes'){
+          const target=m.target;
+          if(target?.matches?.('.reference-filter-bar,.selection-filter-bar')){schedule();return;}
+          continue;
+        }
+        if(m.type==='childList'){
+          const nodes=[...m.addedNodes].filter(n=>n?.nodeType===1);
+          if(nodes.some(n=>n.matches?.('.reference-filter-bar,.selection-filter-bar')||n.querySelector?.('.reference-filter-bar,.selection-filter-bar'))){schedule();return;}
+        }
+      }
+    });
+    obs.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});
+    if(mobileFilterMedia.addEventListener)mobileFilterMedia.addEventListener('change',schedule);
+    window.addEventListener('resize',schedule,{passive:true});
+  }
+
   window.BLEUS3000_APP={openReferences,openTool,openModal,closeModal};
-  function init(){renderDashboard();setupToolbar();setupSearch();setupEvents();document.body.classList.add('js-ready');}
+  function init(){renderDashboard();setupNavigation();setupSearch();setupEvents();setupMobileFilterObserver();document.body.classList.add("js-ready");}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();

@@ -149,3 +149,7 @@
 .calendar-recent-toolbar-left .calendar-home-match-tags>*{min-width:0!important;max-width:calc(50% - 2px)!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
 .calendar-recent-toolbar-left .calendar-home-sheet-btn{flex:0 0 28px!important;width:28px!important;height:28px!important}
 .calendar-recent-toolbar>.calendar-open-match-tile{flex:0 0 auto!important;justify-self:end!important;white-space:nowrap!important;margin:0!important}
+
+/* V1.1.96 — France A est l'unique sélection : masque le badge de section sans toucher au moteur de données. */
+.calendar-global-tag.section,
+.calendar-tag.section{display:none!important}

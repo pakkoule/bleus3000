@@ -727,3 +727,31 @@ body{padding-top:0!important}
 .competition-edition-matches .rel-linked-match-main strong .b3k-svg-flag,
 .competition-edition-matches .rel-linked-match-tile .b3k-svg-flag{width:18px!important;height:12px!important;max-width:18px!important;max-height:12px!important;min-width:18px!important;object-fit:cover!important;display:inline-block!important;vertical-align:middle!important;flex:0 0 18px!important}
 @media(max-width:600px){.competition-canonical-entity-row{width:58px!important;height:58px!important}.competition-logo.is-entity,.competition-canonical-entity-icon{width:46px!important;height:46px!important}.competition-edition-row{grid-template-columns:62px minmax(0,1fr) auto!important}.competition-edition-identity{grid-template-rows:auto 50px!important}.competition-logo.is-edition,.competition-edition-logo-placeholder{width:50px!important;height:50px!important}}
+
+/* V1.1.93 — mobile filter collapse */
+.filter-collapse-toggle{display:none;align-items:center;justify-content:space-between;gap:10px;width:100%;margin:0 0 8px;padding:10px 12px;border:1px solid #bfd1e8;border-radius:12px;background:#f8fbff;color:#17375e;font:900 10px/1 Poppins,Arial;letter-spacing:.01em;cursor:pointer;box-shadow:0 1px 0 rgba(18,52,96,.04)}
+.filter-collapse-toggle:hover{border-color:#2f6dff;background:#eef5ff}
+.filter-collapse-toggle-copy{display:inline-flex;align-items:center;gap:8px;min-width:0}
+.filter-collapse-toggle-badge{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:#1f62e8;color:#fff;font:900 9px/1 Poppins,Arial}
+.filter-collapse-toggle-caret{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:999px;background:#fff;color:#1d56ad;font-size:12px;line-height:1;border:1px solid #d6e2f1}
+@media(max-width:760px){
+  .filter-collapse-toggle{display:flex}
+  .reference-filter-bar.is-mobile-collapsed,.selection-filter-bar.is-mobile-collapsed{display:none!important}
+}
+
+/* V1.1.96 — badge de sélection devenu redondant sur les tuiles Matchs. */
+.relational-team-chip{display:none!important}
+
+/* V1.2.10.6 — brassard capitaine PNG */
+.match-sheet-captain-icon{width:24px;height:24px;object-fit:contain;display:block;flex:0 0 24px}
+.match-sheet-editor-check.is-captain img{width:24px;height:24px;object-fit:contain;display:block}
+.match-sheet-editor-check.is-captain:has(input:checked){border-color:#8aaee0;background:#edf5ff;box-shadow:inset 0 0 0 1px rgba(18,59,143,.08)}
+@media(max-width:520px){.match-sheet-captain-icon{width:22px;height:22px;flex-basis:22px}.match-sheet-editor-check.is-captain img{width:22px;height:22px}}
+
+/* V1.2.10.8 — arbitre, export PNG et focus d’un but précis */
+.rel-export-match{border:1px solid #b9cee6;border-radius:8px;background:#102f57;color:#fff;padding:6px 10px;font:850 9px/1 Poppins,Arial,sans-serif;cursor:pointer;white-space:nowrap;box-shadow:0 2px 8px rgba(14,47,87,.10)}
+.rel-export-match:hover{background:#174777;border-color:#174777}.rel-export-match:disabled{opacity:.55;cursor:wait}
+.rel-match-referee{font-weight:800}
+.match-event-row.is-goal.is-target-goal{position:relative;border-radius:10px;background:#fff7c7!important;box-shadow:0 0 0 3px rgba(244,197,66,.62),0 7px 24px rgba(10,35,66,.14);animation:b3kGoalTargetPulse 1s ease-in-out 3}
+@keyframes b3kGoalTargetPulse{0%,100%{transform:translateX(0)}50%{transform:translateX(3px)}}
+@media(max-width:520px){.rel-export-match{flex:1 1 auto;justify-content:center}}

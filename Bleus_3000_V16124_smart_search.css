@@ -14,3 +14,9 @@
 @media(max-width:620px){.smart-search-interpretation{align-items:flex-start;flex-direction:column;gap:5px}.smart-search-interpretation strong{white-space:normal}.home-search-examples{padding:0 12px 12px}.home-search-example{font-size:7px}}
 .home-universal-search-shell .universal-search-result.is-smart .universal-search-result-meta{white-space:normal;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .home-universal-search-shell .universal-search-result.is-smart{min-height:62px}
+
+.universal-search-section-title{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.universal-search-section-actions{display:flex;align-items:center;gap:6px}
+.universal-search-copy-btn{border:1px solid #c7d9ef;border-radius:7px;background:#fff;color:#244f83;padding:4px 7px;font:inherit;font-size:6.5px;font-weight:900;letter-spacing:.03em;cursor:pointer}
+.universal-search-copy-btn:hover{border-color:#5f91d0;background:#eef5ff}
+.universal-search-copy-btn.is-copied{background:#eaf7ef;border-color:#9ac9a9;color:#24623a}

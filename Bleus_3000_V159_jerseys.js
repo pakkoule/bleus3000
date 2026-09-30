@@ -32,10 +32,15 @@
     if(row.main_photo_path&&client){try{return client.storage.from('jersey-photos').getPublicUrl(row.main_photo_path).data?.publicUrl||'';}catch{}}
     return '';
   }
+  function mainPhotoCredit(row){
+    if(!row)return '';if(row.main_photo_url&&row.main_photo_copyright_source)return row.main_photo_copyright_source;
+    const list=photos.filter(p=>String(p.jersey_id)===String(row.id)).sort((a,b)=>(Number(b.is_primary)-Number(a.is_primary))||(Number(a.sort_order||0)-Number(b.sort_order||0)));
+    const preferred=list.find(p=>p.is_primary)||list[0];return preferred?.credit||row.main_photo_copyright_source||'';
+  }
   function photoCount(row){return photoList(row).length;}
   function photoList(row){
     const list=[];
-    if(row.main_photo_url)list.push({url:row.main_photo_url,caption:'Photo principale',credit:'',is_primary:true});
+    if(row.main_photo_url)list.push({url:row.main_photo_url,caption:'Photo principale',credit:row.main_photo_copyright_source||'',is_primary:true});
     if(!row._seed){for(const p of photos.filter(x=>String(x.jersey_id)===String(row.id)).sort((a,b)=>(Number(b.is_primary)-Number(a.is_primary))||(Number(a.sort_order||0)-Number(b.sort_order||0)))){const url=photoUrl(p);if(url&&!list.some(x=>x.url===url))list.push({url,caption:p.caption||photoTypes[p.photo_type]||'Photo',credit:p.credit||'',is_primary:!!p.is_primary});}}
     return list;
   }
@@ -225,7 +230,7 @@
     const teams=teamRelations(r),comps=competitionRelations(r),photo=mainPhoto(r),count=photoCount(r);
     const linkRef=`jersey:${r.id}`;
     return `<article class="jersey-tile jersey-tile-compact" data-jersey-id="${esc(r.id)}" data-jersey-link="${esc(linkRef)}">
-      <div class="jersey-photo-wrap"><button class="jersey-photo-stage" type="button" data-jersey-gallery="${esc(r.id)}">${photo?`<img src="${esc(photo)}" alt="Maillot ${esc(yearLabel(r))}" loading="lazy">`:`<div class="jersey-photo-placeholder"><svg viewBox="0 0 64 64"><path d="M22 12 14 17 7 29l10 6 4-6v23h22V29l4 6 10-6-7-12-8-5-5 7H27z"></path><path d="M27 19h10"></path></svg><strong>Photo à ajouter</strong></div>`}${count>1?`<span class="jersey-photo-count">▧ ${count}</span>`:''}</button>${canEdit()?`<button class="jersey-compact-edit" type="button" data-jersey-edit="${esc(r.id)}" title="Modifier le maillot">✎</button>`:''}</div>
+      <div class="jersey-photo-wrap"><button class="jersey-photo-stage" type="button" data-jersey-gallery="${esc(r.id)}">${photo?`<img src="${esc(photo)}" alt="Maillot ${esc(yearLabel(r))}" loading="lazy">${mainPhotoCredit(r)?`<span class="photo-copyright-capsule">© ${esc(mainPhotoCredit(r))}</span>`:''}`:`<div class="jersey-photo-placeholder"><svg viewBox="0 0 64 64"><path d="M22 12 14 17 7 29l10 6 4-6v23h22V29l4 6 10-6-7-12-8-5-5 7H27z"></path><path d="M27 19h10"></path></svg><strong>Photo à ajouter</strong></div>`}${count>1?`<span class="jersey-photo-count">▧ ${count}</span>`:''}</button>${canEdit()?`<button class="jersey-compact-edit" type="button" data-jersey-edit="${esc(r.id)}" title="Modifier le maillot">✎</button>`:''}</div>
       <div class="jersey-tile-body jersey-compact-body">
         <div class="jersey-compact-meta"><div><span>Année</span><strong>${esc(yearLabel(r))}</strong></div><div class="jersey-equipment-cell"><span>Équipementier</span><strong class="jersey-equipment-display">${equipmentHtml(r)}</strong></div></div>
         
@@ -250,7 +255,8 @@
     const host=$('#referenceEntries'),title=$('#referenceModalTitle'),sub=$('#referenceModalSub'),count=$('#referenceCount');if(!host)return;
     host.innerHTML='<div class="selection-loading">Chargement des maillots…</div>';
     await load();renderFilters(rows);
-    const list=filtered(rows,q);
+    const chronologicalValue=r=>{const direct=Number(r.year_start);if(Number.isFinite(direct)&&direct>0)return direct;const season=String(r.season_label||'').match(/(?:19|20)\d{2}/);return season?Number(season[0]):9999;};
+    const list=filtered(rows,q).slice().sort((a,b)=>chronologicalValue(a)-chronologicalValue(b)||Number(a.year_end||a.year_start||9999)-Number(b.year_end||b.year_start||9999)||String(a.title||'').localeCompare(String(b.title||''),'fr'));
     if(title)title.textContent='Maillots';if(sub)sub.textContent='Maillots des sélections françaises · photos · équipes et compétitions affiliées';if(count)count.textContent=`${list.length} maillot${list.length>1?'s':''}`;
     host.innerHTML=list.length?`<div class="jersey-reference-grid">${list.map(renderCard).join('')}</div>`:'<div class="universal-search-empty">Aucun maillot ne correspond aux filtres.</div>';
     window.BLEUS3000_JERSEY_EQUIPMENT?.decorateReference?.(host,list,filterState);
@@ -269,7 +275,7 @@
   function openGallery(id){
     const row=rows.find(x=>String(x.id)===String(id));if(!row)return;const list=photoList(row);if(!list.length)return;
     const modal=ensureGallery(),main=$('#jerseyGalleryMain'),thumbs=$('#jerseyGalleryThumbs');$('#jerseyGalleryTitle').textContent=`Photos · ${row.title}`;
-    const show=i=>{const p=list[i]||list[0];main.innerHTML=`<img src="${esc(p.url)}" alt="${esc(row.title)}"><div><strong>${esc(p.caption||'Photo')}</strong>${p.credit?`<span>Crédit : ${esc(p.credit)}</span>`:''}</div>`;$$('[data-gallery-index]',thumbs).forEach((b,n)=>b.classList.toggle('is-active',n===i));};
+    const show=i=>{const p=list[i]||list[0];main.innerHTML=`<img src="${esc(p.url)}" alt="${esc(row.title)}">${p.credit?`<span class="photo-copyright-capsule">© ${esc(p.credit)}</span>`:''}<div><strong>${esc(p.caption||'Photo')}</strong>${p.credit?`<span>Crédit : ${esc(p.credit)}</span>`:''}</div>`;$$('[data-gallery-index]',thumbs).forEach((b,n)=>b.classList.toggle('is-active',n===i));};
     thumbs.innerHTML=list.map((p,i)=>`<button type="button" data-gallery-index="${i}"><img src="${esc(p.url)}" alt="${esc(p.caption||'Photo')}"><span>${esc(p.caption||'Photo')}</span></button>`).join('');$$('[data-gallery-index]',thumbs).forEach(b=>b.addEventListener('click',()=>show(Number(b.dataset.galleryIndex))));show(0);modal.hidden=false;document.body.style.overflow='hidden';
   }
 
@@ -295,7 +301,7 @@
     return `<section class="jersey-editor-section"><h3>Maillot</h3><div class="jersey-editor-grid"><label>Nom de la tuile<input name="title" required maxlength="160" value="${esc(row.title||'')}"><small>Ce nom est aussi celui affiché dans l’édition des feuilles de match.</small></label><label>Type<select name="usage_type">${Object.entries(usageLabels).map(([v,l])=>`<option value="${v}" ${String(row.usage_type||'domicile')===v?'selected':''}>${l}</option>`).join('')}</select></label><label>Périmètre<select name="gender_scope"><option value="M" selected>France A masculine</option></select></label><label>Saison / millésime<input name="season_label" maxlength="60" value="${esc(row.season_label||'')}"></label><label>Année début<input name="year_start" type="number" min="1900" max="2100" value="${esc(row.year_start||'')}"></label><label>Année fin<input name="year_end" type="number" min="1900" max="2100" value="${esc(row.year_end||'')}"></label><label>Équipementier<select name="manufacturer_id">${equipmentOptions}</select><small>Géré depuis Profil → Équipementiers.</small></label></div></section>
     ${formationColorEditorHtml(row)}
     <section class="jersey-editor-section"><h3>Relations 3615 Bleus</h3><div class="jersey-relations-picker">${pickerHtml('team',selections,teamIds)}${pickerHtml('competition',competitionPickerItems,compIds)}</div><div class="jersey-editor-separator"></div><small style="font-size:6.3px;color:#70869f">Le maillot est affilié à une ou plusieurs éditions précises. Sur la tuile, seul le tag entité parent est affiché ; dans une feuille de match, l’édition du match pilote automatiquement les maillots proposés.</small></section>
-    <section class="jersey-editor-section"><h3>Photos</h3><div class="jersey-photo-editor"><div class="jersey-photo-preview" id="jerseyPhotoPreview">${primary?`<img src="${esc(primary)}" alt="Aperçu">`:'<span class="jersey-empty-relation">Aucune photo principale</span>'}</div><div class="jersey-photo-fields"><label>URL de photo principale<input name="main_photo_url" type="url" value="${esc(row.main_photo_url||'')}" placeholder="https://…"></label><label>Ajouter des photos<input name="photos" type="file" accept="image/png,image/jpeg,image/webp" multiple></label><label>Type des nouvelles photos<select name="photo_type">${Object.entries(photoTypes).map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select></label><label>Crédit photo<input name="photo_credit" maxlength="160"></label></div></div><div class="jersey-photo-gallery-preview" id="jerseyPhotoGalleryPreview"></div></section>
+    <section class="jersey-editor-section"><h3>Photos</h3><div class="jersey-photo-editor"><div class="jersey-photo-preview" id="jerseyPhotoPreview">${primary?`<img src="${esc(primary)}" alt="Aperçu">${mainPhotoCredit(row)?`<span class="photo-copyright-capsule">© ${esc(mainPhotoCredit(row))}</span>`:''}`:'<span class="jersey-empty-relation">Aucune photo principale</span>'}</div><div class="jersey-photo-fields"><label>URL de photo principale<input name="main_photo_url" type="url" value="${esc(row.main_photo_url||'')}" placeholder="https://…"></label><label class="photo-copyright-toggle"><input name="main_photo_copyright_enabled" type="checkbox" ${row.main_photo_copyright_source?'checked':''}> Copyright photo principale</label><label class="photo-copyright-field" data-main-photo-copyright ${row.main_photo_copyright_source?'':'hidden'}><span>©</span><input name="main_photo_copyright_source" maxlength="180" value="${esc(row.main_photo_copyright_source||'')}" placeholder="Source / photographe / agence"></label><label>Ajouter des photos<input name="photos" type="file" accept="image/png,image/jpeg,image/webp" multiple></label><label>Type des nouvelles photos<select name="photo_type">${Object.entries(photoTypes).map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select></label><label class="photo-copyright-toggle"><input name="new_photo_copyright_enabled" type="checkbox"> Copyright des nouvelles photos</label><label class="photo-copyright-field" data-new-photo-copyright hidden><span>©</span><input name="photo_credit" maxlength="180" placeholder="Source / photographe / agence"></label></div></div><div class="jersey-photo-gallery-preview" id="jerseyPhotoGalleryPreview"></div></section>
     ${window.BLEUS3000_JERSEY_EQUIPMENT?.editorSections?.(row)||''}<section class="jersey-editor-section"><h3>Notes & sources</h3><label>Notes courtes<input name="notes_short" maxlength="500" value="${esc(row.notes_short||'')}"></label><label style="margin-top:8px">URLs / références · une par ligne<textarea name="source_urls" placeholder="https://…">${esc(sources)}</textarea></label></section>
     <div class="jersey-editor-status" id="jerseyEditorStatus" hidden></div><div class="c3k-v8-actions"><button class="secondary-btn" type="button" id="jerseyEditorCancel">Annuler</button><button class="primary-btn" type="submit">${row.id&&!row._seed?'Enregistrer':'Créer le maillot'}</button></div>`;
   }
@@ -308,7 +314,7 @@
     bindFormationColorEditor(form);
     $('#jerseyEditorCancel').addEventListener('click',()=>{modal.hidden=true;document.body.style.overflow='';});
     const files=form.elements.photos,preview=$('#jerseyPhotoGalleryPreview');files?.addEventListener('change',()=>{preview.innerHTML='';[...(files.files||[])].slice(0,12).forEach(file=>{const url=URL.createObjectURL(file);preview.insertAdjacentHTML('beforeend',`<div class="jersey-photo-thumb"><img src="${url}" alt="Aperçu"></div>`);});});
-    form.elements.main_photo_url?.addEventListener('input',e=>{const p=$('#jerseyPhotoPreview');p.innerHTML=e.target.value?`<img src="${esc(e.target.value)}" alt="Aperçu">`:'<span class="jersey-empty-relation">Aucune photo principale</span>';});
+    form.elements.main_photo_url?.addEventListener('input',e=>{const p=$('#jerseyPhotoPreview');p.innerHTML=e.target.value?`<img src="${esc(e.target.value)}" alt="Aperçu">`:'<span class="jersey-empty-relation">Aucune photo principale</span>';});form.elements.main_photo_copyright_enabled?.addEventListener('change',e=>{const x=$('[data-main-photo-copyright]',form);if(x)x.hidden=!e.target.checked;});form.elements.new_photo_copyright_enabled?.addEventListener('change',e=>{const x=$('[data-new-photo-copyright]',form);if(x)x.hidden=!e.target.checked;});
     modal.hidden=false;document.body.style.overflow='hidden';
   }
 
@@ -320,7 +326,7 @@
       const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'');const safe=['jpg','jpeg','png','webp'].includes(ext)?ext:'jpg';
       const path=`${jerseyId}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${safe}`;
       const {error:upErr}=await client.storage.from('jersey-photos').upload(path,file,{contentType:file.type||undefined,upsert:false});if(upErr)throw upErr;
-      const isPrimary=!main;const {error:phErr}=await client.from('jersey_photos').insert({jersey_id:jerseyId,photo_path:path,photo_type:String(fd.get('photo_type')||'autre'),credit:String(fd.get('photo_credit')||'').trim()||null,is_primary:isPrimary,sort_order:order++});if(phErr)throw phErr;
+      const isPrimary=!main;const {error:phErr}=await client.from('jersey_photos').insert({jersey_id:jerseyId,photo_path:path,photo_type:String(fd.get('photo_type')||'autre'),credit:fd.get('new_photo_copyright_enabled')==='on'?String(fd.get('photo_credit')||'').trim()||null:null,is_primary:isPrimary,sort_order:order++});if(phErr)throw phErr;
       if(isPrimary)main=path;
     }
     return main;
@@ -331,7 +337,7 @@
     try{
       const n=v=>v===''?null:Number(v);
       let formationPalette=[];try{formationPalette=JSON.parse(String(fd.get('formation_colors_json')||'[]')).map(validHex).filter(Boolean).slice(0,3);}catch{}
-      const payload={title:String(fd.get('title')||'').trim(),usage_type:String(fd.get('usage_type')||'domicile'),gender_scope:String(fd.get('gender_scope')||'').trim()||null,season_label:String(fd.get('season_label')||'').trim()||null,year_start:n(fd.get('year_start')),year_end:n(fd.get('year_end')),manufacturer_id:String(fd.get('manufacturer_id')||'').trim()||null,primary_color:formationPalette[0]||null,secondary_color:formationPalette[1]||null,accent_colors:formationPalette.slice(2),notes_short:String(fd.get('notes_short')||'').trim()||null,source_urls:String(fd.get('source_urls')||'').split('\n').map(x=>x.trim()).filter(Boolean),main_photo_url:String(fd.get('main_photo_url')||'').trim()||null,updated_at:new Date().toISOString()};
+      const payload={title:String(fd.get('title')||'').trim(),usage_type:String(fd.get('usage_type')||'domicile'),gender_scope:String(fd.get('gender_scope')||'').trim()||null,season_label:String(fd.get('season_label')||'').trim()||null,year_start:n(fd.get('year_start')),year_end:n(fd.get('year_end')),manufacturer_id:String(fd.get('manufacturer_id')||'').trim()||null,primary_color:formationPalette[0]||null,secondary_color:formationPalette[1]||null,accent_colors:formationPalette.slice(2),notes_short:String(fd.get('notes_short')||'').trim()||null,source_urls:String(fd.get('source_urls')||'').split('\n').map(x=>x.trim()).filter(Boolean),main_photo_url:String(fd.get('main_photo_url')||'').trim()||null,main_photo_copyright_source:fd.get('main_photo_copyright_enabled')==='on'?String(fd.get('main_photo_copyright_source')||'').trim()||null:null,updated_at:new Date().toISOString()};
       let jerseyId=editing?.id;
       if(jerseyId){const {error}=await client.from('jerseys').update(payload).eq('id',jerseyId);if(error)throw error;}
       else{const {data,error}=await client.from('jerseys').insert(payload).select('id').single();if(error)throw error;jerseyId=data.id;}
@@ -394,6 +400,19 @@
   }
   function openNew(){openEditor(null);}
   function invalidate(){loaded=false;loading=null;dbReady=false;editionRelationsReady=false;rows=[];teamLinks=[];competitionLinks=[];competitionEditionLinks=[];photos=[];matchLinks=[];matches=[];selections=[];competitions=[];competitionEntities=[];competitionEditions=[];tags=[];manufacturers=[];}
-  window.BLEUS3000_JERSEYS={render,load,openNew,openEditor,invalidate,getMatchPickerData,setMatchJersey,getMatchJersey,formationColors,formationFillColors,formationHaloColor,formationMarkerBackground,formationMarkerStyle,linkFor:id=>`jersey:${id}`};
+  function search(q){
+    const query=String(q||'').trim();if(!loaded||!query)return [];
+    const engine=window.BLEUS3000_SEARCH;
+    return rows.map(r=>{
+      const rel=[...teamRelations(r).map(x=>x.name||x.label||''),...competitionRelations(r).map(x=>x.name||x.label||'')];
+      const values=[r.title,r.season_label,r.usage_type,usageLabels[r.usage_type]||'',r.manufacturer,r.manufacturer_reference,r.template_name,String(r.year_start||''),String(r.year_end||''),r.version_type,r.notes_short,...rel];
+      const score=engine?.scoreAny?engine.scoreAny(query,values):(norm(values.join(' ')).includes(norm(query))?.15:Infinity);
+      return {r,score};
+    }).filter(x=>Number.isFinite(x.score)&&x.score<=.48).sort((a,b)=>a.score-b.score||String(a.r.title||'').localeCompare(String(b.r.title||''),'fr')).slice(0,12).map(({r,score})=>({
+      type:'Maillots',icon:'👕',image:mainPhoto(r),title:r.title||'Maillot France',meta:[yearLabel(r),r.manufacturer,usageLabels[r.usage_type]||r.usage_type].filter(Boolean).join(' · '),score,
+      action:()=>{window.BLEUS3000_APP?.openReferences?.('maillots');setTimeout(()=>{const i=document.querySelector('#referenceSearch');if(i){i.value=r.title||'';i.dispatchEvent(new Event('input',{bubbles:true}));}},80);}
+    }));
+  }
+  window.BLEUS3000_JERSEYS={render,load,openNew,openEditor,invalidate,getMatchPickerData,setMatchJersey,getMatchJersey,hasMatchJersey:id=>matchLinks.some(x=>String(x.match_id)===String(id)&&String(x.role||'outfield')==='outfield'),formationColors,formationFillColors,formationHaloColor,formationMarkerBackground,formationMarkerStyle,search,linkFor:id=>`jersey:${id}`};
   window.addEventListener('bleus:supabase-ready',()=>invalidate());window.addEventListener('bleus:equipment-changed',()=>invalidate());
 })();

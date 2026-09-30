@@ -1,4 +1,4 @@
-/* 3615 Bleus V1.1.57 — Statistiques V2 · parcours, générations, connexions, bilans, records */
+/* 3615 Bleus V1.2.6 — Statistiques V2 · records fun des XI + expérience historique */
 (()=>{
   'use strict';
   const $=(s,p=document)=>p.querySelector(s), $$=(s,p=document)=>[...p.querySelectorAll(s)];
@@ -8,6 +8,9 @@
   const pct=(a,b)=>b?`${(100*a/b).toLocaleString('fr-FR',{maximumFractionDigits:1})} %`:'—';
   const byId=(arr,key='id')=>new Map(arr.map(x=>[String(x?.[key]),x]));
   const frDate=v=>{const d=new Date(v);return Number.isNaN(+d)?'—':new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'short',year:'numeric'}).format(d);};
+  const fmt1=v=>Number.isFinite(Number(v))?Number(v).toLocaleString('fr-FR',{minimumFractionDigits:1,maximumFractionDigits:1}):'—';
+  const matchDateValue=m=>m?.manual_overrides?.match_date||m?.match_date||null;
+  const ageAt=(birth,when)=>{const b=new Date(birth),d=new Date(when);if(Number.isNaN(+b)||Number.isNaN(+d)||d<b)return null;return (d-b)/(365.2425*24*3600*1000);};
   const stages=['A'];
   const stageLabels={A:'France A'};
   const state={loaded:false,loading:false,tab:'balances',gender:'M',generation:null,balanceDimension:'decade',balanceSelection:'all',recordMetric:'goals',recordSelection:'all',query:'',detail:null,
@@ -21,12 +24,12 @@
       fetchAll(()=>c.from('selection_teams').select('id,code,name,gender,category,sort_order,team_tag_id').eq('active',true).eq('code','FRA-A-M').order('sort_order')),
       fetchAll(()=>c.from('tags').select('id,slug,label_text').eq('is_active',true)),
       fetchAll(()=>c.from('player_selection_stats').select('player_id,selection_id,selections,goals,wins,draws,losses,starts,minutes,appearance_status,first_year,last_year')),
-      fetchAll(()=>c.from('matches').select('id,match_date,gender,selection_team_id,selection_category,competition_id,opponent_id,place_id,coach_id,home_away,france_score,opponent_score,status').eq('gender','M').eq('selection_category','A')),
+      fetchAll(()=>c.from('matches').select('id,match_date,manual_overrides,chronological_number,gender,selection_team_id,selection_category,competition_id,opponent_id,place_id,coach_id,home_away,france_score,opponent_score,status').eq('gender','M').eq('selection_category','A')),
       fetchAll(()=>c.from('competitions').select('id,name,edition,parent_id,gender,selection_category').order('name')),
       fetchAll(()=>c.from('opponents').select('id,name')),
       fetchAll(()=>c.from('places').select('id,name,city,country,place_type')),
       fetchAll(()=>c.from('personnel').select('id,display_name,person_type,nationality')),
-      fetchAll(()=>c.from('match_appearances').select('match_id,player_id,starter,goals,assists,captain,squad_status')),
+      fetchAll(()=>c.from('match_appearances').select('match_id,player_id,starter,appeared,goals,assists,captain,squad_status')),
       fetchAll(()=>c.from('match_goal_events').select('id,match_id,player_id,scorer_name,assist_player_id,assist_name,minute_text')),
       fetchAll(()=>c.from('match_officials').select('match_id,person_id,role'))
     ]);
@@ -65,8 +68,79 @@
     return [...groups.values()].sort((a,b)=>b.matches-a.matches||balanceName(state.balanceDimension,a.key).localeCompare(balanceName(state.balanceDimension,b.key),'fr'));}
   function balancesView(){const groups=balanceGroups(),teams=state.selections.filter(s=>state.gender==='all'||s.gender===state.gender);let detail='';if(state.detail?.type==='balance'&&state.detail.dimension===state.balanceDimension){const g=groups.find(x=>x.key===String(state.detail.key));if(g)detail=detailMatches(balanceName(state.balanceDimension,g.key),g.ids,`${g.matches} matchs · ${g.wins} V · ${g.draws} N · ${g.losses} D`);}return `<div class="stats-v2-module"><section class="stats-v2-intro"><div><span>📊</span><div><h3>Bilans croisés</h3><p>Décennie, sélectionneur, stade, arbitre, compétition ou adversaire : tous les calculs portent sur France A masculine.</p></div></div></section><div class="stats-balance-controls"><label>Bilan par<select id="statsBalanceDimension">${option('decade','Décennie',state.balanceDimension)}${option('coach','Sélectionneur',state.balanceDimension)}${option('stadium','Stade',state.balanceDimension)}${option('referee','Arbitre principal',state.balanceDimension)}${option('competition','Compétition',state.balanceDimension)}${option('opponent','Adversaire',state.balanceDimension)}</select></label><span class="tag-badge">France A masculine</span></div><div class="stats-balance-table"><div class="stats-balance-row is-head"><span>Référence</span><span>MJ</span><span>V</span><span>N</span><span>D</span><span>BP</span><span>BC</span><span>% V</span></div>${groups.map(g=>`<button type="button" class="stats-balance-row" data-stats-balance="${esc(g.key)}"><strong>${esc(balanceName(state.balanceDimension,g.key))}</strong><span>${g.matches}</span><span>${g.wins}</span><span>${g.draws}</span><span>${g.losses}</span><span>${g.gf}</span><span>${g.ga}</span><b>${pct(g.wins,g.matches)}</b></button>`).join('')||'<div class="stats-v2-empty">Aucun match avec score dans ce périmètre.</div>'}</div><div class="stats-v2-coverage">Bilan calculé uniquement sur les matchs dont les deux scores sont renseignés. Les arbitres utilisent uniquement le rôle <strong>Arbitre principal</strong>.</div>${detail}</div>`;}
 
+
+  function funLineupSnapshot(){
+    const capCounts=new Map(),lineups=[],captains=[];
+    const sorted=state.matches
+      .filter(m=>matchMatchesGender(m)&&matchDateValue(m)&&resultOf(m))
+      .slice()
+      .sort((a,b)=>+new Date(matchDateValue(a))-+new Date(matchDateValue(b))||String(a.id).localeCompare(String(b.id)));
+    for(const m of sorted){
+      const rows=state.appearancesByMatch.get(String(m.id))||[];
+      const playedIds=[...new Set(rows
+        .filter(a=>a?.player_id&&(a.starter===true||a.appeared===true))
+        .map(a=>String(a.player_id)))];
+      for(const id of playedIds)capCounts.set(id,(capCounts.get(id)||0)+1);
+
+      const starterMap=new Map();
+      for(const a of rows){
+        if(a?.starter!==true||!a.player_id||!state.playerMap.has(String(a.player_id)))continue;
+        starterMap.set(String(a.player_id),a);
+      }
+      const starters=[...starterMap.values()];
+      if(starters.length!==11)continue;
+
+      const when=matchDateValue(m);
+      const ages=starters.map(a=>ageAt(state.playerMap.get(String(a.player_id))?.birth_date,when));
+      const caps=starters.map(a=>capCounts.get(String(a.player_id))||0);
+      const allAges=ages.every(Number.isFinite),allCaps=caps.length===11&&caps.every(Number.isFinite);
+      const item={
+        match:m,
+        starters,
+        avgAge:allAges?ages.reduce((s,v)=>s+v,0)/11:null,
+        avgCaps:allCaps?caps.reduce((s,v)=>s+v,0)/11:null
+      };
+      lineups.push(item);
+      for(let i=0;i<starters.length;i++){
+        const a=starters[i];
+        if(!a.captain||!Number.isFinite(ages[i]))continue;
+        captains.push({match:m,player_id:String(a.player_id),age:ages[i]});
+      }
+    }
+    return {lineups,captains};
+  }
+  function funRecordRows(){
+    const {lineups,captains}=funLineupSnapshot();
+    const ageRows=lineups.filter(x=>Number.isFinite(x.avgAge));
+    const capRows=lineups.filter(x=>Number.isFinite(x.avgCaps));
+    const youngestXI=ageRows.slice().sort((a,b)=>a.avgAge-b.avgAge)[0]||null;
+    const oldestXI=ageRows.slice().sort((a,b)=>b.avgAge-a.avgAge)[0]||null;
+    const mostExperienced=capRows.slice().sort((a,b)=>b.avgCaps-a.avgCaps)[0]||null;
+    const leastExperienced=capRows.slice().sort((a,b)=>a.avgCaps-b.avgCaps)[0]||null;
+    const youngestCaptain=captains.slice().sort((a,b)=>a.age-b.age)[0]||null;
+    const oldestCaptain=captains.slice().sort((a,b)=>b.age-a.age)[0]||null;
+    const mkLine=(kind,label,x,metric,unit,icon)=>x?{
+      kind,label,icon,match:x.match,
+      value:`${fmt1(x[metric])} ${unit}`,
+      note:`${frDate(matchDateValue(x.match))} · ${matchLabel(x.match)}`
+    }:null;
+    const mkCaptain=(kind,label,x,icon)=>x?{
+      kind,label:`${label} · ${playerName(x.player_id)}`,icon,match:x.match,
+      value:`${fmt1(x.age)} ans`,
+      note:`${frDate(matchDateValue(x.match))} · ${matchLabel(x.match)}`
+    }:null;
+    return [
+      mkLine('youngest-xi','Onze titulaire le plus jeune',youngestXI,'avgAge','ans','🍼'),
+      mkLine('oldest-xi','Onze titulaire le plus âgé',oldestXI,'avgAge','ans','🧓'),
+      mkLine('most-caps','Onze titulaire le plus expérimenté',mostExperienced,'avgCaps','sél.','🎖️'),
+      mkLine('least-caps','Onze titulaire le moins expérimenté',leastExperienced,'avgCaps','sél.','🌱'),
+      mkCaptain('youngest-captain','Plus jeune capitaine',youngestCaptain,'©️'),
+      mkCaptain('oldest-captain','Capitaine le plus âgé',oldestCaptain,'🧭')
+    ].filter(Boolean);
+  }
+
   function recordRows(){const map=new Map();if(state.recordMetric==='captaincy'){for(const a of state.appearances){const m=state.matchMap.get(String(a.match_id));if(!a.captain||!m||!matchMatchesGender(m)||state.recordSelection!=='all'&&String(m.selection_team_id)!==String(state.recordSelection))continue;const k=String(a.player_id),x=map.get(k)||0;map.set(k,x+1);}}else{const field=state.recordMetric==='selections'?'selections':'goals';for(const r of state.stats){const p=state.playerMap.get(String(r.player_id)),s=state.selectionMap.get(String(r.selection_id));if(!p||!s||!playerMatchesGender(p)||state.gender!=='all'&&s.gender!==state.gender||state.recordSelection!=='all'&&String(r.selection_id)!==String(state.recordSelection))continue;map.set(String(r.player_id),(map.get(String(r.player_id))||0)+n(r[field]));}}return [...map.entries()].map(([player_id,value])=>({player_id,value})).filter(x=>x.value>0).sort((a,b)=>b.value-a.value||playerName(a.player_id).localeCompare(playerName(b.player_id),'fr'));}
-  function recordsView(){const rows=recordRows().filter(x=>!state.query||playerName(x.player_id).toLocaleLowerCase('fr').includes(state.query)).slice(0,100),teams=state.selections.filter(s=>state.gender==='all'||s.gender===state.gender),unit=state.recordMetric==='captaincy'?'capitanat':state.recordMetric==='selections'?'sélection':'but';return `<div class="stats-v2-module"><section class="stats-v2-intro"><div><span>🏅</span><div><h3>Records</h3><p>Les classements historiques déjà présents restent disponibles dans la V2.</p></div></div></section><div class="stats-balance-controls"><label>Classement<select id="statsRecordMetric">${option('goals','Buteurs',state.recordMetric)}${option('selections','Sélections',state.recordMetric)}${option('captaincy','Capitanat',state.recordMetric)}</select></label><span class="tag-badge">France A masculine</span></div><div class="stats-record-list">${rows.map((r,i)=>`<button type="button" data-stats-player="${esc(r.player_id)}"><span>${i+1}</span><strong>${esc(playerName(r.player_id))}</strong><b>${r.value.toLocaleString('fr-FR')}</b><small>${unit}${r.value>1?'s':''}</small></button>`).join('')||'<div class="stats-v2-empty">Aucune donnée pour ces filtres.</div>'}</div></div>`;}
+  function recordsView(){const rows=recordRows().filter(x=>!state.query||playerName(x.player_id).toLocaleLowerCase('fr').includes(state.query)).slice(0,100),funRows=funRecordRows(),unit=state.recordMetric==='captaincy'?'capitanat':state.recordMetric==='selections'?'sélection':'but';return `<div class="stats-v2-module"><section class="stats-v2-intro"><div><span>🏅</span><div><h3>Records</h3><p>Records individuels et lignes “fun” calculées directement depuis les feuilles de match France A.</p></div></div></section><section class="stats-fun-records"><div class="stats-v2-section-title"><strong>🎲 Stats fun des XI</strong><small>11 titulaires identifiés · âge et expérience au jour du match</small></div><div class="stats-fun-record-list">${funRows.map(r=>`<button type="button" data-stats-match="${esc(r.match.id)}"><span class="stats-fun-icon">${esc(r.icon)}</span><span class="stats-fun-copy"><strong>${esc(r.label)}</strong><small>${esc(r.note)}</small></span><b>${esc(r.value)}</b><i>↗</i></button>`).join('')||'<div class="stats-v2-empty">Pas encore assez de feuilles complètes pour calculer ces records.</div>'}</div><div class="stats-v2-coverage">L’âge moyen exige les 11 dates de naissance. L’expérience correspond à la moyenne des sélections cumulées par les 11 titulaires <strong>à la date du match</strong>, match concerné inclus. Les capitaines utilisent uniquement les feuilles où le brassard est renseigné.</div></section><div class="stats-balance-controls"><label>Classement individuel<select id="statsRecordMetric">${option('goals','Buteurs',state.recordMetric)}${option('selections','Sélections',state.recordMetric)}${option('captaincy','Capitanat',state.recordMetric)}</select></label><span class="tag-badge">France A masculine</span></div><div class="stats-record-list">${rows.map((r,i)=>`<button type="button" data-stats-player="${esc(r.player_id)}"><span>${i+1}</span><strong>${esc(playerName(r.player_id))}</strong><b>${r.value.toLocaleString('fr-FR')}</b><small>${unit}${r.value>1?'s':''}</small></button>`).join('')||'<div class="stats-v2-empty">Aucune donnée pour ces filtres.</div>'}</div></div>`;}
 
   function body(){if(state.tab==='connections')return connectionsView();if(state.tab==='balances')return balancesView();return recordsView();}
   function bind(){

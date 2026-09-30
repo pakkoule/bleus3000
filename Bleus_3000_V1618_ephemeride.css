@@ -10,3 +10,24 @@
 .c3k-ephemeride-item strong{font-size:9.5px!important;line-height:1.25!important}
 .c3k-ephemeride-item small{font-size:8px!important;line-height:1.3!important}
 .c3k-ephemeride-empty{font-size:9px!important;padding:11px!important}
+
+/* V1.2.10.10 — Navigation compacte sur une seule colonne */
+.c3k-navigation-launcher{position:relative;z-index:52;width:100%;font-family:Poppins,Arial,sans-serif}
+.c3k-navigation-toggle{width:100%;min-height:38px;display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid rgba(78,150,255,.55);border-radius:9px;background:rgba(9,25,52,.96);color:#fff;padding:7px 9px;font:850 10.5px/1 Poppins,Arial;text-align:left;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.14);transition:background .14s ease,border-color .14s ease,box-shadow .14s ease}
+.c3k-navigation-toggle:hover,.c3k-navigation-launcher.is-open .c3k-navigation-toggle{background:#15365f;border-color:#67a2f2;box-shadow:0 5px 16px rgba(0,0,0,.2)}
+.c3k-navigation-toggle b{display:grid;place-items:center;width:22px;height:22px;border-radius:999px;background:#2458a7;font-size:12px;transition:transform .14s ease}
+.c3k-navigation-launcher.is-open .c3k-navigation-toggle b{transform:rotate(180deg)}
+.c3k-navigation-overlay{position:fixed;z-index:5000;box-sizing:border-box;overflow:auto;padding:9px;border:1px solid #a9c7eb;border-radius:11px;background:rgba(248,251,255,.985);box-shadow:0 20px 55px rgba(3,18,40,.28),0 0 0 1px rgba(47,109,255,.08);font-family:Poppins,Arial,sans-serif;color:#17375e;opacity:0;transform:translateY(-8px) scale(.985);transform-origin:top center;transition:opacity .12s ease,transform .12s ease;overscroll-behavior:contain}
+.c3k-navigation-overlay[hidden]{display:none!important}
+.c3k-navigation-overlay.is-visible{opacity:1;transform:translateY(0) scale(1)}
+.c3k-navigation-body{display:grid;gap:10px;min-width:0}
+.c3k-navigation-section{display:grid;gap:5px;min-width:0}
+.c3k-navigation-section h3{margin:0;padding:0 4px;color:#617995;font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.08em}
+.c3k-navigation-grid,.c3k-navigation-grid.is-tools{display:grid;grid-template-columns:1fr;gap:3px}
+.c3k-navigation-grid button,.c3k-navigation-grid.is-tools button{min-width:0;min-height:30px;display:grid;grid-template-columns:14px minmax(0,1fr);grid-template-rows:auto;align-items:center;gap:6px;padding:5px 7px;border:1px solid transparent;border-radius:7px;background:transparent;color:#17375e;text-align:left;cursor:pointer;transition:background .12s ease,border-color .12s ease}
+.c3k-navigation-grid button:hover,.c3k-navigation-grid.is-tools button:hover{transform:none;border-color:#c9dbef;background:#edf5ff}
+.c3k-navigation-grid button strong,.c3k-navigation-grid.is-tools button strong{min-width:0;align-self:center;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c3k-navigation-icon,.c3k-navigation-grid.is-tools .c3k-navigation-icon{grid-row:auto;width:14px;height:18px;display:grid;place-items:center;border:0;border-radius:0;background:transparent;color:#0a2342;font-size:17px;font-weight:1000;line-height:1}
+.c3k-navigation-grid.is-tools button small{grid-column:2;align-self:start;margin-top:-2px;color:#778aa2;font-size:7px;font-weight:650;line-height:1.15}
+.c3k-navigation-arrow{display:none!important}
+@media(max-width:620px){.c3k-navigation-overlay{padding:8px;border-radius:10px}.c3k-navigation-grid,.c3k-navigation-grid.is-tools{grid-template-columns:1fr}.c3k-navigation-grid button,.c3k-navigation-grid.is-tools button{min-height:30px;padding:5px 7px}}
