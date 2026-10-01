@@ -6906,3 +6906,808 @@ comment on table public.match_media_assets is
   'Médias reliés à une tuile match : une de journal, photo d’équipe, ballon, billet historique ou lien vidéo YouTube.';
 
 commit;
+
+-- ============================================================================
+-- V1.3.12 — FEUILLES SANS VALIDATION / SOURCE DE VERITE COURANTE
+-- ============================================================================
+
+-- 3615 Bleus V1.3.12 — suppression du système de validation des feuilles
+-- La feuille courante est la source de vérité. Toute modification remplace l'état précédent.
+-- Les agrégats sont reconstruits depuis les lignes courantes, donc une information ne compte qu'une fois.
+
+begin;
+
+-- ---------------------------------------------------------------------------
+-- 1) Supprimer les déclencheurs de validation / revalidation historiques
+-- ---------------------------------------------------------------------------
+drop trigger if exists trg_match_appearances_sheet_dirty on public.match_appearances;
+drop trigger if exists trg_match_goals_sheet_dirty on public.match_goal_events;
+drop trigger if exists trg_match_cards_sheet_dirty on public.match_card_events;
+drop trigger if exists trg_matches_sheet_dirty on public.matches;
+drop trigger if exists trg_team_type_after_validation on public.matches;
+drop trigger if exists trg_match_officials_sheet_dirty on public.match_officials;
+drop trigger if exists trg_match_jerseys_sheet_dirty on public.match_jerseys;
+
+-- ---------------------------------------------------------------------------
+-- 2) Les tags de poste sont désormais dérivés des feuilles courantes
+-- ---------------------------------------------------------------------------
+create or replace function public.sync_player_position_tags(p_player_id uuid)
+returns void
+language plpgsql
+security invoker
+set search_path='public'
+as $$
+begin
+  if p_player_id is null then return; end if;
+
+  delete from public.entity_tags et
+  using public.tags t
+  where et.entity_type='player'
+    and et.entity_id=p_player_id
+    and et.tag_id=t.id
+    and t.reference_scope='position';
+
+  insert into public.entity_tags(entity_type,entity_id,tag_id,added_by)
+  select distinct 'player',p_player_id,fp.tag_id,null::uuid
+  from public.match_appearances ma
+  join public.matches m on m.id=ma.match_id
+  join public.football_positions fp on fp.id=ma.position_id
+  where ma.player_id=p_player_id
+    and m.match_date<=now()
+    and (coalesce(ma.starter,false) or coalesce(ma.appeared,false))
+  on conflict(entity_type,entity_id,tag_id) do nothing;
+end
+$$;
+
+-- ---------------------------------------------------------------------------
+-- 3) Recalcul idempotent des agrégats joueur depuis les feuilles courantes
+-- ---------------------------------------------------------------------------
+create or replace function public.refresh_players_from_match_sheets(p_player_ids uuid[])
+returns integer
+language plpgsql
+security definer
+set search_path='public'
+as $$
+declare
+  v_ids uuid[];
+  v_cap_id uuid;
+  v_count integer:=0;
+begin
+  select coalesce(array_agg(distinct x),array[]::uuid[])
+    into v_ids
+  from unnest(coalesce(p_player_ids,array[]::uuid[])) x
+  where x is not null;
+
+  if cardinality(v_ids)=0 then return 0; end if;
+  v_count:=cardinality(v_ids);
+
+  -- Remise à zéro uniquement des agrégats calculés. Les métadonnées comme le
+  -- numéro d'international restent intactes.
+  update public.player_selection_stats
+  set selections=0,goals=0,wins=0,draws=0,losses=0,starts=0,minutes=0,
+      appearance_status='called_only',data_status='match_sheets_live',updated_at=now()
+  where player_id=any(v_ids);
+
+  with live as (
+    select
+      a.player_id,
+      m.selection_team_id selection_id,
+      m.match_date,
+      coalesce(a.starter,false) starter,
+      coalesce(a.minutes,0) minutes,
+      coalesce(a.goals,0) goals,
+      case
+        when (m.manual_overrides ? 'france_score') and coalesce(m.manual_overrides->>'france_score','') ~ '^-?[0-9]+$'
+          then (m.manual_overrides->>'france_score')::integer
+        else m.france_score
+      end france_score_eff,
+      case
+        when (m.manual_overrides ? 'opponent_score') and coalesce(m.manual_overrides->>'opponent_score','') ~ '^-?[0-9]+$'
+          then (m.manual_overrides->>'opponent_score')::integer
+        else m.opponent_score
+      end opponent_score_eff
+    from public.match_appearances a
+    join public.matches m on m.id=a.match_id
+    where a.player_id=any(v_ids)
+      and m.selection_team_id is not null
+      and m.match_date<=now()
+      and (coalesce(a.starter,false) or coalesce(a.appeared,false))
+  ), agg as (
+    select
+      player_id,selection_id,
+      count(*)::integer selections,
+      coalesce(sum(goals),0)::integer goals,
+      count(*) filter(where france_score_eff is not null and opponent_score_eff is not null and france_score_eff>opponent_score_eff)::integer wins,
+      count(*) filter(where france_score_eff is not null and opponent_score_eff is not null and france_score_eff=opponent_score_eff)::integer draws,
+      count(*) filter(where france_score_eff is not null and opponent_score_eff is not null and france_score_eff<opponent_score_eff)::integer losses,
+      count(*) filter(where starter)::integer starts,
+      coalesce(sum(minutes),0)::integer minutes,
+      min(extract(year from match_date))::integer first_year,
+      max(extract(year from match_date))::integer last_year,
+      min(match_date)::date first_selection_date
+    from live
+    group by player_id,selection_id
+  )
+  insert into public.player_selection_stats(
+    player_id,selection_id,selections,goals,wins,draws,losses,starts,minutes,
+    appearance_status,first_year,last_year,first_selection_date,data_status,updated_at
+  )
+  select
+    player_id,selection_id,selections,goals,wins,draws,losses,starts,minutes,
+    'capped',first_year,last_year,first_selection_date,'match_sheets_live',now()
+  from agg
+  on conflict(player_id,selection_id) do update set
+    selections=excluded.selections,
+    goals=excluded.goals,
+    wins=excluded.wins,
+    draws=excluded.draws,
+    losses=excluded.losses,
+    starts=excluded.starts,
+    minutes=excluded.minutes,
+    appearance_status='capped',
+    first_year=excluded.first_year,
+    last_year=excluded.last_year,
+    first_selection_date=excluded.first_selection_date,
+    data_status='match_sheets_live',
+    updated_at=now();
+
+  delete from public.player_jersey_numbers where player_id=any(v_ids);
+  insert into public.player_jersey_numbers(
+    player_id,selection_id,shirt_number,first_match_date,last_match_date,appearances_count,notes_short
+  )
+  select
+    a.player_id,m.selection_team_id,a.shirt_number,
+    min(m.match_date)::date,max(m.match_date)::date,count(*)::integer,
+    'Calculé depuis la feuille de match courante.'
+  from public.match_appearances a
+  join public.matches m on m.id=a.match_id
+  where a.player_id=any(v_ids)
+    and a.shirt_number is not null
+    and m.selection_team_id is not null
+    and m.match_date<=now()
+    and (coalesce(a.starter,false) or coalesce(a.appeared,false))
+  group by a.player_id,m.selection_team_id,a.shirt_number;
+
+  update public.players p
+  set
+    primary_position=(
+      select coalesce(fp.label_text,a.position)
+      from public.match_appearances a
+      join public.matches m on m.id=a.match_id
+      left join public.football_positions fp on fp.id=a.position_id
+      where a.player_id=p.id
+        and m.match_date<=now()
+        and (coalesce(a.starter,false) or coalesce(a.appeared,false))
+        and coalesce(fp.label_text,a.position) is not null
+      group by coalesce(fp.label_text,a.position)
+      order by count(*) desc,min(m.match_date),coalesce(fp.label_text,a.position)
+      limit 1
+    ),
+    secondary_positions=coalesce((
+      select array_agg(q.label order by q.n desc,q.first_seen,q.label)
+      from (
+        select coalesce(fp.label_text,a.position) label,count(*) n,min(m.match_date) first_seen
+        from public.match_appearances a
+        join public.matches m on m.id=a.match_id
+        left join public.football_positions fp on fp.id=a.position_id
+        where a.player_id=p.id
+          and m.match_date<=now()
+          and (coalesce(a.starter,false) or coalesce(a.appeared,false))
+          and coalesce(fp.label_text,a.position) is not null
+        group by coalesce(fp.label_text,a.position)
+      ) q
+      where q.label is distinct from (
+        select coalesce(fp2.label_text,a2.position)
+        from public.match_appearances a2
+        join public.matches m2 on m2.id=a2.match_id
+        left join public.football_positions fp2 on fp2.id=a2.position_id
+        where a2.player_id=p.id
+          and m2.match_date<=now()
+          and (coalesce(a2.starter,false) or coalesce(a2.appeared,false))
+          and coalesce(fp2.label_text,a2.position) is not null
+        group by coalesce(fp2.label_text,a2.position)
+        order by count(*) desc,min(m2.match_date),coalesce(fp2.label_text,a2.position)
+        limit 1
+      )
+    ),array[]::text[]),
+    updated_at=now()
+  where p.id=any(v_ids);
+
+  select id into v_cap_id from public.achievements where slug='capitanat' limit 1;
+  if v_cap_id is not null then
+    delete from public.player_achievements
+    where player_id=any(v_ids) and achievement_id=v_cap_id;
+
+    insert into public.player_achievements(
+      player_id,selection_id,achievement_id,achievement_value,notes_short,added_by
+    )
+    select
+      a.player_id,m.selection_team_id,v_cap_id,count(*)::integer,
+      'Calculé depuis la feuille de match courante.',auth.uid()
+    from public.match_appearances a
+    join public.matches m on m.id=a.match_id
+    where a.player_id=any(v_ids)
+      and m.selection_team_id is not null
+      and m.match_date<=now()
+      and coalesce(a.captain,false)
+      and (coalesce(a.starter,false) or coalesce(a.appeared,false))
+    group by a.player_id,m.selection_team_id
+    on conflict(player_id,achievement_id,selection_id) do update set
+      achievement_value=excluded.achievement_value,
+      notes_short=excluded.notes_short;
+  end if;
+
+  perform public.sync_player_position_tags(x)
+  from unnest(v_ids) x;
+
+  return v_count;
+end
+$$;
+
+revoke all on function public.refresh_players_from_match_sheets(uuid[]) from public,anon,authenticated;
+
+create or replace function public.sync_player_position_tags_trigger()
+returns trigger
+language plpgsql
+security invoker
+set search_path='public'
+as $$
+begin
+  if current_setting('bleus.bulk_sheet_save',true)='1' then
+    return case when tg_op='DELETE' then old else new end;
+  end if;
+  if tg_op='DELETE' then perform public.sync_player_position_tags(old.player_id); return old; end if;
+  perform public.sync_player_position_tags(new.player_id);
+  if tg_op='UPDATE' and old.player_id is distinct from new.player_id then perform public.sync_player_position_tags(old.player_id); end if;
+  return new;
+end
+$$;
+
+-- ---------------------------------------------------------------------------
+-- 4) Normaliser l'état courant d'une feuille avant recalcul statistique
+-- ---------------------------------------------------------------------------
+create or replace function public.sync_match_sheet_current_state(
+  p_match_id uuid,
+  p_extra_players uuid[] default array[]::uuid[]
+)
+returns uuid[]
+language plpgsql
+security definer
+set search_path='public'
+as $$
+declare
+  v_ids uuid[]:=array[]::uuid[];
+begin
+  if p_match_id is null then return v_ids; end if;
+
+  -- Un remplaçant ou un joueur présent dans un fait de jeu France doit avoir
+  -- une ligne d'apparition unique pour le match. L'unicité (match_id,player_id)
+  -- empêche tout double comptage lors des éditions successives.
+  with implied as (
+    select replaced_by_player_id pid
+    from public.match_appearances
+    where match_id=p_match_id and replaced_by_player_id is not null
+    union
+    select player_id from public.match_goal_events
+    where match_id=p_match_id and player_id is not null and public.sheet_name_key(coalesce(team_name,'France'))='france'
+    union
+    select assist_player_id from public.match_goal_events
+    where match_id=p_match_id and assist_player_id is not null and public.sheet_name_key(coalesce(team_name,'France'))='france'
+    union
+    select player_id from public.match_card_events
+    where match_id=p_match_id and player_id is not null and public.sheet_name_key(coalesce(team_name,'France'))='france'
+  )
+  insert into public.match_appearances(match_id,player_id,player_name,starter,appeared,squad_status)
+  select p_match_id,p.id,p.display_name,false,true,'Remplaçant(e)'
+  from implied i
+  join public.players p on p.id=i.pid
+  on conflict(match_id,player_id) do nothing;
+
+  update public.match_appearances a
+  set appeared=(
+    coalesce(a.starter,false)
+    or coalesce(a.minutes,0)>0
+    or exists(select 1 from public.match_appearances s where s.match_id=p_match_id and s.replaced_by_player_id=a.player_id)
+    or exists(select 1 from public.match_goal_events g where g.match_id=p_match_id and (g.player_id=a.player_id or g.assist_player_id=a.player_id))
+    or exists(select 1 from public.match_card_events c where c.match_id=p_match_id and c.player_id=a.player_id)
+  )
+  where a.match_id=p_match_id;
+
+  update public.match_appearances a
+  set
+    goals=(select count(*)::integer from public.match_goal_events g where g.match_id=p_match_id and g.player_id=a.player_id),
+    assists=(select count(*)::integer from public.match_goal_events g where g.match_id=p_match_id and g.assist_player_id=a.player_id),
+    yellow_cards=(select count(*)::integer from public.match_card_events c where c.match_id=p_match_id and c.player_id=a.player_id and c.card_type in('yellow','second_yellow')),
+    red_cards=(select count(*)::integer from public.match_card_events c where c.match_id=p_match_id and c.player_id=a.player_id and c.card_type in('red','second_yellow'))
+  where a.match_id=p_match_id and a.player_id is not null;
+
+  select coalesce(array_agg(distinct pid),array[]::uuid[])
+    into v_ids
+  from (
+    select player_id pid from public.match_appearances where match_id=p_match_id and player_id is not null
+    union select player_id from public.match_goal_events where match_id=p_match_id and player_id is not null
+    union select assist_player_id from public.match_goal_events where match_id=p_match_id and assist_player_id is not null
+    union select player_id from public.match_card_events where match_id=p_match_id and player_id is not null
+    union select x from unnest(coalesce(p_extra_players,array[]::uuid[])) x where x is not null
+  ) q;
+
+  perform public.refresh_players_from_match_sheets(v_ids);
+  return v_ids;
+end
+$$;
+
+revoke all on function public.sync_match_sheet_current_state(uuid,uuid[]) from public,anon,authenticated;
+
+-- ---------------------------------------------------------------------------
+-- 5) Sauvegarde atomique : une seule RPC, aucun passage "brouillon -> validé"
+-- ---------------------------------------------------------------------------
+create or replace function public.save_match_sheet(
+  p_match_id uuid,
+  p_appearances jsonb default '[]'::jsonb,
+  p_goals jsonb default '[]'::jsonb,
+  p_cards jsonb default '[]'::jsonb,
+  p_context jsonb default '{}'::jsonb,
+  p_jersey_id uuid default null,
+  p_ball_id uuid default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path='public'
+as $$
+declare
+  v_match public.matches%rowtype;
+  v_selection_id uuid;
+  v_item jsonb;
+  v_id uuid;
+  v_player_id uuid;
+  v_replacement_id uuid;
+  v_assist_id uuid;
+  v_place_id uuid;
+  v_coach_id uuid;
+  v_referee_id uuid;
+  v_competition_id uuid;
+  v_edition_id uuid;
+  v_stadium text:=nullif(trim(coalesce(p_context->>'stadium','')),'');
+  v_city text:=nullif(trim(coalesce(p_context->>'city','')),'');
+  v_coach text:=nullif(trim(coalesce(p_context->>'coach','')),'');
+  v_referee text:=nullif(trim(coalesce(p_context->>'referee','')),'');
+  v_competition text:=nullif(trim(coalesce(p_context->>'competition_name','')),'');
+  v_old_players uuid[]:=array[]::uuid[];
+  v_affected uuid[]:=array[]::uuid[];
+  v_count integer:=0;
+  v_old_manager_key text;
+  v_new_manager_key text;
+begin
+  if auth.uid() is null or not public.can_edit() then raise exception 'Modification non autorisée'; end if;
+  if jsonb_typeof(coalesce(p_appearances,'[]'::jsonb))<>'array'
+     or jsonb_typeof(coalesce(p_goals,'[]'::jsonb))<>'array'
+     or jsonb_typeof(coalesce(p_cards,'[]'::jsonb))<>'array' then
+    raise exception 'Payload de feuille invalide';
+  end if;
+
+  perform set_config('bleus.bulk_sheet_save','1',true);
+
+  select * into v_match from public.matches where id=p_match_id for update;
+  if not found then raise exception 'Match introuvable'; end if;
+  v_selection_id:=v_match.selection_team_id;
+  if v_selection_id is null then raise exception 'Sélection interne manquante pour ce match'; end if;
+  v_old_manager_key:=public.team_type_manager_key(p_match_id);
+
+  select coalesce(array_agg(distinct pid),array[]::uuid[]) into v_old_players
+  from (
+    select player_id pid from public.match_appearances where match_id=p_match_id and player_id is not null
+    union select replaced_by_player_id from public.match_appearances where match_id=p_match_id and replaced_by_player_id is not null
+    union select player_id from public.match_goal_events where match_id=p_match_id and player_id is not null
+    union select assist_player_id from public.match_goal_events where match_id=p_match_id and assist_player_id is not null
+    union select player_id from public.match_card_events where match_id=p_match_id and player_id is not null
+  ) q;
+
+  if v_stadium is not null then v_place_id:=public.resolve_or_create_sheet_place(v_stadium,v_city); end if;
+  if v_coach is not null then v_coach_id:=public.resolve_or_create_sheet_personnel(v_coach,'selectionneur'); end if;
+  if v_referee is not null then v_referee_id:=public.resolve_or_create_sheet_personnel(v_referee,'arbitre'); end if;
+
+  if nullif(p_context->>'competition_edition_id','') is not null then
+    v_edition_id:=(p_context->>'competition_edition_id')::uuid;
+    select c.id into v_competition_id
+    from public.competitions c
+    where c.canonical_edition_id=v_edition_id
+      and (c.gender is null or c.gender=v_match.gender)
+      and (c.selection_category is null or c.selection_category=v_match.selection_category)
+    order by c.created_at nulls last,c.id limit 1;
+  elsif v_competition is not null then
+    select c.id,c.canonical_edition_id into v_competition_id,v_edition_id
+    from public.competitions c
+    where public.sheet_name_key(c.name)=public.sheet_name_key(v_competition)
+      and (c.gender is null or c.gender=v_match.gender)
+      and (c.selection_category is null or c.selection_category=v_match.selection_category)
+    order by c.created_at nulls last,c.id limit 1;
+  end if;
+
+  update public.matches
+  set place_id=v_place_id,
+      coach_id=v_coach_id,
+      competition_id=coalesce(v_competition_id,competition_id),
+      competition_edition_id=v_edition_id,
+      sheet_stadium_name=v_stadium,
+      sheet_city_name=v_city,
+      sheet_referee_name=v_referee,
+      sheet_coach_name=v_coach,
+      sheet_competition_name=v_competition,
+      lineup_status=case when jsonb_array_length(coalesce(p_appearances,'[]'::jsonb))>0
+                         then 'Feuille de match · '||jsonb_array_length(coalesce(p_appearances,'[]'::jsonb))||' joueurs'
+                         else null end,
+      updated_at=now()
+  where id=p_match_id;
+
+  delete from public.match_officials mo
+  where mo.match_id=p_match_id
+    and mo.role ~* '(arbitre|referee)'
+    and mo.role !~* '(assistant|assistante|video|var|linesman|lineswoman|fourth|quatri|4e|4eme|reserve)';
+  if v_referee_id is not null then
+    insert into public.match_officials(match_id,person_id,role)
+    values(p_match_id,v_referee_id,'Arbitre principal')
+    on conflict(match_id,person_id,role) do nothing;
+  end if;
+
+  delete from public.match_jerseys where match_id=p_match_id and coalesce(role,'outfield')='outfield';
+  if p_jersey_id is not null then
+    insert into public.match_jerseys(match_id,jersey_id,selection_team_id,role,created_by,updated_at)
+    values(p_match_id,p_jersey_id,v_selection_id,'outfield',auth.uid(),now());
+  end if;
+
+  delete from public.match_balls where match_id=p_match_id;
+  if p_ball_id is not null then
+    insert into public.match_balls(match_id,ball_id,created_by,updated_at)
+    values(p_match_id,p_ball_id,auth.uid(),now());
+  end if;
+
+  delete from public.match_appearances a
+  where a.match_id=p_match_id
+    and not exists (
+      select 1 from jsonb_array_elements(coalesce(p_appearances,'[]'::jsonb)) j
+      where nullif(j->>'id','') is not null and (j->>'id')::uuid=a.id
+    );
+
+  for v_item in select value from jsonb_array_elements(coalesce(p_appearances,'[]'::jsonb)) loop
+    v_id:=case when nullif(v_item->>'id','') is null then null else (v_item->>'id')::uuid end;
+    v_player_id:=case when nullif(v_item->>'player_id','') is null then null else (v_item->>'player_id')::uuid end;
+    if v_player_id is null and nullif(trim(coalesce(v_item->>'player_name','')),'') is not null then
+      v_player_id:=public.resolve_or_create_sheet_player(v_item->>'player_name',v_match.gender,v_selection_id);
+    end if;
+    v_replacement_id:=case when nullif(v_item->>'replaced_by_player_id','') is null then null else (v_item->>'replaced_by_player_id')::uuid end;
+    if v_replacement_id is null and nullif(trim(coalesce(v_item->>'replaced_by_name','')),'') is not null then
+      v_replacement_id:=public.resolve_or_create_sheet_player(v_item->>'replaced_by_name',v_match.gender,v_selection_id);
+    end if;
+
+    if v_id is null and v_player_id is not null then
+      select id into v_id from public.match_appearances where match_id=p_match_id and player_id=v_player_id limit 1;
+    end if;
+
+    if v_id is not null and exists(select 1 from public.match_appearances where id=v_id and match_id=p_match_id) then
+      update public.match_appearances
+      set player_id=v_player_id,
+          player_name=nullif(trim(coalesce(v_item->>'player_name','')),''),
+          starter=coalesce((v_item->>'starter')::boolean,false),
+          appeared=false,
+          lineup_slot=case when nullif(v_item->>'lineup_slot','') is null then null else (v_item->>'lineup_slot')::integer end,
+          minutes=case when nullif(v_item->>'minutes','') is null then null else (v_item->>'minutes')::integer end,
+          squad_status=nullif(v_item->>'squad_status',''),
+          shirt_number=case when nullif(v_item->>'shirt_number','') is null then null else (v_item->>'shirt_number')::integer end,
+          position_id=case when nullif(v_item->>'position_id','') is null then null else (v_item->>'position_id')::uuid end,
+          position=nullif(v_item->>'position',''),
+          captain=coalesce((v_item->>'captain')::boolean,false),
+          replaced_by_player_id=v_replacement_id,
+          replaced_by_name=nullif(trim(coalesce(v_item->>'replaced_by_name','')),'')
+      where id=v_id;
+    else
+      insert into public.match_appearances(
+        match_id,player_id,player_name,starter,appeared,lineup_slot,minutes,squad_status,
+        shirt_number,position_id,position,captain,replaced_by_player_id,replaced_by_name
+      ) values(
+        p_match_id,v_player_id,nullif(trim(coalesce(v_item->>'player_name','')),''),
+        coalesce((v_item->>'starter')::boolean,false),false,
+        case when nullif(v_item->>'lineup_slot','') is null then null else (v_item->>'lineup_slot')::integer end,
+        case when nullif(v_item->>'minutes','') is null then null else (v_item->>'minutes')::integer end,
+        nullif(v_item->>'squad_status',''),
+        case when nullif(v_item->>'shirt_number','') is null then null else (v_item->>'shirt_number')::integer end,
+        case when nullif(v_item->>'position_id','') is null then null else (v_item->>'position_id')::uuid end,
+        nullif(v_item->>'position',''),coalesce((v_item->>'captain')::boolean,false),
+        v_replacement_id,nullif(trim(coalesce(v_item->>'replaced_by_name','')),'')
+      );
+    end if;
+  end loop;
+
+  delete from public.match_goal_events g
+  where g.match_id=p_match_id
+    and not exists (
+      select 1 from jsonb_array_elements(coalesce(p_goals,'[]'::jsonb)) j
+      where nullif(j->>'id','') is not null and (j->>'id')::uuid=g.id
+    );
+
+  for v_item in select value from jsonb_array_elements(coalesce(p_goals,'[]'::jsonb)) loop
+    v_id:=case when nullif(v_item->>'id','') is null then null else (v_item->>'id')::uuid end;
+    v_player_id:=case when nullif(v_item->>'player_id','') is null then null else (v_item->>'player_id')::uuid end;
+    v_assist_id:=case when nullif(v_item->>'assist_player_id','') is null then null else (v_item->>'assist_player_id')::uuid end;
+
+    if public.sheet_name_key(v_item->>'team_name')='france' then
+      if v_player_id is null then v_player_id:=public.resolve_or_create_sheet_player(v_item->>'scorer_name',v_match.gender,v_selection_id); end if;
+      if v_assist_id is null and nullif(trim(coalesce(v_item->>'assist_name','')),'') is not null then
+        v_assist_id:=public.resolve_or_create_sheet_player(v_item->>'assist_name',v_match.gender,v_selection_id);
+      end if;
+    else
+      v_player_id:=null;v_assist_id:=null;
+    end if;
+
+    if v_id is not null and exists(select 1 from public.match_goal_events where id=v_id and match_id=p_match_id) then
+      update public.match_goal_events
+      set player_id=v_player_id,
+          scorer_name=coalesce(nullif(trim(v_item->>'scorer_name'),''),'Inconnu'),
+          team_name=nullif(v_item->>'team_name',''),
+          minute_text=nullif(v_item->>'minute_text',''),
+          score_after=nullif(v_item->>'score_after',''),
+          assist_player_id=v_assist_id,
+          assist_name=nullif(trim(coalesce(v_item->>'assist_name','')),''),
+          goal_type=nullif(v_item->>'goal_type',''),
+          body_part=nullif(v_item->>'body_part',''),
+          is_penalty=coalesce((v_item->>'is_penalty')::boolean,false),
+          is_own_goal=coalesce((v_item->>'is_own_goal')::boolean,false),
+          updated_at=now()
+      where id=v_id;
+    else
+      insert into public.match_goal_events(
+        match_id,player_id,scorer_name,team_name,minute_text,score_after,
+        assist_player_id,assist_name,goal_type,body_part,is_penalty,is_own_goal,updated_at
+      ) values(
+        p_match_id,v_player_id,coalesce(nullif(trim(v_item->>'scorer_name'),''),'Inconnu'),
+        nullif(v_item->>'team_name',''),nullif(v_item->>'minute_text',''),nullif(v_item->>'score_after',''),
+        v_assist_id,nullif(trim(coalesce(v_item->>'assist_name','')),''),nullif(v_item->>'goal_type',''),
+        nullif(v_item->>'body_part',''),coalesce((v_item->>'is_penalty')::boolean,false),
+        coalesce((v_item->>'is_own_goal')::boolean,false),now()
+      );
+    end if;
+  end loop;
+
+  delete from public.match_card_events c
+  where c.match_id=p_match_id
+    and not exists (
+      select 1 from jsonb_array_elements(coalesce(p_cards,'[]'::jsonb)) j
+      where nullif(j->>'id','') is not null and (j->>'id')::uuid=c.id
+    );
+
+  for v_item in select value from jsonb_array_elements(coalesce(p_cards,'[]'::jsonb)) loop
+    v_id:=case when nullif(v_item->>'id','') is null then null else (v_item->>'id')::uuid end;
+    v_player_id:=case when nullif(v_item->>'player_id','') is null then null else (v_item->>'player_id')::uuid end;
+    if public.sheet_name_key(v_item->>'team_name')='france' then
+      if v_player_id is null then v_player_id:=public.resolve_or_create_sheet_player(v_item->>'player_name',v_match.gender,v_selection_id); end if;
+    else
+      v_player_id:=null;
+    end if;
+
+    if v_id is not null and exists(select 1 from public.match_card_events where id=v_id and match_id=p_match_id) then
+      update public.match_card_events
+      set player_id=v_player_id,
+          player_name=coalesce(nullif(trim(v_item->>'player_name'),''),'Inconnu'),
+          team_name=nullif(v_item->>'team_name',''),
+          card_type=coalesce(nullif(v_item->>'card_type',''),'yellow'),
+          minute_text=nullif(v_item->>'minute_text',''),updated_at=now()
+      where id=v_id;
+    else
+      insert into public.match_card_events(match_id,player_id,player_name,team_name,card_type,minute_text,updated_at)
+      values(p_match_id,v_player_id,coalesce(nullif(trim(v_item->>'player_name'),''),'Inconnu'),
+             nullif(v_item->>'team_name',''),coalesce(nullif(v_item->>'card_type',''),'yellow'),
+             nullif(v_item->>'minute_text',''),now());
+    end if;
+  end loop;
+
+  v_affected:=public.sync_match_sheet_current_state(p_match_id,v_old_players);
+  v_count:=coalesce(cardinality(v_affected),0);
+
+  v_new_manager_key:=public.team_type_manager_key(p_match_id);
+  if nullif(v_new_manager_key,'') is not null then
+    perform public.enqueue_team_type_recalc_for_manager_from(
+      v_new_manager_key,v_selection_id,v_match.match_date,p_match_id,'sheet_change'
+    );
+  else
+    insert into public.team_type_recalc_queue(match_id,source_match_id,reason)
+    values(p_match_id,p_match_id,'sheet_change')
+    on conflict(match_id) do update set source_match_id=excluded.source_match_id,reason='sheet_change',requested_at=now(),available_at=now(),attempts=0,last_error=null;
+  end if;
+
+  if nullif(v_old_manager_key,'') is not null and v_old_manager_key is distinct from v_new_manager_key then
+    perform public.enqueue_team_type_recalc_for_manager_from(
+      v_old_manager_key,v_selection_id,v_match.match_date,p_match_id,'manager_changed'
+    );
+  end if;
+
+  return jsonb_build_object(
+    'ok',true,
+    'match_id',p_match_id,
+    'player_count',v_count,
+    'team_type_queued',true,
+    'chronological_number',(select chronological_number from public.matches where id=p_match_id)
+  );
+end
+$$;
+
+revoke all on function public.save_match_sheet(uuid,jsonb,jsonb,jsonb,jsonb,uuid,uuid) from public,anon;
+grant execute on function public.save_match_sheet(uuid,jsonb,jsonb,jsonb,jsonb,uuid,uuid) to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- 6) Fallback automatique si une donnée de feuille est modifiée hors de la RPC
+-- ---------------------------------------------------------------------------
+create or replace function public.live_sheet_child_sync_trigger()
+returns trigger
+language plpgsql
+security definer
+set search_path='public'
+as $$
+declare
+  v_match_id uuid;
+  v_extra uuid[]:=array[]::uuid[];
+  v_key text;
+  v_selection_id uuid;
+  v_date timestamptz;
+begin
+  if current_setting('bleus.bulk_sheet_save',true)='1' or pg_trigger_depth()>1 then
+    return case when tg_op='DELETE' then old else new end;
+  end if;
+
+  v_match_id:=case when tg_op='DELETE' then old.match_id else new.match_id end;
+
+  if tg_table_name='match_appearances' then
+    v_extra:=array_remove(array[
+      case when tg_op='INSERT' then null else old.player_id end,
+      case when tg_op='DELETE' then null else new.player_id end,
+      case when tg_op='INSERT' then null else old.replaced_by_player_id end,
+      case when tg_op='DELETE' then null else new.replaced_by_player_id end
+    ],null);
+  elsif tg_table_name='match_goal_events' then
+    v_extra:=array_remove(array[
+      case when tg_op='INSERT' then null else old.player_id end,
+      case when tg_op='DELETE' then null else new.player_id end,
+      case when tg_op='INSERT' then null else old.assist_player_id end,
+      case when tg_op='DELETE' then null else new.assist_player_id end
+    ],null);
+  else
+    v_extra:=array_remove(array[
+      case when tg_op='INSERT' then null else old.player_id end,
+      case when tg_op='DELETE' then null else new.player_id end
+    ],null);
+  end if;
+
+  perform public.sync_match_sheet_current_state(v_match_id,v_extra);
+
+  if tg_table_name='match_appearances' then
+    select selection_team_id,match_date into v_selection_id,v_date from public.matches where id=v_match_id;
+    v_key:=public.team_type_manager_key(v_match_id);
+    if nullif(v_key,'') is not null then
+      perform public.enqueue_team_type_recalc_for_manager_from(v_key,v_selection_id,v_date,v_match_id,'lineup_change');
+    end if;
+  end if;
+
+  return case when tg_op='DELETE' then old else new end;
+end
+$$;
+
+revoke all on function public.live_sheet_child_sync_trigger() from public,anon,authenticated;
+
+drop trigger if exists trg_live_sheet_appearances_sync on public.match_appearances;
+create trigger trg_live_sheet_appearances_sync
+after insert or update or delete on public.match_appearances
+for each row execute function public.live_sheet_child_sync_trigger();
+
+drop trigger if exists trg_live_sheet_goals_sync on public.match_goal_events;
+create trigger trg_live_sheet_goals_sync
+after insert or update or delete on public.match_goal_events
+for each row execute function public.live_sheet_child_sync_trigger();
+
+drop trigger if exists trg_live_sheet_cards_sync on public.match_card_events;
+create trigger trg_live_sheet_cards_sync
+after insert or update or delete on public.match_card_events
+for each row execute function public.live_sheet_child_sync_trigger();
+
+create or replace function public.live_sheet_match_sync_trigger()
+returns trigger
+language plpgsql
+security definer
+set search_path='public'
+as $$
+declare
+  v_ids uuid[];
+  v_key text;
+begin
+  if current_setting('bleus.bulk_sheet_save',true)='1' or pg_trigger_depth()>1 then return new; end if;
+
+  select coalesce(array_agg(player_id),array[]::uuid[]) into v_ids
+  from public.match_appearances
+  where match_id=new.id and player_id is not null;
+  perform public.refresh_players_from_match_sheets(v_ids);
+
+  if old.coach_id is distinct from new.coach_id
+     or old.competition_id is distinct from new.competition_id
+     or old.competition_edition_id is distinct from new.competition_edition_id then
+    v_key:=public.team_type_manager_key(new.id);
+    if nullif(v_key,'') is not null then
+      perform public.enqueue_team_type_recalc_for_manager_from(v_key,new.selection_team_id,new.match_date,new.id,'match_context_change');
+    end if;
+  end if;
+  return new;
+end
+$$;
+
+revoke all on function public.live_sheet_match_sync_trigger() from public,anon,authenticated;
+
+drop trigger if exists trg_live_sheet_match_sync on public.matches;
+create trigger trg_live_sheet_match_sync
+after update of france_score,opponent_score,selection_team_id,competition_id,competition_edition_id,coach_id
+on public.matches
+for each row execute function public.live_sheet_match_sync_trigger();
+
+-- ---------------------------------------------------------------------------
+-- 7) Nettoyage total de l'ancien système de validation
+-- ---------------------------------------------------------------------------
+drop function if exists public.team_type_after_validation();
+drop function if exists public.mark_match_sheet_child_dirty();
+drop function if exists public.mark_match_sheet_match_dirty();
+drop function if exists public.quick_validatable_match_sheets();
+drop function if exists public.quick_validation_missing_fields(uuid);
+drop function if exists public.match_sheet_missing_fields(uuid);
+drop function if exists public.quick_validate_existing_match_sheet(uuid);
+drop function if exists public.refresh_validated_player_stats(uuid);
+drop function if exists public.refresh_player_from_validated_sheets(uuid);
+drop function if exists public.validate_match_sheet(uuid,jsonb,jsonb,jsonb,jsonb,uuid);
+
+-- Le Bleu Moyen ne dépend plus du statut de validation. Le champ de compatibilité
+-- interne validated_appearances vaut simplement le nombre d'apparitions exploitées.
+do $$
+declare v_def text;
+begin
+  select pg_get_functiondef(p.oid) into v_def
+  from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+  where n.nspname='public' and p.proname='bleu_moyen_player_metrics' and p.prokind='f';
+  if v_def is not null then
+    v_def:=replace(v_def,'      m.sheet_validation_status,'||chr(10),'');
+    v_def:=replace(v_def,$x$      count(*) filter(where x.sheet_validation_status='validated')::integer validated_appearances,$x$,$x$      count(*)::integer validated_appearances,$x$);
+    execute v_def;
+  end if;
+end $$;
+
+-- Le snapshot de validation n'a plus de rôle : la feuille courante est la seule source.
+drop table if exists public.validated_match_player_stats;
+
+-- Les colonnes de statut de validation disparaissent également de matches.
+alter table public.matches
+  drop column if exists sheet_validation_status,
+  drop column if exists sheet_validated_at,
+  drop column if exists sheet_validated_by,
+  drop column if exists sheet_validation_revision;
+
+-- Nettoyage des anciens libellés d'interface stockés.
+update public.matches m
+set lineup_status=case
+  when x.n>0 then 'Feuille de match · '||x.n||' joueurs'
+  else null
+end,
+updated_at=now()
+from (
+  select m2.id,count(a.id)::integer n
+  from public.matches m2
+  left join public.match_appearances a on a.match_id=m2.id
+  group by m2.id
+) x
+where m.id=x.id
+  and coalesce(m.lineup_status,'') ~* '(valid|revalid|brouillon)';
+
+-- Rebuild unique et idempotent de tous les agrégats existants depuis les feuilles.
+select public.refresh_players_from_match_sheets(array_agg(id)) from public.players;
+
+commit;
+
+
+-- === V1.3.13 — STATIC VISUALS CLEANUP ========================================
+-- Les rendus actuels des cadres/bordures sont désormais figés localement.
+drop table if exists public.calendar_feature_styles;
+drop table if exists public.selection_photo_borders;
+drop table if exists public.country_display_colors;
+alter table public.matches drop column if exists feature_frame_mode;

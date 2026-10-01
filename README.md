@@ -1,9 +1,89 @@
-# 3615 Bleus — V1.2.10.9
+# 3615 Bleus
 
+> Les fichiers de migration SQL incrémentaux ne sont plus inclus dans le ZIP de déploiement. Les évolutions serveur de cette version sont déjà appliquées directement au projet Supabase de production. `SUPABASE_BASELINE.sql` est conservé uniquement comme référence historique de schéma.
+ V1.3.13
 
+# 3615 Bleus — V1.3.12
 
+# 3615 Bleus
 
+**Version actuelle : V1.3.15.1** — accueil calendrier et médias de match simplifiés.
 
+## V1.3.8 — Génération · Actus
+- Joueurs : filtre par année de naissance et liste compacte optimisée iPhone.
+- Accueil : tuiles **Actu** indépendantes des rassemblements, avec liens, live YouTube et diffusion.
+- Migration Supabase appliquée et incluse dans le ZIP. Voir `FEATURES_V1.3.8.md`.
+
+## V1.3.7 — Match : anneau, faits par équipe, export complet
+- Correction du chevauchement du libellé **Équipe type** avec l’anneau.
+- Les faits de match sont séparés en deux colonnes **France / adversaire**.
+- L’export PNG Match utilise un gabarit éditorial dédié et contient date, compétition, stade, sélectionneur, indice Équipe type, âge moyen, sélections moyennes, composition et faits de match.
+- Export standardisé à 1040 px puis rasterisé en haute définition/Retina.
+- Aucune migration Supabase requise. Voir `MATCH_TILE_EXPORT_V1.3.7.md`.
+
+## V1.3.6 — Système d’export
+- Export PNG Match réécrit sur le moteur commun `BLEUS3000_EXPORT`.
+- Correctif du bloc rouge parasite provenant des pseudo-éléments du scoreline lors de la sérialisation SVG.
+- Inlining local des images et backgrounds pour sécuriser CORS.
+- Bouton **TÉLÉCHARGER LE BUT** : télécharge désormais le fichier vidéo associé au but (Supabase Storage ou URL vidéo directe), et non une capture PNG de la tuile.
+- Retina/iPhone et noms de fichiers propres.
+- Les exports Joueur, Onze/Five et Liste réutilisent le gestionnaire commun.
+- Aucune migration Supabase requise. Voir `EXPORT_SYSTEM_V1.3.6.md`.
+
+## V1.3.5 — Synchronisation sélectionneurs → Staff
+- Toute saisie de sélectionneur dans une feuille matérialise/réutilise une entité Staff `selectionneur`.
+- `matches.coach_id` est synchronisé avec `sheet_coach_name`.
+- Backfill historique : 945 matchs avec un nom de sélectionneur, 0 liaison manquante.
+- Migration : `migration déjà appliquée directement sur le projet Supabase`.
+
+## V1.3.4 — Recherche 3615 transversale locale
+- Index local IndexedDB couvrant les principaux référentiels et leurs relations.
+- Recherche multi-blocs et multi-critères sans requête Supabase à chaque frappe.
+- Matchs indexés avec compositions, faits, arbitrage, sélectionneur, lieu, compétition, maillot, ballon et médias.
+- Joueurs indexés avec dates, stats, numéros, postes, accomplissements et historique relationnel.
+- Abréviations, accents, pluriels et fautes légères pris en charge.
+- Résultats ouvrant directement la fiche / tuile / feuille / but concerné.
+- Aucune migration Supabase requise. Voir `SEARCH_3615_V1.3.4.md`.
+
+## V1.3.3 — Administration uniquement
+- Le site reste public en lecture, sans menu Profil public.
+- Suppression de la création de compte et de tout appel frontend `signUp()`.
+- Suppression de Supabase Presence, de l’icône utilisateur en ligne et du module social.
+- Nouveau lien discret **Administration** dans le footer.
+- Après connexion, affichage du **Tableau de bord administrateur** uniquement pour ADMIN / SUPERADMIN.
+- Création de nouveaux comptes réellement bloquée côté Supabase par trigger sur `auth.users`.
+- RLS `profiles` durcie : ADMIN = propre profil uniquement ; SUPERADMIN = administration des profils.
+- Migration : `migration déjà appliquée directement sur le projet Supabase`.
+- Documentation : `AUTH_ADMIN_ONLY_V1.3.3.md`.
+
+## V1.3.2 — Optimisation iPhone / Safari iOS
+- Viewport dynamique `visualViewport` + `dvh/svh` pour la barre d’adresse et le clavier.
+- Navigation recalculée au maximum une fois par frame et plus sur chaque scroll interne.
+- Overlays et modales sans double scroll, avec conservation de la position de page.
+- Position de scroll des référentiels conservée dans la session.
+- Rendu hors écran différé via `content-visibility` pour les grandes listes.
+- Images dynamiques en lazy loading / décodage asynchrone.
+- Logo UI optimisé : ~1,1 Mo → ~32 Ko ; source HD conservée pour les exports.
+- Suppression de plusieurs flashes « Chargement… » quand les données sont déjà en cache/mémoire.
+- Recherche interne temporisée sur tactile pour limiter les rerenders pendant la frappe.
+- Actions ADMIN principales sticky et compatibles avec le clavier iOS.
+- Aucune migration Supabase requise. Voir `MOBILE_IPHONE_V1.3.2.md`.
+
+## V1.3.1 — Indice propriétaire « Équipe type »
+
+- Nouvel indice temporel 0–100 calculé à partir des choix du sélectionneur connus à la date du match.
+- Score brut à 4 décimales + confiance séparée + sous-scores explicatifs JSONB.
+- Calcul lors de la validation/modification d’une feuille validée, jamais lors de l’affichage.
+- Recalcul historique ciblé du match modifié vers les matchs suivants du même mandat.
+- Anneau interactif sur la tuile match, compatible tactile/iPhone et sans requête supplémentaire à l’ouverture.
+- 759 matchs à XI complet recalculés lors de la migration V1.3.1.
+- Migration : `migration déjà appliquée directement sur le projet Supabase`.
+- Documentation : `TEAM_TYPE_V1.3.1.md`.
+
+## V1.3 — Cache First Supabase
+
+- Cache mémoire + IndexedDB versionné, TTL par référentiel, déduplication et invalidation ciblée.
+- Voir `CACHE_FIRST_V1.3.md`.
 
 
 ## V1.2.10.9 — Export PNG corrigé + accès aux Buts depuis Médias
@@ -35,7 +115,7 @@
 - **Médias** passe sous **Faits de jeu** dans la feuille de match.
 - Le capitaine est identifié avec le PNG du brassard tricolore fourni, dans l’affichage et dans l’éditeur.
 - Le bloc Médias accepte désormais une **Photo d’équipe** importée ou distante, avec copyright et zoom visuel.
-- Pour une base existante, exécuter **`MIGRATION_V1.2.10.6_TEAM_PHOTO_MEDIA.sql`** avant d’ajouter ce nouveau média.
+- Pour une base existante, exécuter **`migration déjà appliquée directement sur le projet Supabase`** avant d’ajouter ce nouveau média.
 
 ## V1.2.10.5 — Remplaçants automatiques depuis les convoqués
 
@@ -67,7 +147,7 @@
 - **Navigation → Buts → ⚙** permet désormais d’importer directement un clip vidéo depuis l’ordinateur ou le téléphone.
 - Formats : MP4, WebM, MOV, M4V · 50 Mo maximum.
 - Les fichiers sont stockés dans le bucket Supabase `goal-videos`; l’URL externe / YouTube reste utilisable.
-- Pour une base existante, exécuter **`MIGRATION_V1.2.10.2_GOAL_VIDEO_UPLOAD.sql`** avant d’utiliser l’import fichier.
+- Pour une base existante, exécuter **`migration déjà appliquée directement sur le projet Supabase`** avant d’utiliser l’import fichier.
 
 ## V1.2.10 — Validation rapide, Livres, Buts notés & Panini
 
@@ -77,7 +157,7 @@
 - **Navigation → Buts** : galerie des buts France avec lecteur interne, URL vidéo éditable, note utilisateur de 1 à 100 %, moyenne communautaire et courbe visuelle en dégradé.
 - **Navigation → Panini** : albums en tuiles puis galerie de stickers, avec numéro, joueur lié, image, copyright et tri.
 - **Feuille de match → Importer un rassemblement lié** : récupère les joueurs actifs du rassemblement associé, ignore les joueurs déjà présents et les forfaits, puis remplit le groupe/remplaçants. Aucun XI titulaire n’est inventé.
-- Pour une base existante, exécuter **`MIGRATION_V1.2.10_COLLECTIONS_QUICK_VALIDATION.sql`** avant de déployer le frontend V1.2.10.
+- Pour une base existante, exécuter **`migration déjà appliquée directement sur le projet Supabase`** avant de déployer le frontend V1.2.10.
 
 ## V1.2.9 — Recherche 3615 langage naturel étendu
 
@@ -112,7 +192,7 @@
 - Nouveau sélecteur Ballon dans l’éditeur de feuille de match, avec suggestions selon compétition / édition / année.
 - Les associations match ↔ ballon sont enregistrées dans `match_balls`, ce qui rend le référentiel directement exploitable pour les statistiques.
 - Les anciens médias `asset_type = ball` sont repris automatiquement dans `football_balls` sans suppression de l’historique. Les futurs médias ballon restent synchronisés par trigger.
-- Pour une base existante, exécuter **`MIGRATION_V1.2.7_PHOTO_COPYRIGHT_BALLS.sql`** avant de déployer le frontend V1.2.7.
+- Pour une base existante, exécuter **`migration déjà appliquée directement sur le projet Supabase`** avant de déployer le frontend V1.2.7.
 
 
 ## V1.2.6 — Stats fun des XI
@@ -133,7 +213,7 @@
 - Le bouton **Valider la feuille** utilise la RPC Supabase `validate_match_sheet` : composition, faits de jeu, relations, maillot, snapshot validé et recalcul des statistiques sont traités dans une seule transaction.
 - Toute modification structurante d’une feuille validée la bascule automatiquement en **À revalider** (arbitre, maillot, édition, stade/ville, sélectionneur, score, composition, buts/cartons et corrections éditoriales concernées).
 - `matches.chronological_number` devient le numéro canonique en base ; il est recalculé automatiquement lorsque l’historique change.
-- **À exécuter sur Supabase avant déploiement :** `MIGRATION_V1.2.5_SHEET_RELIABILITY.sql`.
+- **À exécuter sur Supabase avant déploiement :** `migration déjà appliquée directement sur le projet Supabase`.
 
 
 ## V1.2.4 — Numéros chronologiques & administration des feuilles
@@ -290,4 +370,71 @@ La recherche 3615 accepte maintenant les formulations télégraphiques et des al
 - Correctif de l’erreur navigateur `Tainted canvases may not be exported` sur les exports de tuiles match.
 - Les médias externes non compatibles CORS n’empêchent plus l’export complet de la tuile.
 - Ajout d’une icône 🥅 dans le bloc Médias pour ouvrir directement la page Buts correspondant au match.
+## V1.3.9 — Le Bleu Moyen
+Le bloc Statistiques propose désormais une référence statistique fictive calculée depuis les feuilles de match de l'Équipe de France masculine A, avec filtres historiques, couverture des données, évolution, percentiles et comparaison sur les fiches Joueurs. Les agrégats sont produits par un RPC compact et mis en cache localement. Voir `BLEU_MOYEN_V1.3.9.md`.
 
+
+
+## V1.3.10 — Onze type sélectionneur
+Chaque sélectionneur du bloc Staff dispose désormais d’un module **ONZE TYPE** dérivé des feuilles de match, avec filtres, statistiques contextuelles, détail par poste et garde-fous contre les données historiques manquantes. Voir `STAFF_ONZE_TYPE_V1.3.10.md`.
+
+## V1.3.11 — Validation de feuilles / timeout 57014
+Le recalcul historique de l'indice Équipe type n'est plus exécuté dans la transaction de validation d'une feuille. Les matchs concernés sont placés dans une file interne dédupliquée, traitée progressivement par `pg_cron`. Cela évite les timeouts PostgREST lors des validations en série ou des corrections historiques. Voir `VALIDATION_TIMEOUT_FIX_V1.3.11.md`.
+
+
+## V1.3.12 — Feuilles sans validation
+La feuille courante est la source de vérité. Une information ne compte qu’une fois par match, même après plusieurs modifications. Voir `NO_VALIDATION_V1.3.12.md`.
+
+
+## V1.3.14
+Accueil compact, pagination/épinglage des Actus et tag Évènement à venir.
+
+
+## V1.3.14.3
+- Refonte visuelle du bloc Médias des matchs : cartes plus homogènes, cadres plus lisibles, grille médias harmonisée et suppression des chevauchements d’icônes.
+
+
+## V1.3.14.4
+- Attribution d’un maillot à un match : première/dernière date portée synchronisées en base et année portée affichée automatiquement sur la tuile Maillot.
+- Saisie d’un stade + ville sur un match : création ou réutilisation automatique de la tuile Stade et liaison `matches.place_id`.
+
+
+## V1.3.15
+- Tuile accueil calendrier : bouton d’épinglage déplacé à droite du numéro de match.
+- Compte à rebours retiré des tuiles accueil, remplacé par compétition + chaîne TV.
+- Médias de match : cadres centrés, carrés homogènes, aperçu agrandi au survol et au toucher.
+
+
+## V1.3.15.1
+- Suppression complète du média Cartouche.
+- Maillot et tous les aperçus médias utilisent désormais exactement le même cadre carré ; plus de chevauchement.
+
+
+## V1.3.15.2
+- Correction de la création automatique des tuiles Stade depuis les matchs, y compris lorsque le stade est défini via les modifications manuelles de la tuile Match.
+
+
+## V1.3.15.3
+- Correction du référentiel Stades après création automatique depuis une tuile Match : nouveau cache versionné pour `places`/`matches` et masquage des lieux sans match affilié.
+
+
+## V1.3.16
+- Export PNG Match rendu tolérant aux blocs absents.
+- Flèche d’épinglage accueil réduite.
+- Suppression du média YouTube/diffusion dans les feuilles de match.
+- Bloc Staff renommé Sélectionneurs avec grille de tuiles plus compacte.
+
+
+## V1.3.17
+- Calendrier accueil : flèche d’épinglage réduite sans réduire les logos de diffusion.
+- Confrontation centrée verticalement entre date et séparation.
+- Séparateurs Calendrier / Derniers résultats remplacés par une barre bleu-blanc-rouge.
+- VS sans cadre ni arrière-plan.
+- Noms des pays légèrement agrandis.
+- Rendu relancé automatiquement quand les logos des chaînes sont chargés.
+
+
+## V1.3.18
+- Accueil : confrontation réellement centrée entre date et séparation.
+- Séparateurs Calendrier/Derniers résultats : dégradé BBR continu inspiré des cadres.
+- Pays : affichage français en majuscules, noms agrandis ; référentiel opponents normalisé côté Supabase.
