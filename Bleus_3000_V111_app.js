@@ -32,12 +32,12 @@
   let navigationOverlay=null;
   function navigationItemsHtml(){
     const refs=[
-      ['selections','👤','Internationaux A'],['staff','👔','Staff'],['matchs','⚽','Matchs'],
+      ['selections','👤','Joueurs'],['staff','👔','Sélectionneurs'],['matchs','⚽','Matchs'],
       ['rassemblements','📋','Rassemblements'],['livres','📚','Livres'],['buts','🥅','Buts'],['panini','🟨','Panini'],['competitions','🏆','Compétitions'],
       ['adversaires','🌍','Adversaires'],['arbitres','🟨','Arbitres'],['maillots','👕','Maillots'],
       ['statistiques','📊','Statistiques'],['lieux','🏟️','Stades']
     ];
-    return `<section class="c3k-navigation-section"><h3>Outils</h3><div class="c3k-navigation-grid is-tools"><button type="button" data-navigation-tool="xi"><span class="c3k-navigation-icon" aria-hidden="true">•</span><strong>Mon Onze</strong><small>Créer une composition</small></button><button type="button" data-navigation-tool="list"><span class="c3k-navigation-icon" aria-hidden="true">•</span><strong>Liste sélectionneur</strong><small>Composer une liste</small></button></div></section><section class="c3k-navigation-section"><h3>Référentiels</h3><div class="c3k-navigation-grid">${refs.map(([key,icon,label])=>`<button type="button" data-navigation-reference="${key}"><span class="c3k-navigation-icon" aria-hidden="true">•</span><strong>${label}</strong></button>`).join('')}</div></section>`;
+    return `<section class="c3k-navigation-section"><h3>OUTILS</h3><div class="c3k-navigation-grid is-tools"><button type="button" data-navigation-tool="xi"><span class="c3k-navigation-icon" aria-hidden="true">•</span><strong>MON ONZE</strong><small>Créer une composition</small></button><button type="button" data-navigation-tool="list"><span class="c3k-navigation-icon" aria-hidden="true">•</span><strong>LISTE SÉLECTIONNEUR</strong><small>Composer une liste</small></button>${canAdminEdit()?'<button type="button" data-navigation-tool="completion"><span class="c3k-navigation-icon" aria-hidden="true">•</span><strong>COMPLÉTION</strong><small>Contrôler toutes les tuiles</small></button>':''}</div></section><section class="c3k-navigation-section"><h3>RÉFÉRENTIELS</h3><div class="c3k-navigation-grid">${refs.map(([key,icon,label])=>`<button type="button" data-navigation-reference="${key}"><span class="c3k-navigation-icon" aria-hidden="true">•</span><strong>${String(label).toLocaleUpperCase('fr-FR')}</strong></button>`).join('')}</div></section>`;
   }
   function ensureNavigationOverlay(){
     if(navigationOverlay&&document.body.contains(navigationOverlay))return navigationOverlay;
@@ -55,19 +55,38 @@
     });
     return navigationOverlay;
   }
-  function positionNavigation(){
+  let navigationPositionFrame=0;
+  function positionNavigationNow(){
+    navigationPositionFrame=0;
     const launcher=$('#c3kNavigationLauncher'),toggle=launcher?.querySelector('[data-navigation-open]'),overlay=ensureNavigationOverlay();
     if(!toggle||overlay.hidden)return;
+    const vv=window.visualViewport;
+    const viewportLeft=Number(vv?.offsetLeft||0),viewportTop=Number(vv?.offsetTop||0);
+    const viewportWidth=Math.max(280,Number(vv?.width||window.innerWidth||0));
+    const viewportHeight=Math.max(260,Number(vv?.height||window.innerHeight||0));
     const r=toggle.getBoundingClientRect(),margin=10,maxW=340;
-    const available=Math.max(280,window.innerWidth-margin*2);
+    const available=Math.max(280,viewportWidth-margin*2);
     const width=Math.min(maxW,available);
-    let left=Math.min(Math.max(margin,r.left),window.innerWidth-width-margin);
-    if(window.innerWidth<=720)left=margin;
-    const top=Math.min(r.bottom+7,window.innerHeight-90);
-    overlay.style.width=`${width}px`;
+    let left=Math.min(Math.max(viewportLeft+margin,r.left),viewportLeft+viewportWidth-width-margin);
+    if(viewportWidth<=720)left=viewportLeft+margin;
+    const viewportBottom=viewportTop+viewportHeight;
+    let top=Math.max(viewportTop+margin,r.bottom+7);
+    let maxHeight=Math.max(160,viewportBottom-top-margin);
+    if(maxHeight<180){
+      const above=Math.max(0,r.top-viewportTop-margin-7);
+      if(above>maxHeight){
+        maxHeight=Math.max(160,Math.min(520,above));
+        top=Math.max(viewportTop+margin,r.top-maxHeight-7);
+      }
+    }
+    overlay.style.width=`${Math.round(width)}px`;
     overlay.style.left=`${Math.round(left)}px`;
     overlay.style.top=`${Math.round(top)}px`;
-    overlay.style.maxHeight=`${Math.max(180,Math.round(window.innerHeight-top-margin))}px`;
+    overlay.style.maxHeight=`${Math.round(maxHeight)}px`;
+  }
+  function positionNavigation(){
+    if(navigationPositionFrame)return;
+    navigationPositionFrame=requestAnimationFrame(positionNavigationNow);
   }
   function openNavigation(){
     const overlay=ensureNavigationOverlay(),launcher=$('#c3kNavigationLauncher'),toggle=launcher?.querySelector('[data-navigation-open]');
@@ -101,7 +120,10 @@
     });
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&navigationOverlay&&!navigationOverlay.hidden)closeNavigation();});
     window.addEventListener('resize',positionNavigation,{passive:true});
-    window.addEventListener('scroll',positionNavigation,{passive:true,capture:true});
+    window.addEventListener('orientationchange',positionNavigation,{passive:true});
+    window.addEventListener('scroll',positionNavigation,{passive:true});
+    window.visualViewport?.addEventListener('resize',positionNavigation,{passive:true});
+    window.visualViewport?.addEventListener('scroll',positionNavigation,{passive:true});
   }
   window.BLEUS3000_NAVIGATION={mount:mountNavigationLauncher,open:openNavigation,close:closeNavigation};
 
@@ -160,6 +182,7 @@
     else if(kind==='xi'){$('#teamToolTitle').textContent='Créateur de Onze';$('#teamToolSub').textContent='Composition 11 joueurs · terrain plein';buildPitch('xi');$('#teamToolModal').dataset.kind='xi';openModal('teamToolModal');}
     if(kind==='list'&&window.BLEUS3000_SELECTION_LIST?.open){window.BLEUS3000_SELECTION_LIST.open();}
     else if(kind==='list'){buildListTool();openModal('listToolModal');}
+    if(kind==='completion')window.BLEUS3000_COMPLETION_AUDIT?.open?.();
   }
   function buildPitch(kind){
     const n=11,coords=[[3,5],[2,4],[3,4],[4,4],[5,4],[2,3],[4,3],[3,2],[2,1],[4,1],[3,1]];
@@ -234,13 +257,32 @@
     $$('[data-search-copy-group]',box).forEach(b=>b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const entry=groupedEntries[Number(b.dataset.searchCopyGroup)];if(entry)copySearchGroup(entry[0],entry[1],interpretation,b);}));
   }
   async function ensureSearchEverywhereLoaded(){
+    const local=window.BLEUS3000_SEARCH_INDEX;
+    if(local?.ensure){await local.ensure();return;}
     await Promise.allSettled([window.BLEUS3000_RELATIONAL_REFS?.load?.(),window.BLEUS3000_GATHERINGS?.load?.(),window.BLEUS3000_JERSEYS?.load?.()]);
   }
   async function renderSearch(q){
     const box=$('#universalSearchResults');if(!box)return;
     const query=String(q||'').trim(),seq=++searchRenderSeq;
     if(!query){box.hidden=true;box.innerHTML='';activeSearchItems=[];activeSearchIndex=-1;return;}
-    box.hidden=false;box.innerHTML='<div class="smart-search-loading"><span class="smart-search-pulse">3615</span><span>Recherche dans tous les blocs…</span></div>';
+    box.hidden=false;box.innerHTML='<div class="smart-search-loading"><span class="smart-search-pulse">3615</span><span>Recherche locale dans tout 3615 Bleus…</span></div>';
+    const local=window.BLEUS3000_SEARCH_INDEX;
+    if(local?.search){
+      try{
+        const localResult=await local.search(query);if(seq!==searchRenderSeq)return;
+        const smart=window.BLEUS3000_SMART_SEARCH;
+        if(localResult?.preferLegacySmart&&smart?.shouldHandle?.(query)&&(localResult.rows||[]).length<=2){
+          box.innerHTML='<div class="smart-search-loading"><span class="smart-search-pulse">3615</span><span>Analyse statistique complémentaire…</span></div>';
+          try{
+            const smartResult=await smart.search(query);if(seq!==searchRenderSeq)return;
+            const rows=[...(smartResult?.rows||[]),...(localResult.rows||[])];
+            renderSearchRows(box,rows,smartResult?.handled?smartResult.interpretation||localResult.interpretation||'':'');
+            return;
+          }catch(err){console.warn('Recherche statistique 3615',err);}
+        }
+        if((localResult?.rows||[]).length){renderSearchRows(box,localResult.rows,localResult.interpretation||'');return;}
+      }catch(err){console.warn('Index local 3615',err);}
+    }
     await ensureSearchEverywhereLoaded();if(seq!==searchRenderSeq)return;
     const smart=window.BLEUS3000_SMART_SEARCH;
     if(smart?.shouldHandle?.(query)){
@@ -272,7 +314,8 @@
 
   function setupEvents(){
     $$('.modal-backdrop').forEach(m=>m.addEventListener('pointerdown',e=>{if(e.target===m)closeModal(m.id);}));$$('[data-modal-close]').forEach(b=>b.addEventListener('click',()=>closeModal(b.dataset.modalClose)));
-    $('#referenceSearch').addEventListener('input',e=>{refState.query=e.target.value.toLowerCase();renderReferenceEntries();});$('#addReferenceEntry').addEventListener('click',openReferenceEditor);
+    let referenceSearchTimer=0;
+    $('#referenceSearch').addEventListener('input',e=>{refState.query=e.target.value.toLowerCase();clearTimeout(referenceSearchTimer);referenceSearchTimer=setTimeout(renderReferenceEntries,window.matchMedia('(pointer:coarse)').matches?110:55);});$('#addReferenceEntry').addEventListener('click',openReferenceEditor);
     if(!window.BLEUS3000_SELECTION_LIST){$('#saveListTool')?.addEventListener('click',()=>saveToolLocally('list'));$('#exportListPng')?.addEventListener('click',()=>exportTool('list','png'));$('#exportListJpg')?.addEventListener('click',()=>exportTool('list','jpg'));}
 
     document.addEventListener('keydown',e=>{if(e.key==='Escape'){const top=$$('.modal-backdrop:not([hidden])').at(-1);if(top)closeModal(top.id);}});

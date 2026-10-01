@@ -1,0 +1,27 @@
+/* 3615 Bleus V1.3.6 — commandes du moteur d'export commun */
+.b3k-export-button,.b3k-goal-download{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:30px;border:1px solid #b9cee6;border-radius:9px;background:#fff;color:#163f70;padding:0 10px;font:800 10px/1 Poppins,Arial,sans-serif;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.b3k-export-button:hover,.b3k-goal-download:hover{background:#edf5ff;border-color:#78a5d7;color:#0e4d91}
+.b3k-export-button:disabled,.b3k-goal-download:disabled,.b3k-goal-download[aria-disabled="true"]{opacity:.55;cursor:wait}
+.b3k-goal-download{width:100%;min-height:36px;text-transform:uppercase;letter-spacing:.035em;text-decoration:none;box-sizing:border-box}
+@media(max-width:640px){.b3k-export-button,.b3k-goal-download{min-height:44px}}
+
+/* V1.3.7 — gabarit éditorial dédié à l’export complet d’une tuile Match. */
+.b3k-match-export-layout{display:grid;gap:16px;width:1040px;box-sizing:border-box;padding:22px;border:1px solid #c9dbef;border-radius:18px;background:#fff;color:#17375e;font-family:Poppins,Arial,sans-serif}
+.b3k-match-export-header{display:grid;gap:10px;padding-bottom:14px;border-bottom:2px solid #dce8f5}
+.b3k-match-export-layout .rel-ref-head-match{padding:0!important;margin:0!important}
+.b3k-match-export-layout .rel-facts,.b3k-match-export-layout .rel-tags{justify-content:center!important;text-align:center!important}
+.b3k-match-export-section{display:grid;gap:10px;padding:14px;border:1px solid #d6e3f1;border-radius:14px;background:#f8fbff;overflow:visible!important;height:auto!important;max-height:none!important}
+.b3k-match-export-section>h3{margin:0;color:#123b8f;font:900 12px/1 Poppins,Arial,sans-serif;text-transform:uppercase;letter-spacing:.055em}
+.b3k-match-export-layout .match-sheet-lineup-stats{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 102px!important;gap:10px!important}
+.b3k-match-export-layout .match-sheet-lineup-stats article{padding:10px 12px!important}
+.b3k-match-export-layout .team-type-index{min-height:78px!important;padding:6px!important}
+.b3k-match-export-layout .team-type-ring{width:54px!important;height:54px!important}
+.b3k-match-export-layout .team-type-label{font-size:8px!important}
+.b3k-match-export-layout .match-sheet-columns{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important}
+.b3k-match-export-layout .match-events-summary.match-events-teams{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important}
+.b3k-match-export-layout .match-events-team .match-event-row{grid-template-columns:42px 24px minmax(0,1fr)!important;gap:7px!important;padding:8px 9px!important}
+.b3k-match-export-layout .match-events-team .match-event-row>.match-sheet-player-link{display:none!important}
+.b3k-match-export-layout .match-event-main strong{font-size:8.5px!important}
+.b3k-match-export-layout .match-event-main small{font-size:7px!important;white-space:normal!important}
+.b3k-match-export-layout .match-event-assist em{white-space:normal!important}
+.b3k-match-export-layout .match-sheet-provider-unmatched{margin-top:0}

@@ -123,7 +123,7 @@
 
   document.addEventListener('change',e=>{if(e.target?.id==='matchSheetEditorJersey')setTimeout(refreshMatchKitUI,20);});
   const obs=new MutationObserver(()=>{wrapBaseApi();const modal=$('#matchSheetEditorModal');if(modal&&!modal.hidden)setTimeout(refreshMatchKitUI,60);});obs.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});
-  window.addEventListener('bleus:supabase-ready',()=>{loaded=false;load(true);wrapBaseApi();});
-  setTimeout(()=>{load();wrapBaseApi();},0);
+  window.addEventListener('bleus:supabase-ready',()=>wrapBaseApi());
+  setTimeout(wrapBaseApi,0);
   window.BLEUS3000_JERSEY_EQUIPMENT={load,cardExtrasHtml,editorSections,bindEditor,saveEditorExtras,decorateReference,openLibrary,componentsFor,variantsFor,patchesFor,opponentsFor};
 })();

@@ -1,9 +1,9 @@
-/* 3615 Bleus V1.2.10.9 — Référentiels relationnels · arbitre · export PNG · liens buts précis */
+/* 3615 Bleus V1.3.1 — Référentiels relationnels · tri Équipe type · arbitre · export PNG */
 (() => {
   'use strict';
 
-  const $=(s,p=document)=>p.querySelector(s);
-  const $$=(s,p=document)=>[...p.querySelectorAll(s)];
+  const $=(s,p=document)=>p?.querySelector?.(s)||null;
+  const $$=(s,p=document)=>p?.querySelectorAll?[...p.querySelectorAll(s)]:[];
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const S=window.BLEUS3000_SEARCH;
   const norm=v=>S?.normalize?S.normalize(v):String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
@@ -30,7 +30,7 @@
   function teamCode(name){const label=window.BLEUS3000_FLAGS?.countryName?.(name)||String(name||'');const key=normTeam(label);if(teamCodeAliases[key])return teamCodeAliases[key];const words=key.split(/\s+/).filter(Boolean);if(words.length>=2)return words.slice(0,3).map(w=>w[0]).join('').toUpperCase();const raw=label.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Za-z]/g,'').toUpperCase();return (raw.slice(0,3)||'---').padEnd(3,'-');}
   function matchScoreline(left,right,center,compact=false,matchId=''){return window.BLEUS3000_SCORELINE?.render?.(left,right,center,{compact,matchId})||`${esc(left)} ${esc(center||'VS')} ${esc(right)}`;}
 
-  const matchFilters={team:'all',gender:'all',competition:'all',year:'all',result:'all',stadium:'all',coach:'all',sheet:'all',includeUpcoming:false};
+  const matchFilters={team:'all',gender:'all',competition:'all',year:'all',result:'all',stadium:'all',coach:'all',sheet:'all',teamTypeSort:'default',includeUpcoming:false};
   let matchPage=1;
   const relFilters={
     competitions:{gender:'all',selection:'all',type:'all',status:'all'},
@@ -76,7 +76,7 @@
     competition_edition_tag_id:m.competitionEdition?.edition_tag_id||''
   })[key];
   const effective=(m,key)=>Object.prototype.hasOwnProperty.call(overrides(m),key)?overrides(m)[key]:baseValue(m,key);
-  const selectionLabel=()=> 'France A';
+  const selectionLabel=()=> 'France';
   const resultLetter=m=>{
     const av=effective(m,'france_score'),bv=effective(m,'opponent_score');
     if(av===null||av===undefined||av===''||bv===null||bv===undefined||bv==='')return '—';
@@ -85,6 +85,18 @@
     return a>b?'V':a<b?'D':'N';
   };
   const scoreClass=m=>({V:'is-win',N:'is-draw',D:'is-loss'}[resultLetter(m)]||'');
+  const teamTypeRaw=m=>{const raw=m?.team_type_score_raw;if(raw===null||raw===undefined||raw==='')return null;const v=Number(raw);return Number.isFinite(v)?v:null;};
+  function sortMatchesByTeamType(list){
+    if(!['team_type_asc','team_type_desc'].includes(matchFilters.teamTypeSort))return list;
+    const dir=matchFilters.teamTypeSort==='team_type_asc'?1:-1;
+    return list.slice().sort((a,b)=>{
+      const av=teamTypeRaw(a),bv=teamTypeRaw(b),aMissing=av===null,bMissing=bv===null;
+      if(aMissing!==bMissing)return aMissing?1:-1;
+      if(!aMissing&&av!==bv)return (av-bv)*dir;
+      const ad=parseDate(effective(a,'match_date'))?.getTime()||0,bd=parseDate(effective(b,'match_date'))?.getTime()||0;
+      return bd-ad||Number(b?.chronological_number||0)-Number(a?.chronological_number||0);
+    });
+  }
   const flagImg=name=>window.BLEUS3000_FLAGS?.img?.(name,'rel-svg-flag')||'';
   const countryName=v=>window.BLEUS3000_FLAGS?.countryName?.(v)||String(v||'');
   const uniqueSorted=arr=>[...new Set(arr.filter(Boolean).map(String))].sort((a,b)=>a.localeCompare(b,'fr',{sensitivity:'base'}));
@@ -127,7 +139,7 @@
     // JO : le tag de compétition est le seul tag affiché sur la tuile du match.
     if(isOlympicMatch(m))return '';
     const t=sectionTagForMatch(m);
-    if(!t)return `<span class="rel-tag-fallback">FRANCE A</span>`;
+    if(!t)return `<span class="rel-tag-fallback">FRANCE</span>`;
     return tagChip(t,'relational-team-chip');
   }
   function competitionChipForMatch(m){
@@ -220,7 +232,6 @@
       competitionRows=ccRes.data||[];
       competitionEntities=ceRes.data||[];
       competitionEditions=edRes.data||[];
-      try{const [fpRes,cfRes]=await Promise.all([client.from('football_positions').select('id,slug,label_text,aliases,sort_order').order('sort_order'),client.from('competition_families').select('id,slug,name,competition_type,sort_order').order('sort_order')]);footballPositions=fpRes.data||[];competitionFamilies=cfRes.data||[];}catch(err){console.warn('Postes / familles compétitions',err);}
       const allPlaces=llRes.data||[];
       stadiumRows=allPlaces.filter(x=>String(x.place_type||'')==='stadium');
       const om=new Map(opponentRows.map(x=>[x.id,x]));
@@ -235,6 +246,10 @@
         const competitionEntity=cem.get(String(competitionEdition?.competition_entity_id||competition?.canonical_entity_id||''))||null;
         return {...x,selection:selections.get(x.selection_team_id)||null,opponent:om.get(x.opponent_id)||null,competition,competitionEdition,competitionEntity,place:lm.get(x.place_id)||null,coach:pm.get(x.coach_id)||null};
       });
+      // Le bloc Stades est un référentiel des stades réellement utilisés par les Bleus.
+      // On masque donc les lieux orphelins créés par une ancienne saisie mais reliés à aucun match.
+      const linkedPlaceIds=new Set(matches.map(m=>String(m.place_id||'')).filter(Boolean));
+      stadiumRows=stadiumRows.filter(v=>linkedPlaceIds.has(String(v.id)));
       assignChronologicalMatchNumbers(matches);
       staffRows=buildStaffRows();
       refereeRows=buildRefereeRows();
@@ -308,13 +323,13 @@
     const years=[...new Set(matches.map(m=>parseDate(effective(m,'match_date'))?.getFullYear()).filter(Boolean))].sort((a,b)=>b-a);
     const stadiums=[...new Map(matches.filter(m=>m.place_id).map(m=>[String(m.place_id),effective(m,'venue_name')||m.place?.name||'Stade'])).entries()].sort((a,b)=>a[1].localeCompare(b[1],'fr'));
     const coaches=[...new Map(matches.filter(m=>m.coach_id).map(m=>[String(m.coach_id),m.coach?.display_name||'Sélectionneur'])).entries()].sort((a,b)=>a[1].localeCompare(b[1],'fr'));
-    bar.innerHTML=`<span class="tag-badge">France A masculine</span><select data-match-filter="competition">${option('all','Toutes les compétitions',matchFilters.competition)}${comps.map(v=>option(v,v,matchFilters.competition)).join('')}</select><select data-match-filter="year">${option('all','Toutes les années',matchFilters.year)}${years.map(v=>option(String(v),String(v),matchFilters.year)).join('')}</select><select data-match-filter="result">${option('all','Tous les résultats',matchFilters.result)}${option('V','Victoires',matchFilters.result)}${option('N','Nuls',matchFilters.result)}${option('D','Défaites',matchFilters.result)}${option('—','Sans score',matchFilters.result)}</select><select data-match-filter="stadium">${option('all','Tous les stades',matchFilters.stadium)}${stadiums.map(([v,l])=>option(v,l,matchFilters.stadium)).join('')}</select><select data-match-filter="coach">${option('all','Tous les sélectionneurs',matchFilters.coach)}${coaches.map(([v,l])=>option(v,l,matchFilters.coach)).join('')}</select><select data-match-filter="sheet">${option('all','Toutes les feuilles',matchFilters.sheet)}${option('yes','Feuille renseignée',matchFilters.sheet)}${option('no','Feuille à compléter',matchFilters.sheet)}</select><label class="match-finished-only-filter"><input type="checkbox" data-match-include-upcoming ${matchFilters.includeUpcoming?'checked':''}><span>Afficher les prochains matchs</span></label><button type="button" class="reference-filter-reset" data-match-filter-reset>Réinitialiser</button>`;
-    bar.querySelector('[data-match-filter-reset]')?.addEventListener('click',()=>{Object.assign(matchFilters,{team:'all',gender:'all',competition:'all',year:'all',result:'all',stadium:'all',coach:'all',sheet:'all',includeUpcoming:false});matchPage=1;render('matchs',$('#referenceSearch')?.value||'');});
+    bar.innerHTML=`<span class="tag-badge">Équipe de France</span><select data-match-filter="competition">${option('all','Toutes les compétitions',matchFilters.competition)}${comps.map(v=>option(v,v,matchFilters.competition)).join('')}</select><select data-match-filter="year">${option('all','Toutes les années',matchFilters.year)}${years.map(v=>option(String(v),String(v),matchFilters.year)).join('')}</select><select data-match-filter="result">${option('all','Tous les résultats',matchFilters.result)}${option('V','Victoires',matchFilters.result)}${option('N','Nuls',matchFilters.result)}${option('D','Défaites',matchFilters.result)}${option('—','Sans score',matchFilters.result)}</select><select data-match-filter="stadium">${option('all','Tous les stades',matchFilters.stadium)}${stadiums.map(([v,l])=>option(v,l,matchFilters.stadium)).join('')}</select><select data-match-filter="coach">${option('all','Tous les sélectionneurs',matchFilters.coach)}${coaches.map(([v,l])=>option(v,l,matchFilters.coach)).join('')}</select><select data-match-filter="sheet">${option('all','Toutes les feuilles',matchFilters.sheet)}${option('yes','Feuille renseignée',matchFilters.sheet)}${option('no','Feuille à compléter',matchFilters.sheet)}</select><select data-match-filter="teamTypeSort" aria-label="Trier par indice Équipe type">${option('default','Tri : date récente',matchFilters.teamTypeSort)}${option('team_type_desc','Équipe type : décroissant',matchFilters.teamTypeSort)}${option('team_type_asc','Équipe type : croissant',matchFilters.teamTypeSort)}</select><label class="match-finished-only-filter"><input type="checkbox" data-match-include-upcoming ${matchFilters.includeUpcoming?'checked':''}><span>Afficher les prochains matchs</span></label><button type="button" class="reference-filter-reset" data-match-filter-reset>Réinitialiser</button>`;
+    bar.querySelector('[data-match-filter-reset]')?.addEventListener('click',()=>{Object.assign(matchFilters,{team:'all',gender:'all',competition:'all',year:'all',result:'all',stadium:'all',coach:'all',sheet:'all',teamTypeSort:'default',includeUpcoming:false});matchPage=1;render('matchs',$('#referenceSearch')?.value||'');});
   }
   function hideMatchFilters(){const bar=$('#matchReferenceFilters');if(bar)bar.hidden=true;}
   function isFinishedReferenceMatch(m){const status=String(m?.status||'').toUpperCase();if(['FT','AET','PEN'].includes(status))return true;const d=parseDate(effective(m,'match_date'))?.getTime()||0,a=effective(m,'france_score'),b=effective(m,'opponent_score'),hasScore=a!==null&&a!==undefined&&a!==''&&b!==null&&b!==undefined&&b!=='';return d>0&&d<Date.now()&&hasScore;}
   function applyMatchFilters(list){
-    return list.filter(m=>{
+    const filtered=list.filter(m=>{
       if(matchFilters.team!=='all'&&String(m.selection_team_id)!==matchFilters.team)return false;
       if(matchFilters.gender!=='all'&&String(m.gender)!==matchFilters.gender)return false;
       if(matchFilters.competition!=='all'&&String(effective(m,'competition_name'))!==matchFilters.competition)return false;
@@ -328,6 +343,7 @@
       if(!matchFilters.includeUpcoming&&!isFinishedReferenceMatch(m))return false;
       return true;
     });
+    return sortMatchesByTeamType(filtered);
   }
 
   const teamOptionsFromMatches=list=>[...new Map(list.filter(m=>m.selection_team_id).map(m=>[String(m.selection_team_id),selectionLabel(m)])).entries()].sort((a,b)=>a[1].localeCompare(b[1],'fr'));
@@ -338,29 +354,29 @@
       const cats=uniqueSorted(competitionRows.map(x=>x.selection_category));
       const types=uniqueSorted(competitionRows.map(x=>x.competition_type));
       const statuses=uniqueSorted(competitionRows.map(x=>x.status));
-      renderFacetBar(kind,`<span class="tag-badge">France A masculine</span><label>Type<select data-rel-filter="type">${option('all','Tous les types',f.type)}${types.map(v=>option(v,v,f.type)).join('')}</select></label><label>Statut<select data-rel-filter="status">${option('all','Tous les statuts',f.status)}${statuses.map(v=>option(v,v,f.status)).join('')}</select></label>`);
+      renderFacetBar(kind,`<span class="tag-badge">Équipe de France</span><label>Type<select data-rel-filter="type">${option('all','Tous les types',f.type)}${types.map(v=>option(v,v,f.type)).join('')}</select></label><label>Statut<select data-rel-filter="status">${option('all','Tous les statuts',f.status)}${statuses.map(v=>option(v,v,f.status)).join('')}</select></label>`);
     }else if(kind==='adversaires'){
       const f=relFilters.adversaires;
       const confs=uniqueSorted(opponentRows.map(o=>o.confederation));
       const continents=uniqueSorted(opponentRows.map(o=>o.continent));
       const teams=teamOptionsFromMatches(matches);
-      renderFacetBar(kind,`<label class="reference-filter-search">Pays<input type="search" data-rel-country-search value="${esc(f.countryQuery||'')}" placeholder="Rechercher un pays…" autocomplete="off"></label><label>Confédération<select data-rel-filter="confederation">${option('all','Toutes les confédérations',f.confederation)}${confs.map(v=>option(v,v,f.confederation)).join('')}</select></label><label>Continent<select data-rel-filter="continent">${option('all','Tous les continents',f.continent)}${continents.map(v=>option(v,v,f.continent)).join('')}</select></label><label>Périmètre<select data-rel-filter="team">${option('all','France A masculine',f.team)}${teams.map(([v,l])=>option(v,l,f.team)).join('')}</select></label>`);
+      renderFacetBar(kind,`<label class="reference-filter-search">Pays<input type="search" data-rel-country-search value="${esc(f.countryQuery||'')}" placeholder="Rechercher un pays…" autocomplete="off"></label><label>Confédération<select data-rel-filter="confederation">${option('all','Toutes les confédérations',f.confederation)}${confs.map(v=>option(v,v,f.confederation)).join('')}</select></label><label>Continent<select data-rel-filter="continent">${option('all','Tous les continents',f.continent)}${continents.map(v=>option(v,v,f.continent)).join('')}</select></label><label>Périmètre<select data-rel-filter="team">${option('all','Équipe de France',f.team)}${teams.map(([v,l])=>option(v,l,f.team)).join('')}</select></label>`);
     }else if(kind==='staff'){
       const f=relFilters.staff;
       const linked=staffRows.flatMap(p=>p.linked_matches||[]),teams=teamOptionsFromMatches(linked),nations=uniqueSorted(staffRows.map(p=>p.nationality));
-      renderFacetBar(kind,`<span class="tag-badge">France A masculine</span><label>Nationalité<select data-rel-filter="nationality">${option('all','Toutes les nationalités',f.nationality)}${nations.map(v=>option(v,v,f.nationality)).join('')}</select></label>`);
+      renderFacetBar(kind,`<span class="tag-badge">Équipe de France</span><label>Nationalité<select data-rel-filter="nationality">${option('all','Toutes les nationalités',f.nationality)}${nations.map(v=>option(v,v,f.nationality)).join('')}</select></label>`);
     }else if(kind==='arbitres'){
       const f=relFilters.arbitres;
       const linked=refereeRows.flatMap(p=>p.linked_matches||[]),teams=teamOptionsFromMatches(linked),nations=uniqueSorted(refereeRows.map(p=>p.nationality));
       const years=[...new Set(linked.map(m=>parseDate(effective(m,'match_date'))?.getFullYear()).filter(Boolean))].sort((a,b)=>b-a);
-      renderFacetBar(kind,`<label>Nationalité<select data-rel-filter="nationality">${option('all','Toutes les nationalités',f.nationality)}${nations.map(v=>option(v,v,f.nationality)).join('')}</select></label><label>Périmètre<select data-rel-filter="team">${option('all','France A masculine',f.team)}${teams.map(([v,l])=>option(v,l,f.team)).join('')}</select></label><label>Année<select data-rel-filter="year">${option('all','Toutes les années',f.year)}${years.map(v=>option(String(v),String(v),f.year)).join('')}</select></label>`);
+      renderFacetBar(kind,`<label>Nationalité<select data-rel-filter="nationality">${option('all','Toutes les nationalités',f.nationality)}${nations.map(v=>option(v,v,f.nationality)).join('')}</select></label><label>Périmètre<select data-rel-filter="team">${option('all','Équipe de France',f.team)}${teams.map(([v,l])=>option(v,l,f.team)).join('')}</select></label><label>Année<select data-rel-filter="year">${option('all','Toutes les années',f.year)}${years.map(v=>option(String(v),String(v),f.year)).join('')}</select></label>`);
     }else if(kind==='lieux'){
       const f=relFilters.lieux;
       const stadiumIds=new Set(stadiumRows.map(v=>String(v.id)));
       const linked=matches.filter(m=>stadiumIds.has(String(m.place_id))),teams=teamOptionsFromMatches(linked);
       const countries=uniqueSorted(stadiumRows.map(v=>v.country)),cities=uniqueSorted(stadiumRows.map(v=>v.city));
       const years=[...new Set(linked.map(m=>parseDate(effective(m,'match_date'))?.getFullYear()).filter(Boolean))].sort((a,b)=>b-a);
-      renderFacetBar(kind,`<label class="reference-filter-search">Recherche pays<input type="search" data-rel-stadium-country-search value="${esc(f.countryQuery||'')}" placeholder="Rechercher un pays…" autocomplete="off"></label><label>Pays<select data-rel-filter="country">${option('all','🌍 Tous les pays',f.country)}${countries.map(v=>option(v,countryOptionLabel(v),f.country)).join('')}</select></label><label>Ville<select data-rel-filter="city">${option('all','Toutes les villes',f.city)}${cities.map(v=>option(v,v,f.city)).join('')}</select></label><label>Périmètre<select data-rel-filter="team">${option('all','France A masculine',f.team)}${teams.map(([v,l])=>option(v,l,f.team)).join('')}</select></label><label>Année<select data-rel-filter="year">${option('all','Toutes les années',f.year)}${years.map(v=>option(String(v),String(v),f.year)).join('')}</select></label>`);
+      renderFacetBar(kind,`<label class="reference-filter-search">Recherche pays<input type="search" data-rel-stadium-country-search value="${esc(f.countryQuery||'')}" placeholder="Rechercher un pays…" autocomplete="off"></label><label>Pays<select data-rel-filter="country">${option('all','🌍 Tous les pays',f.country)}${countries.map(v=>option(v,countryOptionLabel(v),f.country)).join('')}</select></label><label>Ville<select data-rel-filter="city">${option('all','Toutes les villes',f.city)}${cities.map(v=>option(v,v,f.city)).join('')}</select></label><label>Périmètre<select data-rel-filter="team">${option('all','Équipe de France',f.team)}${teams.map(([v,l])=>option(v,l,f.team)).join('')}</select></label><label>Année<select data-rel-filter="year">${option('all','Toutes les années',f.year)}${years.map(v=>option(String(v),String(v),f.year)).join('')}</select></label>`);
     }else hideFacetBar();
   }
 
@@ -411,73 +427,59 @@
     const score=has?(home?`${a} – ${b}`:`${b} – ${a}`):(future?'VS':'—');
     const place=[effective(m,'venue_name'),effective(m,'city')].filter(Boolean).join(' · '),comp=effective(m,'competition_name')||sel;
     const placeSearch=effective(m,'venue_name')||m.place?.name||effective(m,'city')||'',referee=getMainRefereeForMatch(m.id);
-    return `<article class="rel-ref-tile rel-match-tile" data-match-id="${esc(m.id)}"><div class="rel-ref-head rel-ref-head-match"><div><div class="rel-match-kicker"><span class="rel-match-number">MATCH N°${esc(getMatchNumber(m)||'—')}</span><small>${esc(fmtDateLong(effective(m,'match_date')))}</small></div><div class="rel-match-board-wrap">${matchScoreline(left,right,score,score==='VS',m.id)}<div class="rel-match-team-names"><span>${esc(left)}</span><span>${esc(right)}</span></div></div><div class="subtitle">${esc(comp)}${m.phase?` · ${esc(m.phase)}`:''}</div></div><span class="rel-result ${scoreClass(m)}">${resultLetter(m)}</span></div><div class="rel-facts">${place?`<button type="button" class="rel-fact-link" data-match-place-search="${esc(placeSearch)}">🏟 ${esc(place)}</button>`:''}${m.coach?.display_name?`<span>👔 ${esc(m.coach.display_name)}</span>`:''}${referee?.display_name?`<span class="rel-match-referee">🧑‍⚖️ Arbitre : ${esc(referee.display_name)}</span>`:''}${m.spectators?`<span>👥 ${Number(m.spectators).toLocaleString('fr-FR')}</span>`:''}${effective(m,'broadcast_text')?(window.BLEUS3000_BROADCASTS?.renderText?.(effective(m,'broadcast_text'))||`<span>📺 ${esc(effective(m,'broadcast_text'))}</span>`):''}</div><div class="rel-match-bottom"><div class="rel-tags">${chipForMatch(m)}${competitionChipForMatch(m)}</div><div class="rel-match-actions"><button class="rel-export-match" type="button" data-match-export="${esc(m.id)}" title="Exporter cette tuile en PNG">⇩ PNG</button>${canEdit()?`<button class="rel-quick-event-btn" type="button" data-match-quick-event="${esc(m.id)}" title="Ajouter rapidement un fait de jeu">＋ Fait de jeu</button><button class="rel-edit-match" type="button" data-calendar-edit="${esc(m.id)}">✎ Modifier</button>`:''}</div></div><div class="rel-match-sheet-panel is-always-open" data-match-sheet-panel="${esc(m.id)}"><div class="match-sheet-loading">Chargement de la feuille de match…</div></div></article>`;
+    return `<article class="rel-ref-tile rel-match-tile" data-match-id="${esc(m.id)}"><div class="rel-ref-head rel-ref-head-match">${getMatchNumber(m)?`<span class="rel-match-corner-number" aria-label="Match numéro ${esc(getMatchNumber(m))}">${esc(getMatchNumber(m))}</span>`:''}<div><div class="rel-match-kicker"><small>${esc(fmtDateLong(effective(m,'match_date')))}</small></div><div class="rel-match-board-wrap">${matchScoreline(left,right,score,score==='VS',m.id)}<div class="rel-match-team-names"><span>${esc(left)}</span><span>${esc(right)}</span></div></div><div class="subtitle">${esc(comp)}${m.phase?` · ${esc(m.phase)}`:''}</div></div><span class="rel-result ${scoreClass(m)}">${resultLetter(m)}</span></div><div class="rel-facts">${place?`<button type="button" class="rel-fact-link" data-match-place-search="${esc(placeSearch)}">🏟 ${esc(place)}</button>`:''}${m.coach?.display_name?`<span>👔 ${esc(m.coach.display_name)}</span>`:''}${referee?.display_name?`<span class="rel-match-referee">🧑‍⚖️ Arbitre : ${esc(referee.display_name)}</span>`:''}${m.spectators?`<span>👥 ${Number(m.spectators).toLocaleString('fr-FR')}</span>`:''}${effective(m,'broadcast_text')?(window.BLEUS3000_BROADCASTS?.renderText?.(effective(m,'broadcast_text'))||`<span>📺 ${esc(effective(m,'broadcast_text'))}</span>`):''}</div><div class="rel-match-bottom"><div class="rel-tags">${chipForMatch(m)}${competitionChipForMatch(m)}</div><div class="rel-match-actions"><button class="rel-export-match" type="button" data-match-export="${esc(m.id)}" title="Exporter cette tuile en PNG">⇩ PNG</button>${canEdit()?`<button class="rel-quick-event-btn" type="button" data-match-quick-event="${esc(m.id)}" title="Ajouter rapidement un fait de jeu">＋ Fait de jeu</button><button class="rel-edit-match" type="button" data-calendar-edit="${esc(m.id)}">✎ Modifier</button>`:''}</div></div><div class="rel-match-sheet-panel is-always-open" data-match-sheet-panel="${esc(m.id)}"><div class="match-sheet-loading">Chargement de la feuille de match…</div></div></article>`;
   }
 
-  let matchExportCssCache='';
-  function matchExportCss(){
-    if(matchExportCssCache)return matchExportCssCache;
-    const out=[];for(const sheet of [...document.styleSheets]){try{for(const rule of [...(sheet.cssRules||[])])out.push(rule.cssText);}catch{}}
-    // Un export SVG/foreignObject doit être totalement autonome. Toute URL CSS externe
-    // (police, fond, image, etc.) peut rendre le canvas "tainted" dans Chromium.
-    matchExportCssCache=out.join('\n')
-      .replace(/@font-face\s*\{[^}]*\}/gi,'')
-      .replace(/@import[^;]+;/gi,'')
-      .replace(/url\((['"]?)([^)'"]+)\1\)/gi,(m,q,u)=>/^data:/i.test(String(u||'').trim())?m:'none');
-    return matchExportCssCache;
-  }
-  async function imageToDataUrl(src){
-    if(!src||/^data:/i.test(src))return src;
-    try{const res=await fetch(src,{mode:'cors',cache:'force-cache'});if(!res.ok)throw new Error(String(res.status));const blob=await res.blob();return await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(blob);});}catch{return 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';}
-  }
-  async function inlineMatchExportImages(original,clone){
-    const a=$$('img',original),b=$$('img',clone);
-    await Promise.all(b.map(async(img,i)=>{const src=a[i]?.currentSrc||a[i]?.src||img.src;if(src)img.setAttribute('src',await imageToDataUrl(src));img.removeAttribute('srcset');img.removeAttribute('sizes');img.removeAttribute('loading');img.removeAttribute('crossorigin');}));
-    // Les lecteurs ne sont pas utiles dans une image fixe et peuvent charger des ressources tierces.
-    $$('iframe,video,source',clone).forEach(n=>n.remove());
-    // Neutralise un éventuel background-image distant posé en style inline/calculé.
-    const oa=[original,...$$('*',original)],ca=[clone,...$$('*',clone)];
-    ca.forEach((node,i)=>{try{const bg=getComputedStyle(oa[i]).backgroundImage||'';if(/url\(/i.test(bg)&&!/data:/i.test(bg))node.style.backgroundImage='none';}catch{}});
-    $$('svg image',clone).forEach(n=>{const href=n.getAttribute('href')||n.getAttribute('xlink:href')||'';if(href&&!/^data:/i.test(href)){n.removeAttribute('href');n.removeAttribute('xlink:href');}});
-  }
-  function simplifyMatchExportClone(clone){
-    $$('.rel-fact-link',clone).forEach(btn=>{const span=document.createElement('span');span.className='rel-fact-link rel-fact-link-export';span.textContent=btn.textContent||'';btn.replaceWith(span);});
-    $$('.b3k-scoreline',clone).forEach(line=>{
-      const wrap=line.closest('.rel-match-board-wrap');
-      const names=wrap?$$('.rel-match-team-names span',wrap):[];
-      const left=names[0]?.textContent?.trim()||'',right=names[1]?.textContent?.trim()||'',center=$('.b3k-scoreline-center',line)?.textContent?.trim()||'VS';
-      const simple=document.createElement('div');
-      simple.className='b3k-scoreline-export';
-      simple.innerHTML=`<span>${esc(left)}</span><strong>${esc(center)}</strong><span>${esc(right)}</span>`;
-      line.replaceWith(simple);
-    });
+  function buildMatchExportSurface(card,m){
+    const root=document.createElement('article');root.className='b3k-match-export-layout';
+    const header=document.createElement('section');header.className='b3k-match-export-header';
+    const head=$('.rel-ref-head-match',card)?.cloneNode(true),facts=$('.rel-facts',card)?.cloneNode(true),tags=$('.rel-tags',card)?.cloneNode(true);
+    if(head)header.appendChild(head);if(facts)header.appendChild(facts);if(tags)header.appendChild(tags);root.appendChild(header);
+    const sheet=$('[data-match-sheet-panel]',card);
+    const stats=sheet?$('.match-sheet-lineup-stats',sheet)?.cloneNode(true):null;
+    const columns=sheet?$('.match-sheet-columns',sheet)?.cloneNode(true):null;
+    const provider=sheet?$('.match-sheet-provider-unmatched',sheet)?.cloneNode(true):null;
+    const factsBlock=sheet?$('.match-sheet-facts-inline',sheet)?.cloneNode(true):null;
+    const composition=document.createElement('section');composition.className='b3k-match-export-section is-composition';composition.innerHTML='<h3>Composition</h3>';
+    if(stats)composition.appendChild(stats);
+    if(columns)composition.appendChild(columns);else{const empty=$('.match-sheet-empty',sheet)?.cloneNode(true);if(empty)composition.appendChild(empty);}
+    if(provider)composition.appendChild(provider);root.appendChild(composition);
+    const gameFacts=document.createElement('section');gameFacts.className='b3k-match-export-section is-facts';
+    if(factsBlock){const title=$('h3',factsBlock)?.textContent||'Faits de match';gameFacts.innerHTML=`<h3>${esc(title)}</h3>`;const body=$('.match-events-summary,.match-sheet-empty.is-events',factsBlock)?.cloneNode(true);if(body)gameFacts.appendChild(body);}else gameFacts.innerHTML='<h3>Faits de match</h3><p class="match-event-side-empty">Aucun fait de match renseigné.</p>';
+    root.appendChild(gameFacts);
+    return root;
   }
   async function exportMatchTilePng(matchId,button){
-    const card=$(`[data-match-id="${CSS.escape(String(matchId))}"]`);if(!card)return;const panel=$('[data-match-sheet-panel]',card);
-    if(panel&&panel.dataset.loaded!=='1')await refreshMatchSheetPanel(matchId);
-    await document.fonts?.ready?.catch?.(()=>{});
+    let card=$(`[data-match-id="${CSS.escape(String(matchId))}"]`);if(!card)return;
+    const panel=$('[data-match-sheet-panel]',card);if(panel&&panel.dataset.loaded!=='1')await refreshMatchSheetPanel(matchId);
+    // Le chargement de la feuille peut rafraîchir le DOM : on reprend toujours la tuile courante.
+    card=$(`[data-match-id="${CSS.escape(String(matchId))}"]`)||card;
+    window.BLEUS3000_TEAM_TYPE?.decorateAll?.();await new Promise(r=>requestAnimationFrame(r));
+    const engine=window.BLEUS3000_EXPORT;if(!engine?.exportElement)return alert('Moteur d’export indisponible. Recharge la page puis réessaie.');
     const old=button?.textContent;if(button){button.disabled=true;button.textContent='PNG…';}
+    let surface=null;
     try{
-      const rect=card.getBoundingClientRect(),width=Math.max(520,Math.ceil(rect.width)),clone=card.cloneNode(true);
-      $$('.rel-match-actions,.match-sheet-edit-btn,.match-sheet-player-link,[data-match-media-edit],.rel-tile-edit',clone).forEach(n=>n.remove());
-      clone.style.width=`${width}px`;clone.style.maxWidth='none';clone.style.margin='0';clone.classList.add('is-match-export-clone');
-      simplifyMatchExportClone(clone);
-      await inlineMatchExportImages(card,clone);
-      const stage=document.createElement('div');stage.style.cssText=`position:fixed;left:-100000px;top:0;width:${width}px;background:#fff;padding:18px;z-index:-1`;stage.appendChild(clone);document.body.appendChild(stage);
-      const height=Math.ceil(stage.scrollHeight),serialized=new XMLSerializer().serializeToString(clone),css=matchExportCss();stage.remove();
-      const extraExportCss=`.is-match-export-clone{box-shadow:none!important}.is-match-export-clone button{font-family:inherit}.rel-fact-link-export{display:inline-flex;align-items:center;border:1px solid #d8e1ec;border-radius:999px;background:#f6f9fc;color:#15355c;padding:6px 10px;font:700 11px/1.15 Bitter,Arial,sans-serif}.b3k-scoreline-export{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:10px;align-items:center;width:100%;padding:4px 8px}.b3k-scoreline-export span{display:block;min-width:0;text-align:center;color:#15355c;font:700 12px/1.15 Bitter,Arial,sans-serif}.b3k-scoreline-export strong{display:grid;place-items:center;min-width:56px;height:34px;padding:0 10px;border:2px solid #0c2354;border-radius:8px;background:#fff;color:#0c2354;font:900 14px/1 Poppins,Arial,sans-serif;white-space:nowrap}`;
-      const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${width+36}" height="${height}" viewBox="0 0 ${width+36} ${height}"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" style="width:${width+36}px;min-height:${height}px;box-sizing:border-box;background:#fff;padding:18px"><style>${css}${extraExportCss}</style>${serialized}</div></foreignObject></svg>`;
-      // Data URL plutôt que blob: : Chromium conserve ainsi un canvas origin-clean
-      // avec les foreignObject dès lors que toutes les ressources ont été inlinées.
-      const svgUrl=`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`,img=new Image();
-      await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=()=>reject(new Error('Rendu SVG impossible'));img.src=svgUrl;});
-      const scale=2,canvas=document.createElement('canvas');canvas.width=(width+36)*scale;canvas.height=height*scale;const ctx=canvas.getContext('2d');ctx.scale(scale,scale);ctx.fillStyle='#ffffff';ctx.fillRect(0,0,width+36,height);ctx.drawImage(img,0,0,width+36,height);
-      // toDataURL force un contrôle origin-clean explicite avant toBlob et fournit un message clair.
-      try{canvas.toDataURL('image/png');}catch(e){throw new Error('Une ressource externe bloque encore le rendu PNG. Recharge la page puis réessaie.');}
-      const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('PNG vide')),'image/png'));
-      const m=getMatch(matchId)||{},opp=countryName(effective(m,'opponent_name')||'adversaire'),date=fmtDate(effective(m,'match_date')).replace(/\//g,'-'),safe=`match_${getMatchNumber(m)||''}_France_${opp}_${date}`.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9_-]+/gi,'_').replace(/^_+|_+$/g,'');
-      const dl=URL.createObjectURL(blob),a=document.createElement('a');a.href=dl;a.download=`${safe||'match_3615_bleus'}.png`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(dl),2500);
-    }catch(err){console.error('Export PNG match',err);alert(`Export PNG impossible : ${String(err?.message||err)}`);}finally{if(button){button.disabled=false;button.textContent=old||'⇩ PNG';}}
+      const m=getMatch(matchId)||{},opp=countryName(effective(m,'opponent_name')||'adversaire'),date=fmtDate(effective(m,'match_date')).replace(/\//g,'-');
+      const filename=`3615_Bleus_match_${getMatchNumber(m)||''}_France_${opp}_${date}`;
+      surface=buildMatchExportSurface(card,m);surface.style.cssText='position:fixed;left:-100000px;top:0;width:1040px;z-index:-2147483000;pointer-events:none;content-visibility:visible;contain:none';document.body.appendChild(surface);
+      await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+      await engine.exportElement(surface,{
+        filename,
+        width:1040,
+        scale:2.25,
+        format:'png',
+        background:'#ffffff',
+        padding:24,
+        prepareClone:async clone=>{
+          // Export éditorial complet : score + contexte + indice + composition + faits.
+          $$('.rel-match-actions,.match-sheet-edit-btn,.match-sheet-player-link,[data-match-media-edit],.rel-tile-edit,.match-sheet-hover-zoom,.match-sheet-validation-badge',clone).forEach(n=>n.remove());
+          $$('.rel-fact-link',clone).forEach(btn=>{const span=document.createElement('span');span.textContent=btn.textContent||'';span.style.cssText=btn.style.cssText;btn.replaceWith(span);});
+          $$('button',clone).forEach(btn=>{const span=document.createElement('span');span.className=btn.className;span.innerHTML=btn.innerHTML;span.style.cssText=btn.style.cssText;btn.replaceWith(span);});
+          clone.style.height='auto';clone.style.maxHeight='none';clone.style.overflow='visible';
+          $$('*',clone).forEach(n=>{if(n?.style){n.style.contentVisibility='visible';n.style.contain='none';if(n.classList?.contains('b3k-match-export-layout')||n.classList?.contains('b3k-match-export-section')||n.classList?.contains('match-sheet-columns')||n.classList?.contains('match-events-teams')){n.style.height='auto';n.style.maxHeight='none';n.style.overflow='visible';}}});
+        }
+      });
+    }catch(err){console.error('Export PNG match',err);alert(`Export PNG impossible : ${String(err?.message||err)}`);}finally{surface?.remove();if(button){button.disabled=false;button.textContent=old||'⇩ PNG';}}
   }
 
   const registryPlayers=()=>window.BLEUS3000_PLAYER_REGISTRY_ALL||window.BLEUS3000_PLAYER_REGISTRY||[];
@@ -590,9 +592,11 @@
     return `<div class="match-sheet-player"><b class="match-sheet-shirt-dot" style="${formationMarkerInlineStyle(jersey)}">${esc(shirt)}</b><span><strong>${esc(name)}</strong>${replacedBy?`<small>↪ remplacé par ${esc(replacedBy)}</small>`:''}</span><div class="match-sheet-player-actions">${captain}${markers?`<em>${esc(markers)}</em>`:''}${openPlayerIcon(r.player_id)}</div></div>`;
   }
   function matchMediaAssetUrl(x){if(x?.image_url)return x.image_url;if(x?.image_path&&client)try{return client.storage.from('reference-photos').getPublicUrl(x.image_path).data.publicUrl||'';}catch{}return '';}
-  function matchSheetMediaStrip(media=[],ball=null,matchId='',goalCount=0){
-    const order=[['newspaper_front','🗞','Une de journal'],['team_photo','👥','Photo d’équipe'],['ball','⚽','Ballon du match'],['youtube','▶','YouTube'],['ticket','🎟','Billet du match']];
-    const assets=order.map(([type,icon,label])=>{let x=media.find(a=>a.asset_type===type);if(type==='ball'&&ball){const u=window.BLEUS3000_BALLS?.publicPhoto?.(ball)||'';x={asset_type:'ball',title:ball.model_name||label,image_url:u,image_copyright_source:ball.photo_copyright_source||'',url:u,_canonicalBall:true};}const img=x&&type!=='youtube'?(matchMediaAssetUrl(x)||x.url||''):'',href=x?(x.url||img||''):'';const zoomable=type==='newspaper_front'||type==='team_photo'||type==='ball',staticVisual=zoomable||type==='ticket';const copyright=String(x?.image_copyright_source||'').trim();const credit=copyright?`<span class="photo-copyright-capsule">© ${esc(copyright)}</span>`:'';const inner=img?`<img src="${esc(img)}" alt="${esc(x?.title||label)}" loading="lazy">${credit}`:`<span class="match-sheet-media-icon is-${type}">${icon}</span>`;if(!x)return `<span class="match-sheet-media-slot is-empty is-${type}${zoomable?' is-zoomable':''}" data-match-sheet-zoom="${zoomable?esc(type):''}" title="${esc(label)} non renseigné">${inner}</span>`;if(staticVisual)return `<span class="match-sheet-media-slot is-active is-${type}${zoomable?' is-zoomable':''}" data-match-sheet-zoom="${zoomable?esc(type):''}" title="${esc(x.title||label)}">${inner}</span>`;return href?`<a class="match-sheet-media-slot is-active is-${type}" href="${esc(href)}" rel="noopener noreferrer" title="${esc(x.title||label)}">${inner}</a>`:`<span class="match-sheet-media-slot is-active is-${type}" title="${esc(x.title||label)}">${inner}</span>`;}).join('');
+  function matchSheetMediaStrip(media=[],ball=null,matchId='',goalCount=0,jersey=null,match=null){
+    const opponent=effective(match||{},'opponent_name')||match?.opponent?.name||'Adversaire';
+    const order=[['newspaper_front','🗞','Une de journal'],['team_photo','👥','Photo d’équipe'],['ball','⚽','Ballon du match'],['ticket','🎟','Billet du match']];
+    const assets=order.map(([type,icon,label])=>{let x=media.find(a=>a.asset_type===type);if(type==='ball'&&ball){const u=window.BLEUS3000_BALLS?.publicPhoto?.(ball)||'';x={asset_type:'ball',title:ball.model_name||label,image_url:u,image_copyright_source:ball.photo_copyright_source||'',url:u,_canonicalBall:true};}
+      const img=x&&type!=='youtube'?(matchMediaAssetUrl(x)||x.url||''):'',href=x?(x.url||img||''):'';const zoomable=type==='newspaper_front'||type==='team_photo'||type==='ball'||type==='ticket',staticVisual=zoomable;const copyright=String(x?.image_copyright_source||'').trim();const credit=copyright?`<span class="photo-copyright-capsule">© ${esc(copyright)}</span>`:'';const inner=img?`<img src="${esc(img)}" alt="${esc(x?.title||label)}" loading="lazy">${credit}`:`<span class="match-sheet-media-icon is-${type}">${icon}</span>`;if(!x)return `<span class="match-sheet-media-slot is-empty is-${type}${zoomable?' is-zoomable':''}" data-match-sheet-zoom="${zoomable?esc(type):''}" title="${esc(label)} non renseigné">${inner}</span>`;if(staticVisual)return `<span class="match-sheet-media-slot is-active is-${type}${zoomable?' is-zoomable':''}" data-match-sheet-zoom="${zoomable?esc(type):''}" title="${esc(x.title||label)}">${inner}</span>`;return href?`<a class="match-sheet-media-slot is-active is-${type}" href="${esc(href)}" rel="noopener noreferrer" title="${esc(x.title||label)}">${inner}</a>`:`<span class="match-sheet-media-slot is-active is-${type}" title="${esc(x.title||label)}">${inner}</span>`;}).join('');
     const goals=Number(goalCount||0),goalShortcut=goals>0?`<button type="button" class="match-sheet-media-slot is-active is-goals" data-open-match-goals="${esc(matchId)}" title="Voir ${goals} but${goals>1?'s':''} de ce match dans le référentiel Buts"><span class="match-sheet-media-icon is-goals">🥅</span><b class="match-media-goal-count">${goals}</b></button>`:`<span class="match-sheet-media-slot is-empty is-goals" title="Aucun but français renseigné"><span class="match-sheet-media-icon is-goals">🥅</span></span>`;
     return `<div class="match-sheet-media-strip" aria-label="Médias du match">${assets}${goalShortcut}</div>`;
   }
@@ -612,11 +616,30 @@
     const goals=sheet.goals||[],cards=sheet.cards||[],apps=sheet.appearances||[];
     const aggregateAssists=!goals.some(g=>g.assist_player_id||g.assist_name)?apps.filter(r=>Number(r.assists)>0):[];
     const aggregateCards=!cards.length?apps.filter(r=>Number(r.yellow_cards)>0||Number(r.red_cards)>0):[];
-    const goalHtml=goals.map(matchEventGoalRow).join('');
-    const cardHtml=cards.map(matchEventCardRow).join('')||aggregateCards.map(r=>`${Number(r.yellow_cards)>0?`<div class="match-event-row is-card"><div class="match-event-minute">—</div><span class="match-event-card-icon is-yellow"></span><div class="match-event-main"><strong>${esc(r.player?.display_name||'Joueur')}</strong><small>${Number(r.yellow_cards)} carton${Number(r.yellow_cards)>1?'s':''} jaune${Number(r.yellow_cards)>1?'s':''} · minute non renseignée</small></div>${openPlayerIcon(r.player_id)}</div>`:''}${Number(r.red_cards)>0?`<div class="match-event-row is-card"><div class="match-event-minute">—</div><span class="match-event-card-icon is-red"></span><div class="match-event-main"><strong>${esc(r.player?.display_name||'Joueur')}</strong><small>${Number(r.red_cards)} carton${Number(r.red_cards)>1?'s':''} rouge${Number(r.red_cards)>1?'s':''} · minute non renseignée</small></div>${openPlayerIcon(r.player_id)}</div>`:''}`).join('');
-    const assistHtml=aggregateAssists.map(r=>`<div class="match-event-row is-assist"><div class="match-event-minute">—</div><span class="match-event-kind-icon">➜</span><div class="match-event-main"><strong>${esc(r.player?.display_name||'Joueur')}</strong><small><em>${Number(r.assists)} passe${Number(r.assists)>1?'s':''} décisive${Number(r.assists)>1?'s':''} · but associé non renseigné</em></small></div>${openPlayerIcon(r.player_id)}</div>`).join('');
-    if(!goalHtml&&!cardHtml&&!assistHtml)return `<div class="match-sheet-empty is-events"><span class="match-sheet-pitch-icon is-large" aria-hidden="true"><i></i></span><div><strong>Aucun fait de jeu détaillé</strong><small>Les buts, cartons et passes décisives pourront être renseignés depuis l’éditeur de la feuille de match.</small></div></div>`;
-    return `<div class="match-events-summary">${goalHtml?`<section><h4>Buts · ${goals.length}</h4><div class="match-event-list">${goalHtml}</div></section>`:''}${assistHtml?`<section><h4>Passes décisives</h4><div class="match-event-list">${assistHtml}</div></section>`:''}${cardHtml?`<section><h4>Cartons</h4><div class="match-event-list">${cardHtml}</div></section>`:''}</div>`;
+    const opponentLabel=countryName(effective(m,'opponent_name')||m?.opponent?.name||'Adversaire');
+    const opponentKey=norm(opponentLabel),francePlayers=new Set(apps.flatMap(r=>[r.player?.display_name,r.player_name]).filter(Boolean).map(norm));
+    const sideFor=(teamName,playerId,playerName)=>{
+      const team=norm(teamName),name=norm(playerName);
+      if(team==='france'||team.includes('france'))return'france';
+      if(opponentKey&&team&&(team===opponentKey||team.includes(opponentKey)||opponentKey.includes(team)))return'opponent';
+      if(playerId||francePlayers.has(name))return'france';
+      return team?'opponent':'france';
+    };
+    const buckets={france:[],opponent:[]};
+    goals.forEach(g=>{const scorer=matchEventPlayerName(g.player,g.scorer_name),side=sideFor(g.team_name,g.player_id,scorer);buckets[side].push({rank:minuteRank(g.minute_text),order:1,html:matchEventGoalRow(g)});});
+    cards.forEach(c=>{const name=matchEventPlayerName(c.player,c.player_name),side=sideFor(c.team_name,c.player_id,name);buckets[side].push({rank:minuteRank(c.minute_text),order:2,html:matchEventCardRow(c)});});
+    aggregateCards.forEach(r=>{
+      if(Number(r.yellow_cards)>0)buckets.france.push({rank:999990,order:2,html:`<div class="match-event-row is-card"><div class="match-event-minute">—</div><span class="match-event-card-icon is-yellow"></span><div class="match-event-main"><strong>${esc(r.player?.display_name||'Joueur')}</strong><small>${Number(r.yellow_cards)} carton${Number(r.yellow_cards)>1?'s':''} jaune${Number(r.yellow_cards)>1?'s':''} · minute non renseignée</small></div>${openPlayerIcon(r.player_id)}</div>`});
+      if(Number(r.red_cards)>0)buckets.france.push({rank:999991,order:2,html:`<div class="match-event-row is-card"><div class="match-event-minute">—</div><span class="match-event-card-icon is-red"></span><div class="match-event-main"><strong>${esc(r.player?.display_name||'Joueur')}</strong><small>${Number(r.red_cards)} carton${Number(r.red_cards)>1?'s':''} rouge${Number(r.red_cards)>1?'s':''} · minute non renseignée</small></div>${openPlayerIcon(r.player_id)}</div>`});
+    });
+    aggregateAssists.forEach(r=>buckets.france.push({rank:999992,order:3,html:`<div class="match-event-row is-assist"><div class="match-event-minute">—</div><span class="match-event-kind-icon">➜</span><div class="match-event-main"><strong>${esc(r.player?.display_name||'Joueur')}</strong><small><em>${Number(r.assists)} passe${Number(r.assists)>1?'s':''} décisive${Number(r.assists)>1?'s':''} · but associé non renseigné</em></small></div>${openPlayerIcon(r.player_id)}</div>`}));
+    const total=buckets.france.length+buckets.opponent.length;
+    if(!total)return `<div class="match-sheet-empty is-events"><span class="match-sheet-pitch-icon is-large" aria-hidden="true"><i></i></span><div><strong>Aucun fait de jeu détaillé</strong><small>Les buts, cartons et passes décisives pourront être renseignés depuis l’éditeur de la feuille de match.</small></div></div>`;
+    const teamColumn=(key,label,extra='')=>{
+      const rows=buckets[key].sort((a,b)=>a.rank-b.rank||a.order-b.order);
+      return `<section class="match-events-team is-${key} ${extra}"><h4><span>${esc(label)}</span><b>${rows.length}</b></h4><div class="match-event-list">${rows.map(x=>x.html).join('')||'<div class="match-event-side-empty">Aucun fait renseigné</div>'}</div></section>`;
+    };
+    return `<div class="match-events-summary match-events-teams" aria-label="Faits de match séparés par équipe">${teamColumn('france','France')}${teamColumn('opponent',opponentLabel)}</div>`;
   }
   const validFormationHex=v=>/^#[0-9a-f]{6}$/i.test(String(v||'').trim())?String(v).trim().toUpperCase():'';
   function formationMarkerColors(source){
@@ -645,14 +668,14 @@
     const providerExtra=unmatched.length?`<section class="match-sheet-provider-unmatched"><h4>Non reliés à la base · ${unmatched.length}</h4><div class="match-sheet-list">${unmatched.map(providerUnmatchedRow).join('')}</div><small>Ces noms proviennent du fournisseur live. Ils seront reliés automatiquement lorsqu’une correspondance fiable existe dans la base joueurs.</small></section>`:'';
     const composition=(rows.length||unmatched.length)?`${renderLineupSummary(sheet.lineupSummary||{})}<div class="match-sheet-columns"><section><h4>Titulaires · ${starters.length}</h4><div class="match-sheet-list">${starters.map(r=>matchSheetPlayerRow(r,jersey)).join('')||'<span class="match-sheet-none">Non renseignés</span>'}</div></section><section><h4>Remplaçants / groupe · ${others.length}</h4><div class="match-sheet-list">${others.map(r=>matchSheetPlayerRow(r,jersey)).join('')||'<span class="match-sheet-none">Non renseignés</span>'}</div></section></div>${providerExtra}`:`<div class="match-sheet-empty"><span class="match-sheet-pitch-icon is-large" aria-hidden="true"><i></i></span><div><strong>Composition non renseignée</strong><small>Aucune apparition n’est encore enregistrée dans match_appearances pour cette rencontre.</small></div></div>`;
     const jerseyHtml=jersey?`<div class="match-sheet-current-jersey is-zoomable" data-match-sheet-zoom="jersey" title="Maillot utilisé">${jersey.photo?`<img src="${esc(jersey.photo)}" alt="Maillot utilisé" loading="lazy">`:'<span class="match-sheet-current-jersey-placeholder">👕</span>'}</div>`:'';
-    const validationStatus=String(m.sheet_validation_status||'draft'),validationLabel=validationStatus==='validated'?'✓ Validée':validationStatus==='needs_validation'?'À revalider':'Brouillon';
-    return `<div class="match-sheet-head"><span class="match-sheet-pitch-icon is-large" aria-hidden="true"><i></i></span><div><strong>Feuille de match</strong><small>${esc(m.lineup_status||`${rows.length} joueur${rows.length>1?'s':''} renseigné${rows.length>1?'s':''}`)}</small></div><span class="match-sheet-validation-badge is-${esc(validationStatus)}">${esc(validationLabel)}</span>${canEdit()?`<button type="button" class="match-sheet-edit-btn" data-match-sheet-edit="${esc(m.id)}">⚙ Modifier la feuille</button>`:''}</div><div class="match-sheet-single-pane"><section class="match-sheet-visible-section is-composition"><h3>Composition</h3>${composition}</section><section class="match-sheet-facts-inline match-sheet-visible-section"><h3>Faits de jeu</h3>${renderMatchFacts(sheet,m)}</section><section class="match-sheet-visible-section is-media"><h3>Médias</h3><div class="match-sheet-kit-media-row">${jerseyHtml}${matchSheetMediaStrip(sheet.media||[],sheet.ball||null,m.id,(sheet.goals||[]).filter(g=>norm(g.team_name)==='france'||g.player_id).length)}</div></section></div>`;
+    return `<div class="match-sheet-head"><span class="match-sheet-pitch-icon is-large" aria-hidden="true"><i></i></span><div><strong>Feuille de match</strong><small>${esc(m.lineup_status||`${rows.length} joueur${rows.length>1?'s':''} renseigné${rows.length>1?'s':''}`)}</small></div>${canEdit()?`<button type="button" class="match-sheet-edit-btn" data-match-sheet-edit="${esc(m.id)}">⚙ Modifier la feuille</button>`:''}</div><div class="match-sheet-single-pane"><section class="match-sheet-visible-section is-composition"><h3>Composition</h3>${composition}</section><section class="match-sheet-facts-inline match-sheet-visible-section"><h3>Faits de match</h3>${renderMatchFacts(sheet,m)}</section><section class="match-sheet-visible-section is-media"><h3>Médias</h3><div class="match-sheet-kit-media-row">${jerseyHtml}${matchSheetMediaStrip(sheet.media||[],sheet.ball||null,m.id,(sheet.goals||[]).filter(g=>norm(g.team_name)==='france'||g.player_id).length,sheet.jersey||null,m)}</div></section></div>`;
   }
   function ensureMatchSheetHoverZoom(){let z=$('#matchSheetHoverZoom');if(z)return z;z=document.createElement('div');z.id='matchSheetHoverZoom';z.className='match-sheet-hover-zoom';z.hidden=true;z.innerHTML='<img alt="Aperçu agrandi">';document.body.appendChild(z);return z;}
   function positionMatchSheetHoverZoom(e,z){const pad=18,w=z.offsetWidth||280,h=z.offsetHeight||280;let x=e.clientX+pad,y=e.clientY+pad;if(x+w>window.innerWidth-8)x=Math.max(8,e.clientX-w-pad);if(y+h>window.innerHeight-8)y=Math.max(8,e.clientY-h-pad);z.style.left=`${x}px`;z.style.top=`${y}px`;}
   document.addEventListener('pointerover',e=>{const host=e.target.closest?.('[data-match-sheet-zoom]');const img=host?.querySelector?.('img');if(!host||!img)return;const z=ensureMatchSheetHoverZoom(),zi=$('img',z);zi.src=img.currentSrc||img.src;zi.alt=img.alt||'Aperçu agrandi';z.className=`match-sheet-hover-zoom is-${host.dataset.matchSheetZoom||'visual'}`;z.hidden=false;positionMatchSheetHoverZoom(e,z);});
-  document.addEventListener('pointermove',e=>{const z=$('#matchSheetHoverZoom');if(z&&!z.hidden)positionMatchSheetHoverZoom(e,z);});
-  document.addEventListener('pointerout',e=>{const host=e.target.closest?.('[data-match-sheet-zoom]');if(!host)return;const next=e.relatedTarget;if(next&&host.contains(next))return;const z=$('#matchSheetHoverZoom');if(z)z.hidden=true;});
+  document.addEventListener('pointermove',e=>{const z=$('#matchSheetHoverZoom');if(z&&!z.hidden){z.dataset.previewMode='hover';positionMatchSheetHoverZoom(e,z);}});
+  document.addEventListener('pointerout',e=>{const host=e.target.closest?.('[data-match-sheet-zoom]');if(!host)return;const next=e.relatedTarget;if(next&&host.contains(next))return;const z=$('#matchSheetHoverZoom');if(z&&z.dataset.previewMode!=='touch')z.hidden=true;});
+  document.addEventListener('click',e=>{const host=e.target.closest?.('[data-match-sheet-zoom]');const z=$('#matchSheetHoverZoom');if(!host){if(z&&z.dataset.previewMode==='touch')z.hidden=true;return;}const img=host?.querySelector?.('img');if(!img)return;e.preventDefault();e.stopPropagation();const box=host.getBoundingClientRect(),fakeEvent={clientX:box.left+box.width/2,clientY:box.top+box.height/2};const zoom=ensureMatchSheetHoverZoom(),zi=$('img',zoom),sameOpen=zoom.dataset.previewMode==='touch'&&!zoom.hidden&&zi.src===(img.currentSrc||img.src);zi.src=img.currentSrc||img.src;zi.alt=img.alt||'Aperçu agrandi';zoom.className=`match-sheet-hover-zoom is-${host.dataset.matchSheetZoom||'visual'} is-touch-open`;zoom.dataset.previewMode='touch';zoom.hidden=sameOpen;if(!sameOpen)positionMatchSheetHoverZoom(fakeEvent,zoom);});
   function focusPreciseGoal(panel,matchId){
     if(!pendingGoalFocus||String(pendingGoalFocus.matchId)!==String(matchId))return;
     const goalId=String(pendingGoalFocus.goalId||''),row=goalId?$(`[data-match-goal-id="${CSS.escape(goalId)}"]`,panel):null;if(!row)return;
@@ -749,14 +772,14 @@
     modal.innerHTML=`<section class="modal-dialog match-sheet-editor-dialog" role="dialog" aria-modal="true" aria-labelledby="matchSheetEditorTitle"><header class="modal-head"><div><h2 id="matchSheetEditorTitle">Modifier la feuille de match</h2><p id="matchSheetEditorMeta">Composition et faits de match</p></div><button class="modal-close" data-match-sheet-editor-close type="button">×</button></header><div class="modal-body">
       <datalist id="matchSheetPlayerList"></datalist><datalist id="matchSheetStadiumList"></datalist><datalist id="matchSheetPersonnelList"></datalist><datalist id="matchSheetCompetitionList"></datalist>
       <section class="match-sheet-editor-context"><div class="match-sheet-editor-context-grid"><label>Stade<input id="matchSheetStadium" list="matchSheetStadiumList" placeholder="Nom libre accepté"></label><label>Ville<input id="matchSheetCity" placeholder="Ville du stade"></label><label>Arbitre principal<input id="matchSheetReferee" list="matchSheetPersonnelList" placeholder="Nom libre accepté"></label><label>Sélectionneur<input id="matchSheetCoach" list="matchSheetPersonnelList" placeholder="Nom libre accepté"></label><label>Compétition<input id="matchSheetCompetition" list="matchSheetCompetitionList" placeholder="Ex. Ligue des Nations de l’UEFA"></label><label>Édition canonique<select id="matchSheetCompetitionEdition"><option value="">— édition non définie —</option></select><small>L’édition détermine automatiquement son entité parent pour les liens, filtres et statistiques.</small></label></div></section>
-      <section data-match-sheet-editor-pane="composition"><div class="match-sheet-editor-help">Enregistrer conserve un brouillon. Valider la feuille synchronise ensuite les statistiques.</div>
+      <section data-match-sheet-editor-pane="composition"><div class="match-sheet-editor-help">La feuille enregistrée est directement la source de vérité. Chaque information ne compte qu’une seule fois, même après plusieurs modifications.</div>
       <div class="match-sheet-gathering-import" id="matchSheetGatheringImport" hidden><div><strong>📋 Rassemblement lié</strong><small>Les champs Joueur et Remplacé par deviennent des menus limités aux joueurs convoqués.</small></div><select id="matchSheetGatheringSelect"></select><button type="button" class="secondary-btn" data-import-gathering-roster>Importer toute la liste</button><label class="match-sheet-gathering-auto"><input id="matchSheetAutoGatheringSubs" type="checkbox"> <span><strong>Ajouter automatiquement les remplaçants restants</strong><small>Le banc se recalcule à partir des convoqués qui ne figurent pas parmi les 11 titulaires.</small></span></label><span id="matchSheetGatheringStatus"></span></div>
       <div class="match-sheet-jersey-picker"><label><span>Maillot utilisé par la France</span><select id="matchSheetEditorJersey"><option value="">Chargement des maillots…</option></select></label><div class="match-sheet-jersey-preview" id="matchSheetEditorJerseyPreview"><span>👕</span><small>Aucun maillot associé</small></div></div>
       <div class="match-sheet-ball-picker"><label><span>Ballon du match</span><select id="matchSheetEditorBall"><option value="">Chargement des ballons…</option></select><small>Suggestions prioritaires selon compétition, édition et année.</small></label><div class="match-sheet-ball-preview" id="matchSheetEditorBallPreview"><span>⚽</span><div><strong>Aucun ballon associé</strong><small>Référentiel Ballons</small></div></div></div>
       <div class="match-sheet-editor-roster-section"><div class="match-sheet-roster-title"><strong>Titulaires</strong><span>11</span></div><div class="match-sheet-editor-lineup-head"><span>#</span><span>Joueur</span><span>N°</span><span>Poste</span><span>Min.</span><span>C</span><span>Rempl.</span><span>Remplacé par</span><span></span></div><div id="matchSheetEditorStarters"></div></div>
       <div class="match-sheet-editor-roster-section"><div class="match-sheet-roster-title"><strong>Remplaçants</strong><span id="matchSheetSubCount">12</span></div><div class="match-sheet-editor-lineup-head"><span>#</span><span>Joueur</span><span>N°</span><span>Poste</span><span>Min.</span><span>C</span><span>Rempl.</span><span>Remplacé par</span><span></span></div><div id="matchSheetEditorSubstitutes"></div><button type="button" class="secondary-btn match-sheet-editor-add" data-add-substitute>＋ Ajouter un remplaçant</button></div>
-      <section class="match-sheet-editor-events-inline" data-match-sheet-events-editor><div class="match-sheet-editor-help">Faits de match : ils restent modifiables en brouillon et ne mettent les statistiques à jour qu’au clic sur « Valider la feuille ».</div><div class="match-sheet-editor-event-head"><h3>⚽ Buts</h3><button type="button" class="secondary-btn" data-add-goal>＋ Ajouter un but</button></div><div class="match-sheet-editor-event-labels goal"><span>Équipe</span><span>Buteur</span><span>Minute</span><span>Score</span><span>Type</span><span>Passeur décisif</span><span></span></div><div id="matchSheetEditorGoals"></div><div class="match-sheet-editor-event-head"><h3>Cartons</h3><button type="button" class="secondary-btn" data-add-card>＋ Ajouter un carton</button></div><div class="match-sheet-editor-event-labels card"><span>Équipe</span><span>Joueur</span><span>Carton</span><span>Minute</span><span></span></div><div id="matchSheetEditorCards"></div></section></section>
-      <div class="match-sheet-editor-status" id="matchSheetEditorStatus" hidden></div><div class="match-sheet-editor-actions"><button class="secondary-btn" type="button" data-match-sheet-editor-close>Annuler</button><button class="secondary-btn" type="button" data-match-sheet-editor-save>Enregistrer la feuille</button><button class="primary-btn match-sheet-validate-btn" type="button" data-match-sheet-editor-validate>✓ Valider la feuille</button></div>
+      <section class="match-sheet-editor-events-inline" data-match-sheet-events-editor><div class="match-sheet-editor-help">Faits de match : toute modification remplace l’état précédent et met les statistiques à jour sans double comptage.</div><div class="match-sheet-editor-event-head"><h3>⚽ Buts</h3><button type="button" class="secondary-btn" data-add-goal>＋ Ajouter un but</button></div><div class="match-sheet-editor-event-labels goal"><span>Équipe</span><span>Buteur</span><span>Minute</span><span>Score</span><span>Type</span><span>Passeur décisif</span><span></span></div><div id="matchSheetEditorGoals"></div><div class="match-sheet-editor-event-head"><h3>Cartons</h3><button type="button" class="secondary-btn" data-add-card>＋ Ajouter un carton</button></div><div class="match-sheet-editor-event-labels card"><span>Équipe</span><span>Joueur</span><span>Carton</span><span>Minute</span><span></span></div><div id="matchSheetEditorCards"></div></section></section>
+      <div class="match-sheet-editor-status" id="matchSheetEditorStatus" hidden></div><div class="match-sheet-editor-actions"><button class="secondary-btn" type="button" data-match-sheet-editor-close>Annuler</button><button class="primary-btn" type="button" data-match-sheet-editor-save>Enregistrer la feuille</button></div>
       </div></section>`;document.body.appendChild(modal);
     $$('[data-match-sheet-editor-close]',modal).forEach(b=>b.addEventListener('click',()=>{modal.hidden=true;matchSheetEditorState=null;}));
     $('[data-add-substitute]',modal)?.addEventListener('click',()=>{const h=$('#matchSheetEditorSubstitutes',modal);if(!h)return;const slot=$$('[data-editor-appearance][data-lineup-kind="substitute"]',h).length+1;h.insertAdjacentHTML('beforeend',appearanceEditorRow(blankLineupRow(false,slot),{starter:false,slot,locked:false}));const c=$('#matchSheetSubCount',modal);if(c)c.textContent=String(slot);if(matchSheetEditorState?.activeGatheringPlayers?.length)applyLinkedGatheringPlayerMenus(modal,matchSheetEditorState,matchSheetEditorState.activeGatheringPlayers);if(matchSheetEditorState)matchSheetEditorState.compositionDirty=true;});
@@ -765,7 +788,7 @@
     modal.addEventListener('click',e=>{const b=e.target.closest('[data-remove-editor-row]');if(b){const row=b.closest('[data-editor-appearance],[data-editor-goal],[data-editor-card]');if(row?.hasAttribute('data-editor-appearance')){matchSheetEditorState.compositionDirty=true;row?.remove();const subs=$$('[data-editor-appearance][data-lineup-kind="substitute"]',$('#matchSheetEditorSubstitutes',modal));subs.forEach((x,i)=>{x.dataset.lineupSlot=String(i+1);const badge=$('.match-sheet-lineup-slot',x);if(badge)badge.textContent=String(i+1);});const c=$('#matchSheetSubCount',modal);if(c)c.textContent=String(subs.length);}else{matchSheetEditorState.eventsDirty=true;row?.remove();}return;}const repl=e.target.closest('[data-appearance-replaced]');if(repl){const row=repl.closest('[data-editor-appearance]'),input=$('[data-appearance-replacement]',row);if(input){input.classList.toggle('is-hidden',!repl.checked);if(!repl.checked)input.value='';}matchSheetEditorState.compositionDirty=true;}});
     const markDirty=e=>{if(!matchSheetEditorState)return;if(e.target.closest('[data-match-sheet-events-editor]'))matchSheetEditorState.eventsDirty=true;else matchSheetEditorState.compositionDirty=true;};modal.addEventListener('input',markDirty);modal.addEventListener('change',e=>{if(!matchSheetEditorState)return;if(e.target.id==='matchSheetGatheringSelect')return;if(e.target.id==='matchSheetAutoGatheringSubs'){matchSheetEditorState.autoGatheringSubs=!!e.target.checked;if(e.target.checked)syncAutomaticGatheringSubstitutes(modal,matchSheetEditorState,{announce:true});return;}if(e.target.id==='matchSheetCompetitionEdition'){const ed=competitionEditions.find(x=>String(x.id)===String(e.target.value||'')),entity=ed?competitionEntities.find(x=>String(x.id)===String(ed.competition_entity_id)):null,compInput=$('#matchSheetCompetition',modal);if(entity&&compInput)compInput.value=entity.name;}markDirty(e);if(e.target.matches?.('[data-appearance-name]')&&e.target.closest?.('[data-editor-appearance][data-lineup-kind="starter"]')&&$('#matchSheetAutoGatheringSubs',modal)?.checked)syncAutomaticGatheringSubstitutes(modal,matchSheetEditorState,{announce:false});});
     $('[data-import-gathering-roster]',modal)?.addEventListener('click',()=>importLinkedGatheringRoster(modal,matchSheetEditorState));
-    $('[data-match-sheet-editor-save]',modal)?.addEventListener('click',()=>saveMatchSheetEditor(false));$('[data-match-sheet-editor-validate]',modal)?.addEventListener('click',validateMatchSheetEditor);return modal;
+    $('[data-match-sheet-editor-save]',modal)?.addEventListener('click',()=>saveMatchSheetEditor(false));return modal;
   }
   async function loadGatheringPlayers(callupId,state){
     const key=String(callupId||'');if(!key||!client)return [];
@@ -857,7 +880,7 @@
     select.disabled=true;select.innerHTML='<option value="">Chargement…</option>';
     const draw=(data,id)=>{if(!preview)return;const row=data?.options?.find(x=>String(x.id)===String(id||''));preview.innerHTML=row?`${row.photo?`<img src="${esc(row.photo)}" alt="${esc(row.label)}">`:'<span>⚽</span>'}<div><strong>${esc(row.label)}</strong><small>${esc([row.manufacturer,row.competition].filter(Boolean).join(' · ')||'Ballon du match')}</small></div>${row.copyright?`<span class="photo-copyright-capsule">© ${esc(row.copyright)}</span>`:''}`:'<span>⚽</span><div><strong>Aucun ballon associé</strong><small>Référentiel Ballons</small></div>';};
     try{const api=window.BLEUS3000_BALLS;if(!api?.getMatchPickerData){select.innerHTML='<option value="">Module Ballons indisponible</option>';return;}const data=await api.getMatchPickerData(state.matchId,state.match||{});state.ballOptions=data.options||[];select.innerHTML=`<option value="">Aucun ballon associé</option>${data.options.map(x=>`<option value="${esc(x.id)}">${esc(x.label)}</option>`).join('')}`;select.value=String(data.selectedId||'');select.disabled=false;draw(data,select.value);select.onchange=()=>{state.ballDirty=true;draw(data,select.value);};}
-    catch(err){console.warn('Sélecteur ballon',err);select.innerHTML='<option value="">Migration Ballons V1.2.7 requise</option>';select.disabled=true;if(preview)preview.innerHTML='<span>⚠</span><div><strong>Référentiel indisponible</strong><small>MIGRATION_V1.2.7_PHOTO_COPYRIGHT_BALLS.sql</small></div>';}
+    catch(err){console.warn('Sélecteur ballon',err);select.innerHTML='<option value="">Schéma Ballons Supabase requis</option>';select.disabled=true;if(preview)preview.innerHTML='<span>⚠</span><div><strong>Référentiel indisponible</strong><small>Vérifier le schéma Supabase du projet.</small></div>';}
   }
 
   async function openMatchSheetEditor(matchId,sheet,m){
@@ -871,7 +894,7 @@
     const opp=countryName(effective(safeMatch,'opponent_name')||'Adversaire');if(meta)meta.textContent=`${fmtDateLong(effective(safeMatch,'match_date'))} · France – ${opp}`;const structured=structuredLineup(safeSheet.appearances||[]);if(startersHost)startersHost.innerHTML=structured.starters.map((r,i)=>appearanceEditorRow(r,{starter:true,slot:i+1,locked:true})).join('');if(subsHost)subsHost.innerHTML=structured.subs.map((r,i)=>appearanceEditorRow(r,{starter:false,slot:i+1,locked:i<12})).join('');const subCount=$('#matchSheetSubCount',modal);if(subCount)subCount.textContent=String(structured.subs.length);if(goals)goals.innerHTML=(safeSheet.goals||[]).map(g=>goalEditorRow(g,safeMatch)).join('');if(cards)cards.innerHTML=(safeSheet.cards||[]).map(cardEditorRow).join('');const st=$('#matchSheetEditorStatus',modal);if(st){st.hidden=true;st.textContent='';st.className='match-sheet-editor-status';}modal.hidden=false;requestAnimationFrame(()=>{populateGatheringImporter(modal,matchSheetEditorState).catch(err=>console.warn('Import rassemblement différé',err));populateMatchSheetJerseyPicker(modal,matchSheetEditorState).catch(err=>console.warn('Sélecteur maillot différé',err));populateMatchSheetBallPicker(modal,matchSheetEditorState).catch(err=>console.warn('Sélecteur ballon différé',err));});
   }
   function collectEditorAppearances(modal,state){
-    const out=[],seenNames=new Set();for(const row of $$('[data-editor-appearance]',modal)){const input=$('[data-appearance-name]',row),name=String(input?.value||'').trim();if(!name)continue;const key=norm(name);if(seenNames.has(key))throw new Error(`Le joueur ${name} est présent deux fois dans la composition.`);seenNames.add(key);const current=safeUuid(row.dataset.originalPlayerId),playerId=safeUuid(editorResolvePlayer(name,current||'')),starter=row.dataset.lineupKind==='starter',slot=Number(row.dataset.lineupSlot||0)||null;const posSel=$('[data-appearance-position]',row),positionId=safeUuid(posSel?.value),positionText=positionId?footballPositions.find(x=>String(x.id)===String(positionId))?.label_text||null:null;const replChecked=!!$('[data-appearance-replaced]',row)?.checked,replName=replChecked?String($('[data-appearance-replacement]',row)?.value||'').trim():'',replId=replName?safeUuid(editorResolvePlayer(replName,safeUuid(row.dataset.originalReplacementId)||'')):null;out.push({id:safeUuid(row.dataset.appearanceId),match_id:safeUuid(state.matchId),player_id:playerId,player_name:name,starter,appeared:false,lineup_slot:slot,minutes:$('[data-appearance-minutes]',row)?.value===''?null:Number($('[data-appearance-minutes]',row)?.value),squad_status:starter?'Titulaire':'Remplaçant(e)',shirt_number:$('[data-appearance-number]',row)?.value===''?null:Number($('[data-appearance-number]',row)?.value),position_id:positionId,position:positionText,captain:!!$('[data-appearance-captain]',row)?.checked,replaced_by_player_id:replId,replaced_by_name:replName||null,verification:'manual'});}return out;
+    const out=[],seenNames=new Set();for(const row of $$('[data-editor-appearance]',modal)){const input=$('[data-appearance-name]',row),name=String(input?.value||'').trim();if(!name)continue;const key=norm(name);if(seenNames.has(key))throw new Error(`Le joueur ${name} est présent deux fois dans la composition.`);seenNames.add(key);const current=safeUuid(row.dataset.originalPlayerId),playerId=safeUuid(editorResolvePlayer(name,current||'')),starter=row.dataset.lineupKind==='starter',slot=Number(row.dataset.lineupSlot||0)||null;const posSel=$('[data-appearance-position]',row),positionId=safeUuid(posSel?.value),positionText=positionId?footballPositions.find(x=>String(x.id)===String(positionId))?.label_text||null:null;const replChecked=!!$('[data-appearance-replaced]',row)?.checked,replName=replChecked?String($('[data-appearance-replacement]',row)?.value||'').trim():'',replId=replName?safeUuid(editorResolvePlayer(replName,safeUuid(row.dataset.originalReplacementId)||'')):null;out.push({id:safeUuid(row.dataset.appearanceId),match_id:safeUuid(state.matchId),player_id:playerId,player_name:name,starter,appeared:false,lineup_slot:slot,minutes:$('[data-appearance-minutes]',row)?.value===''?null:Number($('[data-appearance-minutes]',row)?.value),squad_status:starter?'Titulaire':'Remplaçant(e)',shirt_number:$('[data-appearance-number]',row)?.value===''?null:Number($('[data-appearance-number]',row)?.value),position_id:positionId,position:positionText,captain:!!$('[data-appearance-captain]',row)?.checked,replaced_by_player_id:replId,replaced_by_name:replName||null});}return out;
   }
   function collectEditorGoals(modal,state){
     const opp=countryName(effective(state.match,'opponent_name')||'Adversaire');return $$('[data-editor-goal]',modal).map(row=>{const scorer=String($('[data-goal-scorer]',row)?.value||'').trim();if(!scorer)return null;const team=$('[data-goal-team]',row)?.value||'france',current=safeUuid(row.dataset.originalPlayerId),assistName=String($('[data-goal-assist]',row)?.value||'').trim(),currentAssist=safeUuid(row.dataset.originalAssistId),goalType=$('[data-goal-type]',row)?.value||'open_play';const playerId=team==='france'?safeUuid(editorResolvePlayer(scorer,current||'')):null;const assistId=team==='france'&&assistName?safeUuid(editorResolvePlayer(assistName,currentAssist||'')):null;return {id:safeUuid(row.dataset.eventId),match_id:safeUuid(state.matchId),player_id:playerId,scorer_name:scorer,team_name:team==='france'?'France':opp,minute_text:String($('[data-goal-minute]',row)?.value||'').trim()||null,score_after:String($('[data-goal-score]',row)?.value||'').trim()||null,assist_player_id:assistId,assist_name:assistName||null,goal_type:goalType,body_part:goalType==='header'?'head':null,is_penalty:goalType==='penalty',is_own_goal:false,updated_at:new Date().toISOString()};}).filter(Boolean);}
@@ -920,14 +943,16 @@
     }
     const {error}=await client.from('matches').update(patch).eq('id',state.matchId);if(error)throw error;Object.assign(state.match,patch);
   }
-  async function validateMatchSheetEditor(){
-    const modal=ensureMatchSheetEditor(),state=matchSheetEditorState,st=$('#matchSheetEditorStatus',modal);if(!state||!client)return;
-    if(st){st.hidden=false;st.className='match-sheet-editor-status';st.textContent='Validation atomique et recalcul des statistiques…';}
+  async function saveMatchSheetEditor(stayOpen=false){
+    const modal=ensureMatchSheetEditor(),state=matchSheetEditorState,st=$('#matchSheetEditorStatus',modal);
+    if(!state||!client)return false;
+    if(st){st.hidden=false;st.className='match-sheet-editor-status';st.textContent='Enregistrement de la feuille…';}
     try{
       await ensureEditorLookups();
       const appearances=collectEditorAppearances(modal,state),goals=collectEditorGoals(modal,state),cards=collectEditorCards(modal,state);
-      const jerseySelect=$('#matchSheetEditorJersey',modal),jerseyId=jerseySelect&&!jerseySelect.disabled?safeUuid(jerseySelect.value):null;
-      const ballSelect=$('#matchSheetEditorBall',modal);if(state.ballDirty&&ballSelect&&!ballSelect.disabled&&window.BLEUS3000_BALLS?.setMatchBall)await window.BLEUS3000_BALLS.setMatchBall(state.matchId,ballSelect.value||'');
+      const jerseySelect=$('#matchSheetEditorJersey',modal),ballSelect=$('#matchSheetEditorBall',modal);
+      const jerseyId=jerseySelect&&!jerseySelect.disabled?safeUuid(jerseySelect.value):null;
+      const ballId=ballSelect&&!ballSelect.disabled?safeUuid(ballSelect.value):null;
       const context={
         stadium:String($('#matchSheetStadium',modal)?.value||'').trim()||null,
         city:String($('#matchSheetCity',modal)?.value||'').trim()||null,
@@ -936,29 +961,36 @@
         competition_name:String($('#matchSheetCompetition',modal)?.value||'').trim()||null,
         competition_edition_id:safeUuid($('#matchSheetCompetitionEdition',modal)?.value)||null
       };
-      const {data,error}=await client.rpc('validate_match_sheet',{p_match_id:safeUuid(state.matchId),p_appearances:appearances,p_goals:goals,p_cards:cards,p_context:context,p_jersey_id:jerseyId});
+      const {data,error}=await client.rpc('save_match_sheet',{
+        p_match_id:safeUuid(state.matchId),p_appearances:appearances,p_goals:goals,p_cards:cards,
+        p_context:context,p_jersey_id:jerseyId,p_ball_id:ballId
+      });
       if(error){
-        if(/validate_match_sheet|PGRST202|schema cache/i.test(String(error?.message||'')))throw new Error('Migration Supabase V1.2.5 requise : exécute MIGRATION_V1.2.5_SHEET_RELIABILITY.sql avant de valider une feuille.');
-        const labels={composition:'composition (11 titulaires)',stade:'stade',ville:'ville',arbitre:'arbitre',selectionneur:'sélectionneur',edition_competition:'édition compétition',maillot:'maillot',score:'score'};
-        const msg=String(error?.message||error).replace(/Feuille incomplète\s*:\s*([^\n]+)/i,(_,raw)=>`Feuille incomplète : ${raw.split(',').map(x=>labels[x.trim()]||x.trim()).join(' · ')}`);
-        throw new Error(msg);
+        if(/save_match_sheet|PGRST202|schema cache/i.test(String(error?.message||'')))throw new Error('Migration Supabase V1.3.12 requise.');
+        throw error;
       }
       const result=Array.isArray(data)?data[0]:data||{};
-      matchSheetCache.delete(state.matchId);window.BLEUS3000_JERSEYS?.invalidate?.();window.BLEUS3000_PLAYERS_DB?.reload?.();window.BLEUS3000_STATISTICS?.invalidate?.();window.BLEUS3000_SELECTIONS?.reload?.();
-      if(st){st.className='match-sheet-editor-status is-ok';st.textContent=`Feuille validée ✓ · ${Number(result.player_count||0)} joueur${Number(result.player_count||0)>1?'s':''} comptabilisé${Number(result.player_count||0)>1?'s':''}${result.chronological_number?` · match n°${result.chronological_number}`:''}`;}
-      invalidate();setTimeout(()=>{modal.hidden=true;matchSheetEditorState=null;window.BLEUS3000_APP?.openReferences?.('matchs');},900);
-    }catch(err){console.error('Validation feuille',err);if(st){st.hidden=false;st.className='match-sheet-editor-status is-error';st.textContent=String(err?.message||err);}}
-  }
-
-  async function saveMatchSheetEditor(stayOpen=false){
-    const modal=ensureMatchSheetEditor(),state=matchSheetEditorState,st=$('#matchSheetEditorStatus',modal);if(!state||!client)return;if(st){st.hidden=false;st.className='match-sheet-editor-status';st.textContent='Enregistrement…';}
-    try{await ensureEditorLookups();const appearances=collectEditorAppearances(modal,state);const goals=collectEditorGoals(modal,state),cards=collectEditorCards(modal,state);await saveEditorAppearances(state,appearances);const jerseySelect=$('#matchSheetEditorJersey',modal);if(state.jerseyDirty&&jerseySelect&&!jerseySelect.disabled&&window.BLEUS3000_JERSEYS?.setMatchJersey)await window.BLEUS3000_JERSEYS.setMatchJersey(state.matchId,jerseySelect.value||'',state.match?.selection_team_id||state.match?.selection?.id||null);const ballSelect=$('#matchSheetEditorBall',modal);if(state.ballDirty&&ballSelect&&!ballSelect.disabled&&window.BLEUS3000_BALLS?.setMatchBall)await window.BLEUS3000_BALLS.setMatchBall(state.matchId,ballSelect.value||'');if(state.eventsDirty){const savedGoals=await saveEditorGoals(state,goals),savedCards=await saveEditorCards(state,cards);$$('[data-editor-goal]',modal).forEach((row,i)=>{row.dataset.eventId=String(savedGoals[i]?.id||'');row.dataset.originalPlayerId=String(savedGoals[i]?.player_id||'');row.dataset.originalAssistId=String(savedGoals[i]?.assist_player_id||'');});$$('[data-editor-card]',modal).forEach((row,i)=>{row.dataset.eventId=String(savedCards[i]?.id||'');row.dataset.originalPlayerId=String(savedCards[i]?.player_id||'');});await syncAppearanceEventCounters(state.matchId,savedGoals,savedCards);}const manualStatus=appearances.length?`Feuille éditoriale · ${appearances.length} joueur${appearances.length>1?'s':''}`:null;const selectedEditionId=$('#matchSheetCompetitionEdition',modal)?.value||null,selectedLegacyCompetition=selectedEditionId?competitionRows.find(x=>String(x.canonical_edition_id||'')===String(selectedEditionId)&&(!x.gender||x.gender===state.match.selection?.gender)&&(!x.selection_category||x.selection_category===state.match.selection?.category))||competitionRows.find(x=>String(x.canonical_edition_id||'')===String(selectedEditionId)):null;const draftPatch={lineup_status:manualStatus,competition_edition_id:selectedEditionId,competition_id:selectedLegacyCompetition?.id||state.match?.competition_id||null,sheet_stadium_name:String($('#matchSheetStadium',modal)?.value||'').trim()||null,sheet_city_name:String($('#matchSheetCity',modal)?.value||'').trim()||null,sheet_referee_name:String($('#matchSheetReferee',modal)?.value||'').trim()||null,sheet_coach_name:String($('#matchSheetCoach',modal)?.value||'').trim()||null,sheet_competition_name:String($('#matchSheetCompetition',modal)?.value||'').trim()||null,updated_at:new Date().toISOString()};const {error:matchStatusError}=await client.from('matches').update(draftPatch).eq('id',state.matchId);if(matchStatusError)throw matchStatusError;if(state.match)state.match.lineup_status=manualStatus;window.dispatchEvent(new CustomEvent('bleus:match-sheet-updated',{detail:{matchId:state.matchId,lineupStatus:manualStatus,source:'manual'}}));matchSheetCache.delete(state.matchId);if(st){st.className='match-sheet-editor-status is-ok';st.textContent='Feuille de match enregistrée ✓';}await refreshMatchSheetPanel(state.matchId);if(!stayOpen)setTimeout(()=>{modal.hidden=true;matchSheetEditorState=null;},650);return true;}catch(err){console.error('Édition feuille de match',err);if(st){st.hidden=false;st.className='match-sheet-editor-status is-error';st.textContent=String(err?.message||err);}if(stayOpen)throw err;return false;}
+      matchSheetCache.delete(state.matchId);
+      window.BLEUS3000_JERSEYS?.invalidate?.();window.BLEUS3000_BALLS?.invalidate?.();
+      window.BLEUS3000_SEARCH_INDEX?.invalidate?.();window.BLEUS3000_STATISTICS?.invalidate?.();
+      window.dispatchEvent(new CustomEvent('bleus:match-sheet-updated',{detail:{matchId:state.matchId,lineupStatus:`Feuille de match · ${appearances.length} joueurs`,source:'manual'}}));
+      if(st){st.className='match-sheet-editor-status is-ok';st.textContent=`Feuille enregistrée ✓ · ${Number(result.player_count||0)} joueur${Number(result.player_count||0)>1?'s':''} synchronisé${Number(result.player_count||0)>1?'s':''}`;}
+      invalidate();
+      if(stayOpen)await refreshMatchSheetPanel(state.matchId).catch(()=>{});
+      if(!stayOpen)setTimeout(()=>{modal.hidden=true;matchSheetEditorState=null;},650);
+      return true;
+    }catch(err){
+      console.error('Enregistrement feuille de match',err);
+      if(st){st.hidden=false;st.className='match-sheet-editor-status is-error';st.textContent=String(err?.message||err);}
+      if(stayOpen)throw err;
+      return false;
+    }
   }
 
   function ensureQuickEventModal(){let modal=$('#quickMatchEventModal');if(modal)return modal;modal=document.createElement('div');modal.className='modal-backdrop quick-match-event-modal';modal.id='quickMatchEventModal';modal.hidden=true;modal.innerHTML=`<section class="modal-dialog quick-match-event-dialog" role="dialog" aria-modal="true"><header class="modal-head"><div><h2>Ajouter un fait de jeu</h2><p id="quickMatchEventMeta">Ajout rapide sans ouvrir la feuille</p></div><button class="modal-close" data-quick-event-close type="button">×</button></header><div class="modal-body"><datalist id="quickEventPlayerList"></datalist><form id="quickMatchEventForm" class="quick-match-event-form"><label>Type<select id="quickEventType"><option value="goal">⚽ But</option><option value="yellow">🟨 Carton jaune</option><option value="second_yellow">🟨🟥 Second jaune</option><option value="red">🟥 Carton rouge</option></select></label><label>Équipe<select id="quickEventTeam"><option value="france">France</option><option value="opponent">Adversaire</option></select></label><label>Joueur<input id="quickEventPlayer" list="quickEventPlayerList" required placeholder="Nom libre accepté"></label><label>Minute<input id="quickEventMinute" placeholder="Ex. 64 ou 90+2"></label><label class="quick-goal-only">Score après le but<input id="quickEventScore" placeholder="Ex. 2-1"></label><label class="quick-goal-only">Type de but<select id="quickEventGoalType"><option value="open_play">Jeu</option><option value="header">Tête</option><option value="free_kick">Coup franc</option><option value="penalty">Penalty</option><option value="other">Autre</option></select></label><label class="quick-goal-only">Passeur décisif<input id="quickEventAssist" list="quickEventPlayerList" placeholder="Facultatif"></label><div class="match-sheet-editor-status" id="quickEventStatus" hidden></div><div class="match-sheet-editor-actions"><button type="button" class="secondary-btn" data-quick-event-close>Annuler</button><button class="primary-btn" type="submit">Ajouter</button></div></form></div></section>`;document.body.appendChild(modal);$$('[data-quick-event-close]',modal).forEach(b=>b.addEventListener('click',()=>modal.hidden=true));$('#quickEventType',modal)?.addEventListener('change',()=>{$$('.quick-goal-only',modal).forEach(x=>x.hidden=$('#quickEventType',modal).value!=='goal');});$('#quickMatchEventForm',modal)?.addEventListener('submit',saveQuickMatchEvent);return modal;}
   let quickEventMatchId=null;
   async function openQuickMatchEvent(matchId){if(!canEdit())return alert('Ajout réservé aux ADMIN et SUPERADMIN.');await load();const m=getMatch(matchId);if(!m)return;quickEventMatchId=String(matchId);const modal=ensureQuickEventModal(),list=$('#quickEventPlayerList',modal);if(list)list.innerHTML=editorPlayerListHtml();$('#quickMatchEventForm',modal)?.reset();$$('.quick-goal-only',modal).forEach(x=>x.hidden=false);const opp=countryName(effective(m,'opponent_name')||'Adversaire');$('#quickMatchEventMeta',modal).textContent=`${fmtDateLong(effective(m,'match_date'))} · France – ${opp}`;const st=$('#quickEventStatus',modal);if(st){st.hidden=true;st.textContent='';st.className='match-sheet-editor-status';}modal.hidden=false;setTimeout(()=>$('#quickEventPlayer',modal)?.focus(),40);}
-  async function saveQuickMatchEvent(e){e.preventDefault();if(!canEdit()||!client||!quickEventMatchId)return;const modal=ensureQuickEventModal(),m=getMatch(quickEventMatchId)||{},type=$('#quickEventType',modal).value,team=$('#quickEventTeam',modal).value,name=String($('#quickEventPlayer',modal).value||'').trim(),minute=String($('#quickEventMinute',modal).value||'').trim()||null,st=$('#quickEventStatus',modal);if(!name)return;st.hidden=false;st.className='match-sheet-editor-status';st.textContent='Ajout…';try{const playerId=team==='france'?safeUuid(editorResolvePlayer(name)):null,opp=countryName(effective(m,'opponent_name')||'Adversaire');if(type==='goal'){const assistName=String($('#quickEventAssist',modal).value||'').trim(),assistId=team==='france'&&assistName?editorResolvePlayer(assistName):null;const goalType=$('#quickEventGoalType',modal)?.value||'open_play';const {error}=await client.from('match_goal_events').insert({match_id:quickEventMatchId,player_id:playerId,scorer_name:name,team_name:team==='france'?'France':opp,minute_text:minute,score_after:String($('#quickEventScore',modal).value||'').trim()||null,assist_player_id:assistId,assist_name:assistName||null,goal_type:goalType,body_part:goalType==='header'?'head':null,is_penalty:goalType==='penalty',is_own_goal:false});if(error)throw error;}else{const {error}=await client.from('match_card_events').insert({match_id:quickEventMatchId,player_id:playerId,player_name:name,team_name:team==='france'?'France':opp,card_type:type,minute_text:minute});if(error)throw error;}matchSheetCache.delete(quickEventMatchId);st.className='match-sheet-editor-status is-ok';st.textContent='Fait de jeu ajouté ✓ · la feuille devra être validée pour mettre les statistiques à jour.';window.dispatchEvent(new CustomEvent('bleus:match-sheet-updated',{detail:{matchId:quickEventMatchId,lineupStatus:m.lineup_status||null,source:'quick-event'}}));const panel=$(`[data-match-sheet-panel="${CSS.escape(String(quickEventMatchId))}"]`);if(panel&&!panel.hidden)refreshMatchSheetPanel(quickEventMatchId).catch(()=>{});setTimeout(()=>modal.hidden=true,850);}catch(err){st.className='match-sheet-editor-status is-error';st.textContent=String(err?.message||err);}}
+  async function saveQuickMatchEvent(e){e.preventDefault();if(!canEdit()||!client||!quickEventMatchId)return;const modal=ensureQuickEventModal(),m=getMatch(quickEventMatchId)||{},type=$('#quickEventType',modal).value,team=$('#quickEventTeam',modal).value,name=String($('#quickEventPlayer',modal).value||'').trim(),minute=String($('#quickEventMinute',modal).value||'').trim()||null,st=$('#quickEventStatus',modal);if(!name)return;st.hidden=false;st.className='match-sheet-editor-status';st.textContent='Ajout…';try{const playerId=team==='france'?safeUuid(editorResolvePlayer(name)):null,opp=countryName(effective(m,'opponent_name')||'Adversaire');if(type==='goal'){const assistName=String($('#quickEventAssist',modal).value||'').trim(),assistId=team==='france'&&assistName?editorResolvePlayer(assistName):null;const goalType=$('#quickEventGoalType',modal)?.value||'open_play';const {error}=await client.from('match_goal_events').insert({match_id:quickEventMatchId,player_id:playerId,scorer_name:name,team_name:team==='france'?'France':opp,minute_text:minute,score_after:String($('#quickEventScore',modal).value||'').trim()||null,assist_player_id:assistId,assist_name:assistName||null,goal_type:goalType,body_part:goalType==='header'?'head':null,is_penalty:goalType==='penalty',is_own_goal:false});if(error)throw error;}else{const {error}=await client.from('match_card_events').insert({match_id:quickEventMatchId,player_id:playerId,player_name:name,team_name:team==='france'?'France':opp,card_type:type,minute_text:minute});if(error)throw error;}matchSheetCache.delete(quickEventMatchId);st.className='match-sheet-editor-status is-ok';st.textContent='Fait de jeu ajouté ✓ · statistiques synchronisées sans double comptage.';window.dispatchEvent(new CustomEvent('bleus:match-sheet-updated',{detail:{matchId:quickEventMatchId,lineupStatus:m.lineup_status||null,source:'quick-event'}}));const panel=$(`[data-match-sheet-panel="${CSS.escape(String(quickEventMatchId))}"]`);if(panel&&!panel.hidden)refreshMatchSheetPanel(quickEventMatchId).catch(()=>{});setTimeout(()=>modal.hidden=true,850);}catch(err){st.className='match-sheet-editor-status is-error';st.textContent=String(err?.message||err);}}
   function competitionIconFallback(entity,c,tag){const explicit=String(entity?.icon_text||tag?.icon_text||'').trim();if(explicit)return explicit;const key=norm([entity?.name,c?.name,c?.competition_type,entity?.competition_type].filter(Boolean).join(' '));if(/olymp|jeux olymp/.test(key))return '🥇';if(/coupe du monde|world cup|mondial/.test(key))return '🌍';if(/euro|europe/.test(key))return '🇪🇺';if(/ligue des nations|nations league/.test(key))return '🏆';if(/amical|friendly/.test(key))return '🤝';if(/tournoi/.test(key))return '🏅';return '🏆';}
   function renderCompetitionCard(c){
     const entity=competitionEntities.find(x=>String(x.id)===String(c.canonical_entity_id||'')),tag=(entity?.competition_tag_id||c.tag_id)?tagsById.get(entity?.competition_tag_id||c.tag_id):null,icon=competitionIconFallback(entity,c,tag);
@@ -1016,7 +1048,7 @@
   function renderOpponentDetails(card,opponentId,teamId,page=1){
     const list=opponentMatches(opponentId,teamId),bal=balance(list);
     const team=list[0]?.selection||selectionRows.find(x=>String(x.id)===String(teamId));
-    const label='France A';
+    const label='France';
     updateRelationSummary(card,bal,`Bilan · ${label}`);
     const details=$('.rel-opponent-details',card);if(!details)return;
     renderPagedMatches(details,list,`Matchs · ${label}`,page,p=>renderOpponentDetails(card,opponentId,teamId,p));
@@ -1057,7 +1089,7 @@
   function renderStaffCard(p){
     const linked=p.linked_matches||[],bal=balance(linked),teams=teamMapForMatches(linked);
     const teamTags=[...teams.entries()].map(([id,x])=>`<span class="rel-static-section-tag" data-team-id="${esc(id)}">${x.tag?tagChip(x.tag,'relational-team-chip'):`<span class="rel-tag-fallback">${esc(x.label)}</span>`}</span>`).join('');
-    return `<article class="selection-player-tile rel-ref-tile rel-person-tile rel-staff-tile" data-staff-id="${esc(p.id)}">${referencePhotoHtml(p)}${referenceEditButton('staff',p)}<div class="rel-ref-head"><div><h3>${esc(p.display_name)}</h3><div class="subtitle">Sélectionneur${p.organization?` · ${esc(p.organization)}`:''}</div></div><span class="rel-result">${linked.length}</span></div>${(p.nationality||p.birth_date||p.death_date)?`<div class="rel-facts">${p.nationality?`<span>${flagImg(p.nationality)} ${esc(p.nationality)}</span>`:''}${p.birth_date?`<span>🎂 ${esc(fmtDate(p.birth_date))}</span>`:''}${p.death_date?`<span>🕯️ ${esc(fmtDate(p.death_date))}</span>`:''}</div>`:''}${relationSummaryHtml(bal,'Bilan comme sélectionneur')}<div class="rel-opponent-section-title">Sélections dirigées</div><div class="rel-opponent-sections">${teamTags||'<span class="rel-opponent-empty">Aucun match relié</span>'}</div></article>`;
+    return `<article class="selection-player-tile rel-ref-tile rel-person-tile rel-staff-tile" data-staff-id="${esc(p.id)}">${referencePhotoHtml(p)}${referenceEditButton('staff',p)}<div class="rel-ref-head"><div><h3>${esc(p.display_name)}</h3><div class="subtitle">Sélectionneur${p.organization?` · ${esc(p.organization)}`:''}</div></div><span class="rel-result">${linked.length}</span></div>${(p.nationality||p.birth_date||p.death_date)?`<div class="rel-facts">${p.nationality?`<span>${flagImg(p.nationality)} ${esc(p.nationality)}</span>`:''}${p.birth_date?`<span>🎂 ${esc(fmtDate(p.birth_date))}</span>`:''}${p.death_date?`<span>🕯️ ${esc(fmtDate(p.death_date))}</span>`:''}</div>`:''}${relationSummaryHtml(bal,'Bilan comme sélectionneur')}<div class="rel-opponent-section-title">Sélections dirigées</div><div class="rel-opponent-sections">${teamTags||'<span class="rel-opponent-empty">Aucun match relié</span>'}</div><section class="staff-bestxi-shell"><button type="button" class="staff-bestxi-toggle" data-staff-bestxi-toggle="${esc(p.id)}"><span>⚽ ONZE TYPE</span><small>Reconstruction statistique des titularisations</small><b>＋</b></button><div class="staff-bestxi-host" data-staff-bestxi-host="${esc(p.id)}" hidden></div></section></article>`;
   }
 
   function refereeMatches(personId,teamId='all'){
@@ -1072,7 +1104,7 @@
   function renderRefereeDetails(card,personId,teamId,page=1){
     const list=refereeMatches(personId,teamId),bal=balance(list);
     const team=list[0]?.selection||selectionRows.find(x=>String(x.id)===String(teamId));
-    const label='France A';
+    const label='France';
     updateRelationSummary(card,bal,`Bilan France · ${label}`);
     const details=$('.rel-opponent-details',card);if(!details)return;
     renderPagedMatches(details,list,`Matchs arbitrés · ${label}`,page,p=>renderRefereeDetails(card,personId,teamId,p));
@@ -1110,7 +1142,7 @@
   function renderStadiumDetails(card,placeId,teamId,page=1){
     const list=stadiumMatches(placeId,teamId),bal=balance(list);
     const team=list[0]?.selection||selectionRows.find(x=>String(x.id)===String(teamId));
-    const label='France A';
+    const label='France';
     updateRelationSummary(card,bal,`Bilan · ${label}`);
     const details=$('.rel-opponent-details',card);if(!details)return;
     renderPagedMatches(details,list,`Matchs dans ce stade · ${label}`,page,p=>renderStadiumDetails(card,placeId,teamId,p));
@@ -1198,14 +1230,14 @@
     resetForeignUi();
     const host=$('#referenceEntries'),title=$('#referenceModalTitle'),sub=$('#referenceModalSub'),count=$('#referenceCount');
     if(!host)return;
-    host.innerHTML='<div class="selection-loading">Chargement du référentiel relationnel…</div>';
+    if(!loaded)host.innerHTML='<div class="selection-loading">Chargement du référentiel relationnel…</div>';
     try{
       await load();
       if(kind==='matchs'){
         renderMatchFilters();
         let list=matches.filter(m=>matchQuery(q,[selectionLabel(m),effective(m,'opponent_name'),effective(m,'competition_name'),m.phase,effective(m,'venue_name'),effective(m,'city'),m.coach?.display_name,fmtDate(effective(m,'match_date')),String(getMatchNumber(m)||''),`match ${getMatchNumber(m)||''}`,m.provider]));
         list=applyMatchFilters(list);
-        if(title)title.textContent='Matchs';if(sub)sub.textContent='Équipe de France masculine A · matchs terminés par défaut · une tuile par page';if(count)count.textContent=`${list.length} match${list.length>1?'s':''}`;
+        if(title)title.textContent='Matchs';if(sub)sub.textContent='Équipe de France · matchs terminés par défaut · une tuile par page';if(count)count.textContent=`${list.length} match${list.length>1?'s':''}`;
         const pages=Math.max(1,Math.ceil(list.length/MATCH_PAGE_SIZE));matchPage=Math.max(1,Math.min(matchPage,pages));const shown=list.slice((matchPage-1)*MATCH_PAGE_SIZE,matchPage*MATCH_PAGE_SIZE),pagination=renderMainMatchPagination(list.length);
         host.innerHTML=list.length?`${pagination}<div class="rel-ref-grid rel-match-grid">${shown.map(renderMatchCard).join('')}</div>${pagination}`:'<div class="universal-search-empty">Aucun match ne correspond aux filtres.</div>';
         bindMatchCards(host);bindMainMatchPagination(host);
@@ -1227,8 +1259,8 @@
       }else if(kind==='staff'){
         renderRelFilters(kind);
         let list=staffRows.filter(p=>matchQuery(q,[p.display_name,p.person_type,p.nationality,'sélectionneur','staff',...(p.linked_matches||[]).flatMap(m=>[selectionLabel(m),effective(m,'opponent_name'),effective(m,'competition_name')]) ]));list=applyRelFilters(kind,list);
-        if(title)title.textContent='Staff';if(sub)sub.textContent='Sélectionneurs reliés aux matchs des sélections françaises';if(count)count.textContent=`${list.length} sélectionneur${list.length>1?'s':''}`;
-        host.innerHTML=list.length?`<div class="rel-ref-grid">${list.map(renderStaffCard).join('')}</div>`:'<div class="universal-search-empty">Aucun sélectionneur ne correspond aux filtres.</div>';
+        if(title)title.textContent='Sélectionneurs';if(sub)sub.textContent='Sélectionneurs de l’Équipe de France reliés aux matchs';if(count)count.textContent=`${list.length} sélectionneur${list.length>1?'s':''}`;
+        host.innerHTML=list.length?`<div class="rel-ref-grid rel-staff-grid">${list.map(renderStaffCard).join('')}</div>`:'<div class="universal-search-empty">Aucun sélectionneur ne correspond aux filtres.</div>';
         bindReferenceEditors(host);
       }else if(kind==='arbitres'){
         renderRelFilters(kind);
@@ -1252,7 +1284,7 @@
 
   function search(q){
     if(!loaded||!String(q||'').trim())return [];
-    const labels={matchs:'Matchs',competitions:'Compétitions',adversaires:'Adversaires',staff:'Staff',arbitres:'Arbitres',lieux:'Stades'};
+    const labels={matchs:'Matchs',competitions:'Compétitions',adversaires:'Adversaires',staff:'Sélectionneurs',arbitres:'Arbitres',lieux:'Stades'};
     const icons={matchs:'⚽',competitions:'🏆',adversaires:'🌍',staff:'👔',arbitres:'🟨',lieux:'🏟️'};
     return searchRegistry.filter(x=>matchQuery(q,[x.title,x.meta,...x.values])).slice(0,24).map(x=>({
       type:labels[x.kind]||'Référentiels',icon:icons[x.kind]||'▦',image:x.image||'',title:x.title,meta:x.meta,score:0.18,

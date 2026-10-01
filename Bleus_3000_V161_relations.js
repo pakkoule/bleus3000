@@ -194,7 +194,7 @@
     new MutationObserver(muts=>{for(const m of muts){for(const n of m.addedNodes){if(n.nodeType===1&&(n.matches?.('#matchSheetEditorModal')||n.querySelector?.('[data-appearance-position]')))enhancePositionEditors(n).catch(()=>{});}}}).observe(document.body,{childList:true,subtree:true});
     document.addEventListener('click',e=>{if(e.target.closest('[data-add-editor-row]'))setTimeout(()=>enhancePositionEditors(document),0);});
   }
-  async function boot(){await loadCatalog();observe();hydrateMatchJerseys(document);}
+  async function boot(){observe();hydrateMatchJerseys(document);}
   boot();
   window.BLEUS3000_V161={loadCatalog,renderCompetitions,openNewCompetition,get positions(){return positions;}};
 })();

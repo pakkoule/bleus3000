@@ -31,3 +31,21 @@
 .c3k-navigation-grid.is-tools button small{grid-column:2;align-self:start;margin-top:-2px;color:#778aa2;font-size:7px;font-weight:650;line-height:1.15}
 .c3k-navigation-arrow{display:none!important}
 @media(max-width:620px){.c3k-navigation-overlay{padding:8px;border-radius:10px}.c3k-navigation-grid,.c3k-navigation-grid.is-tools{grid-template-columns:1fr}.c3k-navigation-grid button,.c3k-navigation-grid.is-tools button{min-height:30px;padding:5px 7px}}
+
+
+/* V1.2.10.16 — navigation compacte */
+.c3k-navigation-overlay{padding:6px!important;max-width:320px!important}
+.c3k-navigation-body{gap:5px!important}
+.c3k-navigation-section{gap:3px!important}
+.c3k-navigation-section h3{font-size:9px!important;letter-spacing:.12em!important;margin:1px 3px!important}
+.c3k-navigation-grid{gap:2px!important}
+.c3k-navigation-grid button{min-height:25px!important;padding:3px 7px!important;border-radius:7px!important}
+.c3k-navigation-grid button:nth-child(odd){background:#f8fbff!important}
+.c3k-navigation-grid button:nth-child(even){background:#eef4fb!important}
+.c3k-navigation-grid button strong{font-size:10.5px!important;letter-spacing:.045em!important;text-transform:uppercase!important}
+.c3k-navigation-grid button small{font-size:7.5px!important;line-height:1.15!important}
+.c3k-navigation-icon{font-size:10px!important}
+/* V1.3.3 hotfix — rail neutre Éphéméride + Navigation, indépendant de l'authentification */
+.c3k-header-tools-slot{gap:6px;align-content:start}
+.c3k-header-tools-slot>.c3k-ephemeride,.c3k-header-tools-slot>.c3k-navigation-launcher{width:100%;min-width:0}
+

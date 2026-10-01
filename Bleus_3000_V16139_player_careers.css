@@ -29,3 +29,6 @@
 @media(max-width:680px){.player-quick-card{display:none!important}.player-match-controls{width:100%;margin:5px 0 0}.player-match-pager{flex-wrap:wrap}.player-career-event{min-width:112px}.player-compare-grid{min-width:650px}}
 
 .selection-player-match-list>[data-career-owned]{display:grid;gap:5px}
+
+/* V1.2.10.16 — timeline internationale retirée */
+.player-career-timeline-wrap{display:none!important}

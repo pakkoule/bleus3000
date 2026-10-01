@@ -6,22 +6,34 @@
   const slugify=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,72)||'chaine';
   const state=()=>window.C3K_ACCOUNT_STATE||{};
   const client=()=>window.BLEUS3000_SUPABASE;
+  const refs=()=>window.BLEUS3000_RELATIONAL_REFS;
   const canEdit=()=>['admin','superadmin'].includes(String(state().role||'').toLowerCase());
-  let channels=[],tags=new Map(),editingId=null,pendingFile=null,pendingPreview='';
+  let channels=[],tags=new Map(),editingId=null,pendingFile=null,pendingPreview='',loaded=false,loading=null;
 
   const publicIconUrl=t=>{const c=client();if(!t?.icon_image_path||!c)return '';return c.storage.from('tag-icons').getPublicUrl(t.icon_image_path).data?.publicUrl||'';};
   const logoHtml=(b,t)=>{const u=publicIconUrl(t);return u?`<img class="broadcast-logo-preview" src="${esc(u)}" alt="${esc(b.name)}">`:`<span class="broadcast-tag-preview">${esc(t?.icon_text||'📺')} ${esc(b.name)}</span>`;};
 
-  async function load(){
-    const c=client();if(!c)return render();
-    const [{data:b,error:be},{data:t,error:te}]=await Promise.all([
-      c.from('broadcast_channels').select('*').eq('active',true).order('name'),
-      c.from('tags').select('*').eq('is_active',true)
-    ]);
-    if(be)console.warn('Chaînes',be);if(te)console.warn('Tags chaînes',te);
-    channels=b||[];tags=new Map((t||[]).map(x=>[x.id,x]));render();
-    window.dispatchEvent(new CustomEvent('bleus:broadcasts-ready',{detail:{channels,tags:[...tags.values()]}}));
-    return channels;
+  async function load(force=false){
+    if(loaded&&!force){render();return channels;}
+    if(loading){await loading;render();return channels;}
+    const c=client();if(!c){render();return channels;}
+    loading=(async()=>{
+      try{await refs()?.load?.();}catch{}
+      const {data:b,error:be}=await c.from('broadcast_channels').select('*').eq('active',true).order('name');
+      if(be)console.warn('Chaînes',be);
+      channels=b||[];
+      const sharedTags=refs()?.getTags?.()||[];
+      if(sharedTags.length)tags=new Map(sharedTags.map(x=>[x.id,x]));
+      else{
+        const {data:t,error:te}=await c.from('tags').select('*').eq('is_active',true);
+        if(te)console.warn('Tags chaînes',te);
+        tags=new Map((t||[]).map(x=>[x.id,x]));
+      }
+      loaded=true;
+      window.dispatchEvent(new CustomEvent('bleus:broadcasts-ready',{detail:{channels,tags:[...tags.values()]}}));
+      return channels;
+    })().finally(()=>loading=null);
+    await loading;render();return channels;
   }
   function open(){editingId=null;pendingFile=null;pendingPreview='';const body=$('#c3kV8PanelBody');if(body)body.innerHTML='<div class="c3k-v8-muted">Chargement des chaînes…</div>';load();}
   function rowHtml(b){const t=tags.get(b.tag_id);return `<article class="broadcast-manager-row"><div class="broadcast-manager-logo">${logoHtml(b,t)}</div><div><strong>${esc(b.name)}</strong><small>${esc((b.aliases||[]).join(' · ')||b.slug)}</small></div>${canEdit()?`<button type="button" data-broadcast-edit="${esc(b.id)}">Modifier</button>`:''}</article>`;}
@@ -42,10 +54,10 @@
       let iconPath=tag.icon_image_path||null;if(form.dataset.removeLogo==='1')iconPath=null;if(pendingFile)iconPath=await uploadLogo(pendingFile,name,tag.id);
       const {error:te}=await c.from('tags').update({label_text:name.slice(0,40),aliases:[name,...aliases],icon_image_path:iconPath,reference_scope:'broadcast',updated_at:new Date().toISOString()}).eq('id',tag.id);if(te)throw te;
       if(channel){const {error}=await c.from('broadcast_channels').update({name,slug:slugify(name),aliases,website_url:String(fd.get('website_url')||'').trim()||null,tag_id:tag.id,updated_at:new Date().toISOString()}).eq('id',channel.id);if(error)throw error;}else{const {data,error}=await c.from('broadcast_channels').insert({name,slug:slugify(name),aliases,website_url:String(fd.get('website_url')||'').trim()||null,tag_id:tag.id}).select('*').single();if(error)throw error;channel=data;await c.from('tag_reference_links').insert({tag_id:tag.id,reference_type:'broadcast',reference_id:channel.id,relation_kind:'membership',created_by:state().profile?.id||null});}
-      editingId=null;pendingFile=null;pendingPreview='';await load();window.BLEUS3000_CALENDAR?.refreshBroadcasts?.();
+      editingId=null;pendingFile=null;pendingPreview='';await load(true);window.BLEUS3000_CALENDAR?.refreshBroadcasts?.();
     }catch(err){console.error(err);st.hidden=false;st.className='c3k-v8-status is-error';st.textContent=err.message||String(err);}}
   function findByText(text){const n=String(text||'').toLowerCase();return channels.filter(b=>n.includes(String(b.name||'').toLowerCase())||(b.aliases||[]).some(a=>n.includes(String(a).toLowerCase())));}
   function renderText(text){const found=findByText(text);if(!found.length)return `<span class="calendar-tv">📺 ${esc(text||'Diffusion à confirmer')}</span>`;return found.map(b=>{const t=tags.get(b.tag_id),u=publicIconUrl(t);return u?`<span class="broadcast-calendar-logo" title="${esc(b.name)}"><img src="${esc(u)}" alt="${esc(b.name)}"></span>`:`<span class="calendar-tv broadcast-text-tag">${esc(t?.icon_text||'📺')} ${esc(b.name)}</span>`;}).join('');}
-  window.BLEUS3000_BROADCASTS={open,refresh:load,refreshBroadcasts:load,renderText,findByText,get channels(){return channels;}};
+  window.BLEUS3000_BROADCASTS={open,refresh:()=>load(true),refreshBroadcasts:()=>load(true),renderText,findByText,get channels(){return channels;}};
   window.addEventListener('bleus:supabase-ready',()=>load());
 })();

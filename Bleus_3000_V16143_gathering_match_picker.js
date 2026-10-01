@@ -52,7 +52,7 @@
     host.addEventListener('click',e=>{const el=e.target.closest('[data-gathering-match-choice]');if(!el)return;e.preventDefault();toggleChoice(el,st);});
     host.addEventListener('keydown',e=>{const el=e.target.closest('[data-gathering-match-choice]');if(!el||!['Enter',' '].includes(e.key))return;e.preventDefault();toggleChoice(el,st);});
     render(st);
-    const small=host.closest('.gathering-editor-section')?.querySelector('header small');if(small)small.textContent='Tous les matchs France A sont sélectionnables, y compris les matchs passés.';
+    const small=host.closest('.gathering-editor-section')?.querySelector('header small');if(small)small.textContent='Tous les matchs France sont sélectionnables, y compris les matchs passés.';
   }
   function schedule(){
     const modal=$('#gatheringEditorModal'),open=Boolean(modal&&!modal.hidden);

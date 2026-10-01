@@ -1,0 +1,11 @@
+/* 3615 Bleus V1.3.4 — recherche transversale locale */
+.is-search-target{outline:3px solid #2d67ff!important;outline-offset:3px;box-shadow:0 0 0 8px rgba(45,103,255,.12),0 18px 42px rgba(10,42,88,.16)!important;transition:outline-color .18s ease,box-shadow .18s ease}
+.universal-search-detail-dialog{width:min(680px,100%)}
+.universal-search-detail-card{display:flex;align-items:center;gap:14px;padding:14px;border:1px solid #d8e5f4;border-radius:18px;background:#f8fbff}
+.universal-search-detail-card>img{width:76px;height:76px;object-fit:contain;border-radius:14px;background:#fff;border:1px solid #dce8f6}
+.universal-search-detail-card strong{display:block;color:#102e58;font-size:1.05rem}
+.universal-search-detail-card p{margin:5px 0 0;color:#5c7596;font-weight:700}
+.universal-search-detail-links{margin-top:14px;padding-top:12px;border-top:1px solid #e1eaf5}
+.universal-search-detail-links h3{margin:0 0 8px;color:#15355c;font-size:.84rem;text-transform:uppercase;letter-spacing:.06em}
+.universal-search-detail-links button{width:100%;display:flex;align-items:center;justify-content:space-between;min-height:44px;margin:6px 0;padding:9px 12px;border:1px solid #cbdcf0;border-radius:12px;background:#fff;color:#173d72;font-weight:800;text-align:left;cursor:pointer}
+@media(max-width:760px){.universal-search-detail-dialog{max-height:min(88dvh,88svh)}.universal-search-detail-card{padding:12px}.universal-search-detail-card>img{width:60px;height:60px}}

@@ -5,7 +5,16 @@
   const stripSection=v=>String(v||'').replace(/\s+(women|woman|feminin(?:e)?|girls?|boys?|espoirs?|senior(?:s)?|a|u\s?\d+)\s*$/i,'').replace(/\s+/g,' ').trim();
   const norm=v=>stripSection(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
   function codeFor(name){return MAP[norm(name)]||null;}
-  function countryName(name){return stripSection(name)||String(name||'');}
+  const SPECIAL_FR={'gb-eng':'Angleterre','gb-sct':'Écosse','gb-wls':'Pays de Galles','gb-nir':'Irlande du Nord'};
+  let FR_REGIONS=null;try{FR_REGIONS=new Intl.DisplayNames(['fr'],{type:'region'});}catch{}
+  function countryName(name){
+    const raw=stripSection(name)||String(name||'');
+    const code=codeFor(raw);
+    if(!code)return raw;
+    if(SPECIAL_FR[code])return SPECIAL_FR[code];
+    if(/^[a-z]{2}$/i.test(code)&&FR_REGIONS){try{return FR_REGIONS.of(code.toUpperCase())||raw;}catch{}}
+    return raw;
+  }
   function urlForCode(code){if(!code)return '';return `https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.3.2/flags/4x3/${encodeURIComponent(String(code).toLowerCase())}.svg`;}
   function img(name,cls='b3k-svg-flag'){const code=codeFor(name);if(!code)return `<span class="${cls} is-missing" aria-hidden="true">◌</span>`;return `<img class="${cls}" src="${urlForCode(code)}" alt="" loading="lazy" decoding="async" crossorigin="anonymous" data-flag-code="${code}">`;}
   window.BLEUS3000_FLAGS={codeFor,urlForCode,img,countryName,map:MAP};

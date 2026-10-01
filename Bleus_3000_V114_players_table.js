@@ -98,14 +98,21 @@
   }
 
   async function openPlayer(id){
-    const p=players.find(x=>String(x.id)===String(id));if(!p)return;
+    const source=players.length?players:(window.BLEUS3000_PLAYER_REGISTRY||[]);
+    const p=source.find(x=>String(x.id)===String(id))||null;
     const app=window.BLEUS3000_APP,sel=window.BLEUS3000_SELECTIONS;if(!app||!sel)return;
     app.openReferences('selections');await sel.selectCategory('FRA-A-M');
-    const input=$('#referenceSearch');if(input){input.value=p.name;input.dispatchEvent(new Event('input',{bubbles:true}));}
+    const label=String(p?.name||p?.display_name||'').trim(),input=$('#referenceSearch');
+    if(input&&label){input.value=label;input.dispatchEvent(new Event('input',{bubbles:true}));}
     requestAnimationFrame(()=>setTimeout(()=>{const tile=document.querySelector(`[data-player-tile="${CSS.escape(String(id))}"]`);if(tile){tile.scrollIntoView({block:'center',behavior:'smooth'});tile.classList.add('is-search-target');const toggle=tile.querySelector('[data-player-row-toggle]');if(toggle&&toggle.getAttribute('aria-expanded')!=='true')toggle.click();setTimeout(()=>tile.classList.remove('is-search-target'),1800);}},120));
   }
 
-  window.BLEUS3000_PLAYERS_DB={reload:load,openPlayer,get players(){return players;}};
-  window.addEventListener('bleus:supabase-ready',()=>{if(!players.length)load().catch(e=>console.warn('Registre joueurs · reprise Supabase',e));});
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>load().catch(e=>console.error('Registre joueurs',e)),{once:true});else load().catch(e=>console.error('Registre joueurs',e));
+  // Le registre enrichi est désormais chargé à la demande. Le référentiel Joueurs
+  // publie déjà un registre suffisant au démarrage, ce qui évite 5–7 lectures
+  // Supabase redondantes sur chaque chargement de page.
+  window.BLEUS3000_PLAYERS_DB={
+    reload:load,
+    openPlayer,
+    get players(){return players.length?players:(window.BLEUS3000_PLAYER_REGISTRY||[]);}
+  };
 })();

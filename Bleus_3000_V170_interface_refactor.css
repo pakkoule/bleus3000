@@ -17,19 +17,22 @@ body:not(.b3k-can-edit) .match-sheet-edit-btn{display:none!important}
 .match-sheet-single-pane{display:grid;gap:14px}
 .match-sheet-facts-inline{display:grid;gap:8px;padding-top:12px;border-top:1px solid #d6e3f1}
 .match-sheet-facts-inline>h3{margin:0;color:#123b8f;font-size:10px}
-.match-sheet-kit-media-row{display:flex;align-items:center;gap:12px;margin:10px 0 14px;overflow:visible;min-height:138px}
-.match-sheet-current-jersey{position:relative;display:grid!important;place-items:center!important;flex:0 0 112px;width:112px;height:128px!important;min-height:128px!important;margin:0!important;padding:8px!important;border:1px solid #d4e1ef!important;border-radius:12px!important;background:#fff!important;box-sizing:border-box;overflow:visible!important;cursor:default!important}
-.match-sheet-current-jersey img,.match-sheet-current-jersey-placeholder{display:block!important;width:100%!important;height:100%!important;max-width:96px!important;max-height:112px!important;object-fit:contain!important;padding:0!important;border:0!important;background:transparent!important;border-radius:8px!important}
-.match-sheet-media-strip{display:grid;grid-template-columns:126px 136px 116px 58px 58px 58px;gap:9px;align-items:center;overflow:visible}
-.match-sheet-media-slot{position:relative;display:grid;place-items:center;width:58px;height:58px;min-height:58px;border:1px solid #d4e1ef;border-radius:10px;background:#f7fbff;color:#123b8f;text-decoration:none;overflow:hidden;box-sizing:border-box;cursor:default}
+.match-sheet-kit-media-row{display:flex;align-items:flex-start;gap:14px;margin:10px 0 14px;overflow:visible;min-height:146px}
+.match-sheet-current-jersey{position:relative;display:grid!important;place-items:center!important;flex:0 0 112px;width:112px;height:128px!important;min-height:128px!important;margin:0!important;padding:10px!important;border:1px solid #d4e1ef!important;border-radius:14px!important;background:linear-gradient(180deg,#fff,#f8fbff)!important;box-shadow:0 6px 18px rgba(10,35,66,.06)!important;box-sizing:border-box;overflow:hidden!important;cursor:default!important}
+.match-sheet-current-jersey img,.match-sheet-current-jersey-placeholder{display:block!important;width:100%!important;height:100%!important;max-width:92px!important;max-height:108px!important;object-fit:contain!important;padding:0!important;border:0!important;background:transparent!important;border-radius:10px!important}
+.match-sheet-media-strip{display:grid;grid-template-columns:126px 136px 170px 116px 58px 58px 58px;gap:12px;align-items:start;overflow:visible}
+.match-sheet-media-slot{position:relative;display:grid;place-items:center;width:58px;height:58px;min-height:58px;border:1px solid #d7e3f0;border-radius:14px;background:linear-gradient(180deg,#fff,#f7fbff);box-shadow:0 6px 18px rgba(10,35,66,.06);color:#123b8f;text-decoration:none;overflow:hidden;box-sizing:border-box;cursor:default;transition:border-color .14s ease,box-shadow .14s ease,transform .14s ease,background .14s ease}
 .match-sheet-media-slot.is-newspaper_front{width:126px;height:138px;min-height:138px;background:#fff}
 .match-sheet-media-slot.is-team_photo{width:136px;height:90px;min-height:90px;background:#fff}
 .match-sheet-media-slot.is-ball{width:116px;height:116px;min-height:116px;background:#fff}
-.match-sheet-media-slot.is-youtube,.match-sheet-media-slot.is-ticket{align-self:center}
-.match-sheet-media-slot.is-youtube.is-active{cursor:pointer}
-.match-sheet-media-slot.is-active:hover{border-color:#6fa0da;background:#fff}
-.match-sheet-media-slot.is-empty{opacity:.3;filter:grayscale(.6)}
-.match-sheet-media-slot img{display:block;width:100%;height:100%;object-fit:contain;padding:5px;box-sizing:border-box;border-radius:9px}
+.match-sheet-media-slot.is-youtube,.match-sheet-media-slot.is-ticket,.match-sheet-media-slot.is-goals{align-self:center}
+.match-sheet-media-slot.is-youtube.is-active,.match-sheet-media-slot.is-goals{cursor:pointer}
+.match-sheet-media-slot.is-active:hover{border-color:#6fa0da;background:#fff;box-shadow:0 10px 24px rgba(22,64,112,.12);transform:translateY(-1px)}
+.match-sheet-media-slot.is-empty{opacity:1;filter:none;background:linear-gradient(180deg,#fbfdff,#f3f7fc);border-style:dashed;color:#9aacbe;box-shadow:none}
+.match-sheet-media-slot.is-empty .match-sheet-media-icon{opacity:.72}
+.match-sheet-media-slot img{display:block;width:100%;height:100%;object-fit:contain;padding:8px;box-sizing:border-box;border-radius:12px}
+.match-sheet-media-slot.is-newspaper_front img,.match-sheet-media-slot.is-team_photo img{padding:0;object-fit:cover}
+.match-sheet-media-slot.is-ball img{padding:12px;object-fit:contain}
 .match-sheet-current-jersey.is-zoomable,.match-sheet-media-slot.is-zoomable{cursor:zoom-in}.match-sheet-media-slot.is-zoomable{overflow:hidden}
 .match-sheet-hover-zoom{position:fixed;z-index:12000;display:grid;place-items:center;width:270px;height:270px;padding:10px;border:1px solid #9fb8d6;border-radius:14px;background:rgba(255,255,255,.98);box-shadow:0 18px 46px rgba(7,31,66,.32);pointer-events:none;box-sizing:border-box}.match-sheet-hover-zoom[hidden]{display:none!important}.match-sheet-hover-zoom img{display:block;width:100%;height:100%;object-fit:contain;border-radius:9px}.match-sheet-hover-zoom.is-newspaper_front{width:300px;height:410px}.match-sheet-hover-zoom.is-team_photo{width:440px;height:300px}.match-sheet-hover-zoom.is-ball{width:300px;height:300px}.match-sheet-hover-zoom.is-jersey{width:300px;height:330px}
 .match-sheet-media-icon{display:grid;place-items:center;width:100%;height:100%;font-size:24px;font-weight:950}
@@ -44,13 +47,13 @@ body:not(.b3k-can-edit) .match-sheet-edit-btn{display:none!important}
 .jersey-formation-color-editor .jersey-formation-color-preview{display:flex}
 
 @media(max-width:760px){
-  .match-sheet-kit-media-row{align-items:flex-start;gap:8px;overflow-x:auto;padding-bottom:8px}
-  .match-sheet-current-jersey{flex-basis:92px;width:92px;height:108px!important;min-height:108px!important}
-  .match-sheet-media-strip{grid-template-columns:104px 118px 96px 52px 52px 52px;gap:7px;min-width:max-content}
+  .match-sheet-kit-media-row{align-items:flex-start;gap:10px;overflow-x:auto;padding:0 0 8px;scroll-snap-type:x proximity}
+  .match-sheet-current-jersey{flex-basis:92px;width:92px;height:108px!important;min-height:108px!important;border-radius:12px!important}
+  .match-sheet-media-strip{grid-template-columns:104px 118px 145px 96px 52px 52px 52px;gap:8px;min-width:max-content}
   .match-sheet-media-slot.is-newspaper_front{width:104px;height:118px;min-height:118px}
   .match-sheet-media-slot.is-team_photo{width:118px;height:78px;min-height:78px}
   .match-sheet-media-slot.is-ball{width:96px;height:96px;min-height:96px}
-  .match-sheet-media-slot{width:52px;height:52px;min-height:52px}
+  .match-sheet-media-slot{width:52px;height:52px;min-height:52px;border-radius:12px}
 }
 
 /* Tous les boutons d'édition restent invisibles tant que le rôle ADMIN/SUPERADMIN n'est pas confirmé. */
@@ -66,7 +69,40 @@ body:not(.b3k-can-edit) [title^="Modifier "]{display:none!important}
 
 
 /* V1.2.10.9 — raccourci Médias → Buts du match */
-.match-sheet-media-slot.is-goals{border-color:#b9cfe7;background:#f4f8fd;cursor:pointer;appearance:none;font:inherit;padding:0}
+.match-sheet-media-slot.is-goals{border-color:#b9cfe7;background:linear-gradient(180deg,#ffffff,#f2f7fd);cursor:pointer;appearance:none;font:inherit;padding:0}
 .match-sheet-media-slot.is-goals.is-active:hover{border-color:#2f6da8;background:#eaf3fc;transform:translateY(-1px)}
 .match-sheet-media-icon.is-goals{font-size:22px;line-height:1}
 .match-media-goal-count{position:absolute;right:4px;top:4px;display:grid;place-items:center;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:#123b6d;color:#fff;font-size:7px;line-height:1;box-sizing:border-box}
+
+
+/* V1.3.15 — médias harmonisés en carrés */
+.match-sheet-kit-media-row{justify-content:center;align-items:flex-start;flex-wrap:wrap;gap:12px;min-height:0}
+.match-sheet-media-strip{display:grid;grid-template-columns:repeat(6,92px) 92px;gap:12px;justify-content:center;align-items:start;overflow:visible;max-width:100%}
+.match-sheet-media-slot,.match-sheet-media-slot.is-newspaper_front,.match-sheet-media-slot.is-team_photo,.match-sheet-media-slot.is-ball{width:92px;height:92px;min-height:92px;border-radius:14px}
+.match-sheet-media-slot{justify-self:center}
+.match-sheet-media-slot img{width:100%;height:100%;padding:8px;object-fit:contain}
+.match-sheet-media-slot.is-newspaper_front img,.match-sheet-media-slot.is-team_photo img{padding:0;object-fit:cover}
+.match-sheet-media-slot.is-ball img,.match-sheet-media-slot.is-ticket img{padding:10px;object-fit:contain}
+.match-sheet-hover-zoom.is-touch-open{pointer-events:none}
+@media(max-width:900px){
+  .match-sheet-kit-media-row{justify-content:flex-start;flex-wrap:nowrap;overflow-x:auto;padding-bottom:8px}
+  .match-sheet-media-strip{grid-template-columns:repeat(7,84px);gap:10px;min-width:max-content}
+  .match-sheet-media-slot,.match-sheet-media-slot.is-newspaper_front,.match-sheet-media-slot.is-team_photo,.match-sheet-media-slot.is-ball{width:84px;height:84px;min-height:84px}
+    }
+
+
+/* V1.3.15.1 — médias réellement uniformisés */
+.match-sheet-kit-media-row{display:flex!important;align-items:flex-start!important;justify-content:center!important;flex-wrap:wrap!important;gap:12px!important;margin:10px auto 14px!important;overflow:visible!important;min-height:0!important;width:100%!important;box-sizing:border-box!important}
+.match-sheet-current-jersey{flex:0 0 92px!important;width:92px!important;height:92px!important;min-width:92px!important;min-height:92px!important;max-width:92px!important;max-height:92px!important;margin:0!important;padding:8px!important;border-radius:14px!important;box-sizing:border-box!important;overflow:hidden!important}
+.match-sheet-current-jersey img,.match-sheet-current-jersey-placeholder{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;object-fit:contain!important;padding:0!important}
+.match-sheet-media-strip{display:grid!important;grid-template-columns:repeat(6,92px)!important;grid-auto-columns:92px!important;gap:12px!important;justify-content:center!important;align-items:start!important;width:auto!important;max-width:100%!important;overflow:visible!important}
+.match-sheet-media-slot,.match-sheet-media-slot.is-newspaper_front,.match-sheet-media-slot.is-team_photo,.match-sheet-media-slot.is-ball,.match-sheet-media-slot.is-youtube,.match-sheet-media-slot.is-ticket,.match-sheet-media-slot.is-goals{display:grid!important;place-items:center!important;width:92px!important;height:92px!important;min-width:92px!important;min-height:92px!important;max-width:92px!important;max-height:92px!important;margin:0!important;padding:0!important;border-radius:14px!important;box-sizing:border-box!important;overflow:hidden!important}
+.match-sheet-media-slot img{display:block!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:contain!important;padding:8px!important;box-sizing:border-box!important;border-radius:12px!important}
+.match-sheet-media-slot.is-newspaper_front img,.match-sheet-media-slot.is-team_photo img{object-fit:cover!important;padding:0!important}
+.match-sheet-media-slot.is-ball img,.match-sheet-media-slot.is-ticket img{object-fit:contain!important;padding:10px!important}
+@media(max-width:900px){
+  .match-sheet-kit-media-row{justify-content:flex-start!important;flex-wrap:nowrap!important;overflow-x:auto!important;padding-bottom:8px!important;scroll-snap-type:x proximity}
+  .match-sheet-current-jersey{flex-basis:84px!important;width:84px!important;height:84px!important;min-width:84px!important;min-height:84px!important;max-width:84px!important;max-height:84px!important;scroll-snap-align:start}
+  .match-sheet-media-strip{grid-template-columns:repeat(6,84px)!important;grid-auto-columns:84px!important;gap:10px!important;min-width:max-content!important}
+  .match-sheet-media-slot,.match-sheet-media-slot.is-newspaper_front,.match-sheet-media-slot.is-team_photo,.match-sheet-media-slot.is-ball,.match-sheet-media-slot.is-youtube,.match-sheet-media-slot.is-ticket,.match-sheet-media-slot.is-goals{width:84px!important;height:84px!important;min-width:84px!important;min-height:84px!important;max-width:84px!important;max-height:84px!important;scroll-snap-align:start}
+}

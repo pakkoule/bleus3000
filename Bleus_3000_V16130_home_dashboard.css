@@ -363,3 +363,8 @@
 .gathering-mini-event-people .in{color:#1f7444}
 .gathering-mini-event-people b{font-size:8px;color:#72849a}
 .gathering-mini-event-note{display:block;margin-top:2px;font-size:7px;font-style:normal;color:#5f7288}
+
+
+/* V1.3.15 — ne pas masquer les logos TV sur les tuiles accueil */
+.home-dashboard-grid .calendar-home-broadcast{flex-wrap:wrap!important;overflow:visible!important}
+.home-dashboard-grid .calendar-home-match-tags{overflow:visible!important}

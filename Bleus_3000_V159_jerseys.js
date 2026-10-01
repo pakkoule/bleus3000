@@ -127,6 +127,12 @@
     if(r.year_start&&r.year_end&&r.year_start!==r.year_end)return `${r.year_start}–${r.year_end}`;
     return String(r.year_start||r.year_end||'—');
   }
+  function wornYearRange(r){
+    const fy=r?.first_worn_date?Number(String(r.first_worn_date).slice(0,4)):null,ly=r?.last_worn_date?Number(String(r.last_worn_date).slice(0,4)):null;
+    if(fy&&ly&&fy!==ly)return `${fy}–${ly}`;
+    return String(fy||ly||'');
+  }
+  function tileYearLabel(r){return wornYearRange(r)||yearLabel(r);}
   function fields(r){
     return [
       ['Usage',usageLabels[r.usage_type]||r.usage_type||'—'],['Équipementier',r.manufacturer||'—'],['Saison',yearLabel(r)],['Référence',r.manufacturer_reference||r.template_name||'—'],
@@ -182,7 +188,7 @@
     const bar=$('#referenceFacetFilters');if(!bar)return;
     const usages=[...new Set(list.map(r=>r.usage_type).filter(Boolean))].sort();
     const makers=[...new Set(list.map(r=>r.manufacturer).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fr'));
-    const years=[...new Set(list.flatMap(r=>[r.year_start,r.year_end]).filter(Boolean))].sort((a,b)=>b-a);
+    const years=[...new Set(list.flatMap(r=>[r.year_start,r.year_end,r.first_worn_date?Number(String(r.first_worn_date).slice(0,4)):null,r.last_worn_date?Number(String(r.last_worn_date).slice(0,4)):null]).filter(Boolean))].sort((a,b)=>b-a);
     const opts=(vals,current,labelFn=x=>x)=>`<option value="all">Tous</option>${vals.map(v=>`<option value="${esc(v)}" ${String(current)===String(v)?'selected':''}>${esc(labelFn(v))}</option>`).join('')}`;
     bar.hidden=false;bar.className='reference-filter-bar jersey-filter-bar';
     const linkedTeams=[...new Map(list.flatMap(r=>teamRelations(r)).filter(Boolean).map(x=>[String(x.id),x])).values()].sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'fr'));
@@ -196,7 +202,7 @@
     return list.filter(r=>{
       if(filterState.usage!=='all'&&String(r.usage_type)!==filterState.usage)return false;
       if(filterState.manufacturer!=='all'&&String(r.manufacturer)!==filterState.manufacturer)return false;
-      if(filterState.year!=='all'&&![String(r.year_start||''),String(r.year_end||'')].includes(filterState.year))return false;
+      if(filterState.year!=='all'&&![String(r.year_start||''),String(r.year_end||''),String(r.first_worn_date||'').slice(0,4),String(r.last_worn_date||'').slice(0,4)].includes(filterState.year))return false;
       if(filterState.team!=='all'&&!teamRelations(r).some(x=>String(x.id)===String(filterState.team)))return false;
       if(filterState.competition!=='all'&&!competitionRelations(r).some(x=>String(x.id)===String(filterState.competition)))return false;
       if(!nq)return true;
@@ -210,7 +216,7 @@
     const ids=new Set(links.map(x=>String(x.match_id)));
     return matches.filter(m=>ids.has(String(m.id))&&(teamId==='all'||String(m.selection_team_id)===String(teamId))).sort((a,b)=>String(b.match_date||'').localeCompare(String(a.match_date||'')));
   }
-  function selectionName(){return 'France A';}
+  function selectionName(){return 'France';}
   function matchMiniCard(m){
     const date=m?.match_date?new Date(m.match_date).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'}):'—';
     const opponent=m?.opponent?.name||m?.manual_overrides?.opponent_name||'Adversaire';
@@ -223,7 +229,7 @@
   function expandedMatchesHtml(r,teamId='all'){
     const list=linkedMatchesFor(r,teamId);
     const team=teamId==='all'?null:selections.find(x=>String(x.id)===String(teamId));
-    const label=team?selectionName({selection:team}):'France A masculine';
+    const label=team?selectionName({selection:team}):'Équipe de France';
     return `<div class="jersey-expanded-head"><strong>Matchs liés</strong><span>${esc(label)} · ${list.length}</span></div><div class="jersey-match-list">${list.length?list.map(matchMiniCard).join(''):'<div class="jersey-match-empty">Aucun match n’est encore associé à ce maillot pour cette sélection.</div>'}</div>`;
   }
   function renderCard(r){
@@ -232,7 +238,7 @@
     return `<article class="jersey-tile jersey-tile-compact" data-jersey-id="${esc(r.id)}" data-jersey-link="${esc(linkRef)}">
       <div class="jersey-photo-wrap"><button class="jersey-photo-stage" type="button" data-jersey-gallery="${esc(r.id)}">${photo?`<img src="${esc(photo)}" alt="Maillot ${esc(yearLabel(r))}" loading="lazy">${mainPhotoCredit(r)?`<span class="photo-copyright-capsule">© ${esc(mainPhotoCredit(r))}</span>`:''}`:`<div class="jersey-photo-placeholder"><svg viewBox="0 0 64 64"><path d="M22 12 14 17 7 29l10 6 4-6v23h22V29l4 6 10-6-7-12-8-5-5 7H27z"></path><path d="M27 19h10"></path></svg><strong>Photo à ajouter</strong></div>`}${count>1?`<span class="jersey-photo-count">▧ ${count}</span>`:''}</button>${canEdit()?`<button class="jersey-compact-edit" type="button" data-jersey-edit="${esc(r.id)}" title="Modifier le maillot">✎</button>`:''}</div>
       <div class="jersey-tile-body jersey-compact-body">
-        <div class="jersey-compact-meta"><div><span>Année</span><strong>${esc(yearLabel(r))}</strong></div><div class="jersey-equipment-cell"><span>Équipementier</span><strong class="jersey-equipment-display">${equipmentHtml(r)}</strong></div></div>
+        <div class="jersey-compact-meta"><div><span>Année portée</span><strong>${esc(tileYearLabel(r))}</strong></div><div class="jersey-equipment-cell"><span>Équipementier</span><strong class="jersey-equipment-display">${equipmentHtml(r)}</strong></div></div>
         
         <div class="jersey-relation-block jersey-compact-relations"><span class="jersey-relation-label">Équipes</span><div class="jersey-tag-row">${teams.length?teams.map(t=>chipForTeam(t,r.id)).join(''):'<span class="jersey-empty-relation">Aucune équipe reliée</span>'}</div><div class="jersey-tag-separator"></div><span class="jersey-relation-label">Compétitions</span><div class="jersey-tag-row">${comps.length?comps.map(chipForCompetition).join(''):'<span class="jersey-empty-relation">Aucune compétition reliée</span>'}</div></div>
         ${window.BLEUS3000_JERSEY_EQUIPMENT?.cardExtrasHtml?.(r)||''}
@@ -253,7 +259,7 @@
 
   async function render(q=''){
     const host=$('#referenceEntries'),title=$('#referenceModalTitle'),sub=$('#referenceModalSub'),count=$('#referenceCount');if(!host)return;
-    host.innerHTML='<div class="selection-loading">Chargement des maillots…</div>';
+    if(!loaded)host.innerHTML='<div class="selection-loading">Chargement des maillots…</div>';
     await load();renderFilters(rows);
     const chronologicalValue=r=>{const direct=Number(r.year_start);if(Number.isFinite(direct)&&direct>0)return direct;const season=String(r.season_label||'').match(/(?:19|20)\d{2}/);return season?Number(season[0]):9999;};
     const list=filtered(rows,q).slice().sort((a,b)=>chronologicalValue(a)-chronologicalValue(b)||Number(a.year_end||a.year_start||9999)-Number(b.year_end||b.year_start||9999)||String(a.title||'').localeCompare(String(b.title||''),'fr'));
@@ -298,7 +304,7 @@
     const teamIds=teamRelations(row).map(x=>String(x.id)),compIds=(editionRelationsReady?competitionEditionRelations(row):competitionRelations(row)).map(x=>String(x.id)),sources=sourcesFor(row).join('\n'),primary=mainPhoto(row),currentEquipment=equipmentFor(row);
     const competitionPickerItems=editionRelationsReady?competitionEditions.map(ed=>({...ed,_label:competitionEditionLabel(ed)})).sort((a,b)=>String(a._label).localeCompare(String(b._label),'fr')):competitions;
     const equipmentOptions=`<option value="">— Aucun équipementier —</option>${manufacturers.map(e=>`<option value="${esc(e.id)}" ${String(currentEquipment?.id||'')===String(e.id)?'selected':''}>${esc(e.name)}</option>`).join('')}`;
-    return `<section class="jersey-editor-section"><h3>Maillot</h3><div class="jersey-editor-grid"><label>Nom de la tuile<input name="title" required maxlength="160" value="${esc(row.title||'')}"><small>Ce nom est aussi celui affiché dans l’édition des feuilles de match.</small></label><label>Type<select name="usage_type">${Object.entries(usageLabels).map(([v,l])=>`<option value="${v}" ${String(row.usage_type||'domicile')===v?'selected':''}>${l}</option>`).join('')}</select></label><label>Périmètre<select name="gender_scope"><option value="M" selected>France A masculine</option></select></label><label>Saison / millésime<input name="season_label" maxlength="60" value="${esc(row.season_label||'')}"></label><label>Année début<input name="year_start" type="number" min="1900" max="2100" value="${esc(row.year_start||'')}"></label><label>Année fin<input name="year_end" type="number" min="1900" max="2100" value="${esc(row.year_end||'')}"></label><label>Équipementier<select name="manufacturer_id">${equipmentOptions}</select><small>Géré depuis Profil → Équipementiers.</small></label></div></section>
+    return `<section class="jersey-editor-section"><h3>Maillot</h3><div class="jersey-editor-grid"><label>Nom de la tuile<input name="title" required maxlength="160" value="${esc(row.title||'')}"><small>Ce nom est aussi celui affiché dans l’édition des feuilles de match.</small></label><label>Type<select name="usage_type">${Object.entries(usageLabels).map(([v,l])=>`<option value="${v}" ${String(row.usage_type||'domicile')===v?'selected':''}>${l}</option>`).join('')}</select></label><label>Périmètre<select name="gender_scope"><option value="M" selected>Équipe de France</option></select></label><label>Saison / millésime<input name="season_label" maxlength="60" value="${esc(row.season_label||'')}"></label><label>Année début<input name="year_start" type="number" min="1900" max="2100" value="${esc(row.year_start||'')}"></label><label>Année fin<input name="year_end" type="number" min="1900" max="2100" value="${esc(row.year_end||'')}"></label><label>Équipementier<select name="manufacturer_id">${equipmentOptions}</select><small>Géré depuis Profil → Équipementiers.</small></label></div></section>
     ${formationColorEditorHtml(row)}
     <section class="jersey-editor-section"><h3>Relations 3615 Bleus</h3><div class="jersey-relations-picker">${pickerHtml('team',selections,teamIds)}${pickerHtml('competition',competitionPickerItems,compIds)}</div><div class="jersey-editor-separator"></div><small style="font-size:6.3px;color:#70869f">Le maillot est affilié à une ou plusieurs éditions précises. Sur la tuile, seul le tag entité parent est affiché ; dans une feuille de match, l’édition du match pilote automatiquement les maillots proposés.</small></section>
     <section class="jersey-editor-section"><h3>Photos</h3><div class="jersey-photo-editor"><div class="jersey-photo-preview" id="jerseyPhotoPreview">${primary?`<img src="${esc(primary)}" alt="Aperçu">${mainPhotoCredit(row)?`<span class="photo-copyright-capsule">© ${esc(mainPhotoCredit(row))}</span>`:''}`:'<span class="jersey-empty-relation">Aucune photo principale</span>'}</div><div class="jersey-photo-fields"><label>URL de photo principale<input name="main_photo_url" type="url" value="${esc(row.main_photo_url||'')}" placeholder="https://…"></label><label class="photo-copyright-toggle"><input name="main_photo_copyright_enabled" type="checkbox" ${row.main_photo_copyright_source?'checked':''}> Copyright photo principale</label><label class="photo-copyright-field" data-main-photo-copyright ${row.main_photo_copyright_source?'':'hidden'}><span>©</span><input name="main_photo_copyright_source" maxlength="180" value="${esc(row.main_photo_copyright_source||'')}" placeholder="Source / photographe / agence"></label><label>Ajouter des photos<input name="photos" type="file" accept="image/png,image/jpeg,image/webp" multiple></label><label>Type des nouvelles photos<select name="photo_type">${Object.entries(photoTypes).map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select></label><label class="photo-copyright-toggle"><input name="new_photo_copyright_enabled" type="checkbox"> Copyright des nouvelles photos</label><label class="photo-copyright-field" data-new-photo-copyright hidden><span>©</span><input name="photo_credit" maxlength="180" placeholder="Source / photographe / agence"></label></div></div><div class="jersey-photo-gallery-preview" id="jerseyPhotoGalleryPreview"></div></section>
@@ -333,7 +339,7 @@
   }
   async function saveEditor(e){
     e.preventDefault();const form=e.currentTarget,status=$('#jerseyEditorStatus'),fd=new FormData(form);status.hidden=false;status.className='jersey-editor-status';status.textContent='Enregistrement…';
-    if(!dbReady){status.classList.add('is-error');status.textContent='Le référentiel Maillots est prêt dans le code, mais le schéma Maillots doit être installé via SUPABASE_BASELINE.sql avant le premier enregistrement.';return;}
+    if(!dbReady){status.classList.add('is-error');status.textContent='Le référentiel Maillots est prêt dans le code, mais le schéma Maillots doit être présent dans Supabase avant le premier enregistrement.';return;}
     try{
       const n=v=>v===''?null:Number(v);
       let formationPalette=[];try{formationPalette=JSON.parse(String(fd.get('formation_colors_json')||'[]')).map(validHex).filter(Boolean).slice(0,3);}catch{}
@@ -396,7 +402,7 @@
     return true;
   }
   async function getMatchJersey(matchId){
-    await load();const link=matchLinks.find(x=>String(x.match_id)===String(matchId)&&String(x.role||'outfield')==='outfield');if(!link)return null;const row=rows.find(x=>String(x.id)===String(link.jersey_id));if(!row)return null;return {id:row.id,title:row.title||'',year:yearLabel(row),manufacturer:row.manufacturer||'',usage:usageLabels[row.usage_type]||row.usage_type||'',photo:mainPhoto(row),primary_color:row.primary_color||'',secondary_color:row.secondary_color||'',accent_colors:Array.isArray(row.accent_colors)?row.accent_colors:[],formation_colors:formationColors(row),formation_marker_background:formationMarkerBackground(row),formation_halo_color:formationHaloColor(row),short_component_id:link.short_component_id||null,socks_component_id:link.socks_component_id||null,jersey_variant_id:link.jersey_variant_id||null,link:`jersey:${row.id}`};
+    await load();const link=matchLinks.find(x=>String(x.match_id)===String(matchId)&&String(x.role||'outfield')==='outfield');if(!link)return null;const row=rows.find(x=>String(x.id)===String(link.jersey_id));if(!row)return null;const team=selections.find(x=>String(x.id)===String(link.selection_team_id||''))||teamRelations(row)[0]||null,tag=team?.team_tag_id?tags.find(x=>String(x.id)===String(team.team_tag_id)):null;let crestUrl='';if(tag?.icon_image_path&&client){try{crestUrl=client.storage.from('tag-icons').getPublicUrl(tag.icon_image_path).data?.publicUrl||'';}catch{}}return {id:row.id,title:row.title||'',year:yearLabel(row),manufacturer:row.manufacturer||'',usage:usageLabels[row.usage_type]||row.usage_type||'',photo:mainPhoto(row),crest_url:crestUrl,crest_icon:tag?.icon_text||'🇫🇷',crest_label:tag?.label_text||team?.name||'France',primary_color:row.primary_color||'',secondary_color:row.secondary_color||'',accent_colors:Array.isArray(row.accent_colors)?row.accent_colors:[],formation_colors:formationColors(row),formation_marker_background:formationMarkerBackground(row),formation_halo_color:formationHaloColor(row),short_component_id:link.short_component_id||null,socks_component_id:link.socks_component_id||null,jersey_variant_id:link.jersey_variant_id||null,link:`jersey:${row.id}`};
   }
   function openNew(){openEditor(null);}
   function invalidate(){loaded=false;loading=null;dbReady=false;editionRelationsReady=false;rows=[];teamLinks=[];competitionLinks=[];competitionEditionLinks=[];photos=[];matchLinks=[];matches=[];selections=[];competitions=[];competitionEntities=[];competitionEditions=[];tags=[];manufacturers=[];}
@@ -405,7 +411,7 @@
     const engine=window.BLEUS3000_SEARCH;
     return rows.map(r=>{
       const rel=[...teamRelations(r).map(x=>x.name||x.label||''),...competitionRelations(r).map(x=>x.name||x.label||'')];
-      const values=[r.title,r.season_label,r.usage_type,usageLabels[r.usage_type]||'',r.manufacturer,r.manufacturer_reference,r.template_name,String(r.year_start||''),String(r.year_end||''),r.version_type,r.notes_short,...rel];
+      const values=[r.title,r.season_label,r.usage_type,usageLabels[r.usage_type]||'',r.manufacturer,r.manufacturer_reference,r.template_name,String(r.year_start||''),String(r.year_end||''),String(r.first_worn_date||''),String(r.last_worn_date||''),r.version_type,r.notes_short,...rel];
       const score=engine?.scoreAny?engine.scoreAny(query,values):(norm(values.join(' ')).includes(norm(query))?.15:Infinity);
       return {r,score};
     }).filter(x=>Number.isFinite(x.score)&&x.score<=.48).sort((a,b)=>a.score-b.score||String(a.r.title||'').localeCompare(String(b.r.title||''),'fr')).slice(0,12).map(({r,score})=>({
@@ -413,6 +419,16 @@
       action:()=>{window.BLEUS3000_APP?.openReferences?.('maillots');setTimeout(()=>{const i=document.querySelector('#referenceSearch');if(i){i.value=r.title||'';i.dispatchEvent(new Event('input',{bubbles:true}));}},80);}
     }));
   }
-  window.BLEUS3000_JERSEYS={render,load,openNew,openEditor,invalidate,getMatchPickerData,setMatchJersey,getMatchJersey,hasMatchJersey:id=>matchLinks.some(x=>String(x.match_id)===String(id)&&String(x.role||'outfield')==='outfield'),formationColors,formationFillColors,formationHaloColor,formationMarkerBackground,formationMarkerStyle,search,linkFor:id=>`jersey:${id}`};
+  async function refreshVisibleJerseys(){
+    invalidate();
+    const modal=document.querySelector('#referenceModal');
+    if(modal&&!modal.hidden&&String(modal.dataset.referenceKind||'')==='maillots'){
+      await load();
+      render(document.querySelector('#referenceSearch')?.value||'');
+    }
+  }
+  window.BLEUS3000_JERSEYS={render,load,openNew,openEditor,invalidate,refreshVisibleJerseys,getMatchPickerData,setMatchJersey,getMatchJersey,hasMatchJersey:id=>matchLinks.some(x=>String(x.match_id)===String(id)&&String(x.role||'outfield')==='outfield'),formationColors,formationFillColors,formationHaloColor,formationMarkerBackground,formationMarkerStyle,search,linkFor:id=>`jersey:${id}`};
   window.addEventListener('bleus:supabase-ready',()=>invalidate());window.addEventListener('bleus:equipment-changed',()=>invalidate());
+  window.addEventListener('bleus:match-sheet-updated',()=>refreshVisibleJerseys().catch(()=>{}));
+  window.addEventListener('bleus:match-jersey-changed',()=>refreshVisibleJerseys().catch(()=>{}));
 })();

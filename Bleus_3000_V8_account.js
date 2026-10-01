@@ -1,180 +1,94 @@
-/* 3615 Bleus V1.2.7 — profil + administration + référentiel ballons */
+/* 3615 Bleus V1.3.3 — authentification administrateur uniquement */
 (() => {
   'use strict';
   const cfg=window.BLEUS3000_CONFIG||{};
   const $=(s,p=document)=>p.querySelector(s), $$=(s,p=document)=>[...p.querySelectorAll(s)];
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const roleLabel=r=>({user:'USER',admin:'ADMIN',superadmin:'SUPERADMIN'}[r]||String(r||'USER').toUpperCase());
-  const reportLabel=t=>({bug:'🐞 Bug',suggestion:'💡 Suggestion',missing_data:'📚 Manque dans la base',data_correction:'✏ Correction de référentiel'}[t]||'Signalement');
-  const localProfileKey='bleus3000.profile.local.v1',localReportsKey='bleus3000.reports.local.v1',localPrefsKey='bleus3000.preferences.local.v1';
-  let client=null,session=null,profile=null,presenceChannel=null,reportType='bug',authMode='login';
+  const roleLabel=r=>({admin:'ADMIN',superadmin:'SUPERADMIN'}[String(r||'').toLowerCase()]||String(r||'').toUpperCase());
+  const localPrefsKey='bleus3000.preferences.local.v1',localPrefsSyncKey='bleus3000.preferences.synced-at.v1';
+  let client=null,session=null,profile=null;
   const configured=()=>!!(cfg.SUPABASE_URL&&cfg.SUPABASE_ANON_KEY&&window.supabase?.createClient);
-  const isAdmin=()=>['admin','superadmin'].includes(profile?.role);
-  const social=()=>window.C3K_SOCIAL_PROFILE;
+  const isAdmin=()=>['admin','superadmin'].includes(String(profile?.role||'').toLowerCase());
+  const isSuperAdmin=()=>String(profile?.role||'').toLowerCase()==='superadmin';
   const toast=(node,msg,type='')=>{if(!node)return;node.hidden=false;node.className='c3k-v8-status'+(type?` is-${type}`:'');node.textContent=msg;};
-  function defaultLocalProfile(){return {id:'local-demo',first_name:'Membre',username:'Profil local',email:'',role:'user',status_text:'',presence_status:'online',member_label:null,postit_style:null};}
-  function loadLocalProfile(){try{return {...defaultLocalProfile(),...(JSON.parse(localStorage.getItem(localProfileKey)||'null')||{})};}catch{return defaultLocalProfile();}}
-  function saveLocalProfile(p){localStorage.setItem(localProfileKey,JSON.stringify(p));}
   function loadLocalPrefs(){try{return JSON.parse(localStorage.getItem(localPrefsKey)||'{}')||{};}catch{return {};}}
-  async function getPrefs(){
-    const local=loadLocalPrefs();
-    if(!client||!session?.user)return local;
-    try{const {data,error}=await client.from('user_preferences').select('settings').eq('user_id',session.user.id).maybeSingle();if(error)throw error;return {...local,...(data?.settings||{})};}
-    catch(err){console.warn('3615 Bleus · préférences',err);return local;}
-  }
-  async function setPrefs(settings){
-    const next={...(settings||{})};localStorage.setItem(localPrefsKey,JSON.stringify(next));
-    if(!client||!session?.user)return next;
-    const {error}=await client.from('user_preferences').upsert({user_id:session.user.id,settings:next,updated_at:new Date().toISOString()},{onConflict:'user_id'});
-    if(error)throw error;return next;
-  }
+  async function getPrefs(force=false){const local=loadLocalPrefs();if(!client||!session?.user)return local;const syncedAt=Number(localStorage.getItem(localPrefsSyncKey)||0);if(!force&&Object.keys(local).length&&Date.now()-syncedAt<6*60*60*1000)return local;try{const {data,error}=await client.from('user_preferences').select('settings').eq('user_id',session.user.id).maybeSingle();if(error)throw error;const merged={...local,...(data?.settings||{})};localStorage.setItem(localPrefsKey,JSON.stringify(merged));localStorage.setItem(localPrefsSyncKey,String(Date.now()));return merged;}catch(err){console.warn('3615 Bleus · préférences',err);return local;}}
+  async function setPrefs(settings){const next={...(settings||{})};localStorage.setItem(localPrefsKey,JSON.stringify(next));localStorage.setItem(localPrefsSyncKey,String(Date.now()));if(!client||!session?.user)return next;const {error}=await client.from('user_preferences').upsert({user_id:session.user.id,settings:next,updated_at:new Date().toISOString()},{onConflict:'user_id'});if(error)throw error;return next;}
+
   function buildUi(){
-    const header=$('.top-header'),search=$('#universalSearchShell');
-    const markup=`<div class="c3k-v8-account-shell" id="c3kV8AccountShell" aria-label="Compte 3615 Bleus"><div class="c3k-v8-account-actions"><button class="c3k-v8-account-btn" id="c3kV8AccountBtn" type="button"><span data-c3k-icon="user"></span><span id="c3kV8AccountLabel">Se connecter</span></button><button class="c3k-v8-signup-shortcut" id="c3kV8SignupShortcut" type="button">Créer un compte</button><button class="c3k-v8-notify-btn" id="c3kV8NotifyBtn" type="button" hidden aria-label="Action compte"><span id="c3kV8HeaderActionIcon" data-c3k-icon="flag"></span><span class="c3k-v8-notify-count" id="c3kV8NotifyCount" hidden>0</span></button></div><div class="c3k-v8-presence" title="Utilisateurs présents sur 3615 Bleus"><span class="c3k-v8-dot"></span><span data-c3k-online-count>Profil local</span></div></div>`;
-    /* La recherche 3615 est désormais dans l’accueil : le profil reste dans le header et ne doit jamais flotter dessus. */
-    if(header)header.insertAdjacentHTML('beforeend',`<div class="c3k-header-profile-slot" id="c3kTopLeftRail">${markup}</div>`);
-    else if(search)search.insertAdjacentHTML('afterend',`<div class="c3k-top-left-rail" id="c3kTopLeftRail">${markup}</div>`);
-    else document.body.insertAdjacentHTML('beforeend',markup);
-    document.body.insertAdjacentHTML('beforeend',`<div class="c3k-v8-panel-backdrop" id="c3kV8AccountBackdrop" hidden><section class="c3k-v8-panel" role="dialog" aria-modal="true" aria-label="Compte 3615 Bleus"><header class="c3k-v8-panel-head"><strong>Compte 3615 Bleus</strong><button class="c3k-v8-close" id="c3kV8Close" type="button">×</button></header><div class="c3k-v8-panel-body" id="c3kV8PanelBody"></div></section></div><button class="c3k-v8-report-launch" id="c3kV8ReportLaunch" type="button" title="Suggestion, bug ou donnée manquante">⚑</button><section class="c3k-v8-report-pop" id="c3kV8ReportPop" hidden><div class="c3k-v8-report-kinds"><button type="button" class="is-active" data-report-type="bug">🐞 Bug</button><button type="button" data-report-type="suggestion">💡 Suggestion</button><button type="button" data-report-type="missing_data">📚 Manque dans la base</button><button type="button" data-report-type="data_correction">✏ Correction référentiel</button></div><div class="c3k-v8-form"><label>Une phrase suffit<textarea id="c3kV8ReportMessage" maxlength="2000" placeholder="Décris rapidement le signalement…"></textarea></label></div><div class="c3k-v8-actions"><button class="c3k-v8-secondary" id="c3kV8ReportCancel" type="button">Fermer</button><button class="c3k-v8-primary" id="c3kV8ReportSend" type="button">Envoyer</button></div><div class="c3k-v8-status" id="c3kV8ReportStatus" hidden></div></section>`);
-    $('#c3kV8AccountBtn')?.addEventListener('click',()=>openAccount('login'));$('#c3kV8SignupShortcut')?.addEventListener('click',()=>{if(session?.user&&client){client.auth.signOut();return;}openAccount('signup');});$('#c3kV8NotifyBtn')?.addEventListener('click',()=>isAdmin()?openAdmin():openReport());$('#c3kV8Close')?.addEventListener('click',closeAccount);$('#c3kV8AccountBackdrop')?.addEventListener('pointerdown',e=>{if(e.target.id==='c3kV8AccountBackdrop')closeAccount();});$('#c3kV8ReportLaunch')?.addEventListener('click',()=>{const p=$('#c3kV8ReportPop');p.hidden=!p.hidden;});$('#c3kV8ReportCancel')?.addEventListener('click',()=>$('#c3kV8ReportPop').hidden=true);$('#c3kV8ReportSend')?.addEventListener('click',sendReport);$$('[data-report-type]').forEach(b=>b.addEventListener('click',()=>{reportType=b.dataset.reportType;$$('[data-report-type]').forEach(x=>x.classList.toggle('is-active',x===b));}));
+    document.body.insertAdjacentHTML('beforeend',`<div class="c3k-v8-panel-backdrop" id="c3kV8AccountBackdrop" hidden><section class="c3k-v8-panel c3k-admin-dashboard" role="dialog" aria-modal="true" aria-label="Administration 3615 Bleus"><header class="c3k-v8-panel-head"><strong id="c3kV8PanelTitle">Administration</strong><button class="c3k-v8-close" id="c3kV8Close" type="button" aria-label="Fermer">×</button></header><div class="c3k-v8-panel-body" id="c3kV8PanelBody"></div></section></div>`);
+    $('#c3kV8Close')?.addEventListener('click',closeAccount);
+    $('#c3kV8AccountBackdrop')?.addEventListener('pointerdown',e=>{if(e.target.id==='c3kV8AccountBackdrop')closeAccount();});
+    const adminLink=$('#adminLoginLink');
+    adminLink?.addEventListener('click',e=>{e.preventDefault();openAccount();});
+    updateAdminLink();
   }
-  function openAccount(mode='login'){authMode=mode;$('#c3kV8AccountBackdrop').hidden=false;document.body.style.overflow='hidden';renderAccount();}
-  function closeAccount(){const b=$('#c3kV8AccountBackdrop');if(b)b.hidden=true;document.body.style.overflow='';}
-  function openReport(){$('#c3kV8ReportPop').hidden=false;$('#c3kV8ReportMessage')?.focus();}
-  function updateHeader(){const label=$('#c3kV8AccountLabel'),signup=$('#c3kV8SignupShortcut'),notify=$('#c3kV8NotifyBtn'),actions=$('.c3k-v8-account-actions');if(profile){label.textContent=profile.username||profile.first_name||'Mon compte';signup.textContent=session?.user?'Se déconnecter':'Profil local';notify.hidden=false;actions?.classList.add('has-notify');}else{label.textContent='Se connecter';signup.textContent='Créer un compte';notify.hidden=true;actions?.classList.remove('has-notify');}const count=profile?'1 présent':'Profil local';$$('[data-c3k-online-count]').forEach(x=>x.textContent=count);}
-  function dispatchState(){window.C3K_ACCOUNT_STATE={session,profile,role:profile?.role||'guest'};const can=['admin','superadmin'].includes(String(profile?.role||'').toLowerCase());document.body?.classList.toggle('b3k-can-edit',can);window.dispatchEvent(new CustomEvent('c3k:account-state',{detail:window.C3K_ACCOUNT_STATE}));}
+  function setPanelTitle(txt){const t=$('#c3kV8PanelTitle');if(t)t.textContent=txt;}
+  function openAccount(){const b=$('#c3kV8AccountBackdrop');if(!b)return;b.hidden=false;document.body.classList.add('b3k-admin-modal-open');renderAccount();}
+  function closeAccount(){const b=$('#c3kV8AccountBackdrop');if(b)b.hidden=true;document.body.classList.remove('b3k-admin-modal-open');}
+  function updateAdminLink(){const a=$('#adminLoginLink');if(!a)return;a.textContent=isAdmin()?'Tableau de bord administrateur':'Administration';a.setAttribute('aria-label',isAdmin()?'Ouvrir le tableau de bord administrateur':'Connexion administrateur');}
+  function dispatchState(){window.C3K_ACCOUNT_STATE={session,profile,role:profile?.role||'guest'};const can=isAdmin();document.body?.classList.toggle('b3k-can-edit',can);updateAdminLink();window.dispatchEvent(new CustomEvent('c3k:account-state',{detail:window.C3K_ACCOUNT_STATE}));}
+
   function renderAccount(){
     const body=$('#c3kV8PanelBody');if(!body)return;
-    if(!profile){renderAuth();return;}
-    body.innerHTML=`${social()?.profileIdentityHtml?.(profile,'lg')||''}<dl class="c3k-v8-profile-grid"><dt>Prénom</dt><dd>${esc(profile.first_name||'—')}</dd><dt>Pseudo</dt><dd>${esc(profile.username||'—')}</dd><dt>E-mail</dt><dd>${esc(profile.email||session?.user?.email||'Profil local')}</dd><dt>Rôle</dt><dd>${social()?.roleBadgeHtml?.(profile.role,profile.member_label)||roleLabel(profile.role)}</dd><dt>Présence</dt><dd>${esc(({online:'En ligne',away:'Absent',dnd:'Ne pas déranger',offline:'Hors ligne'})[profile.presence_status||'online'])}</dd></dl><div style="margin-top:12px"><span class="c3k-v8-sync-pill">${client&&session?.user?'☁ Compte synchronisé':'💾 Mode local de démonstration'}</span></div><div class="c3k-v8-menu"><button id="c3kV8EditProfile" type="button"><span>Modifier mon profil</span><span>›</span></button><button id="c3kV8Personalization" type="button"><span>Personnalisation</span><span>🎨</span></button><button id="c3kV8Compositions" type="button"><span>Mes Onze</span><span>⚽</span></button><button id="c3kV8Tags" type="button"><span>Tags & étiquettes</span><span>🏷️</span></button><button id="c3kV8Achievements" type="button"><span>Accomplissements</span><span>🏅</span></button><button id="c3kV8Broadcasts" type="button"><span>Chaînes de diffusion</span><span>📺</span></button><button id="c3kV8Equipment" type="button"><span>Équipementiers</span><span>👕</span></button><button id="c3kV8Balls" type="button"><span>Base de données · Ballons</span><span>⚽</span></button><button id="c3kV8FeatureFrames" type="button"><span>Cadre de diffusion</span><span>✨</span></button><button id="c3kV8SelectionBorders" type="button"><span>Bordures des sélections</span><span>🖼️</span></button>${isAdmin()?'<button id="c3kV8CountryColors" type="button"><span>Surlignage des pays</span><span>🌍</span></button><button id="c3kV8MatchSheetAdmin" type="button"><span>Feuilles de match</span><span>📋</span></button><button id="c3kV8QuickValidation" type="button"><span>Validation rapide</span><span>⚡</span></button><button id="c3kV8Admin" type="button"><span>Registre administrateur</span><span>🛠</span></button>':''}${session?.user?'<button id="c3kV8Logout" type="button"><span>Se déconnecter</span><span>↪</span></button>':'<button id="c3kV8ConnectReal" type="button"><span>Connecter le nouveau Supabase</span><span>☁</span></button>'}</div>`;
-    $('#c3kV8EditProfile',body)?.addEventListener('click',renderProfileEditor);$('#c3kV8Personalization',body)?.addEventListener('click',renderPersonalization);$('#c3kV8Compositions',body)?.addEventListener('click',()=>{const b=$('#c3kV8AccountBackdrop');if(b)b.hidden=true;document.body.style.overflow='';window.BLEUS3000_TEAM_TOOLS?.openLibrary?.('xi');});$('#c3kV8Tags',body)?.addEventListener('click',()=>window.BLEUS3000_TAGS?.open?.());$('#c3kV8Achievements',body)?.addEventListener('click',()=>window.BLEUS3000_ACHIEVEMENTS?.open?.());$('#c3kV8Broadcasts',body)?.addEventListener('click',()=>window.BLEUS3000_BROADCASTS?.open?.());$('#c3kV8Equipment',body)?.addEventListener('click',()=>window.BLEUS3000_EQUIPMENT?.open?.());$('#c3kV8Balls',body)?.addEventListener('click',()=>window.BLEUS3000_BALLS?.open?.());$('#c3kV8FeatureFrames',body)?.addEventListener('click',()=>window.BLEUS3000_FEATURE_FRAMES?.open?.());$('#c3kV8SelectionBorders',body)?.addEventListener('click',()=>window.BLEUS3000_SELECTIONS?.openBorderEditor?.());$('#c3kV8CountryColors',body)?.addEventListener('click',renderCountryColors);$('#c3kV8MatchSheetAdmin',body)?.addEventListener('click',renderMatchSheetAdmin);$('#c3kV8QuickValidation',body)?.addEventListener('click',()=>window.BLEUS3000_QUICK_VALIDATION?.render?.(body,renderAccount));$('#c3kV8Admin',body)?.addEventListener('click',renderAdmin);$('#c3kV8Logout',body)?.addEventListener('click',()=>client?.auth.signOut());$('#c3kV8ConnectReal',body)?.addEventListener('click',()=>{profile=null;renderAuth();});
+    if(!session?.user||!profile){renderAuth();return;}
+    if(!isAdmin()){renderUnauthorized();return;}
+    setPanelTitle('Tableau de bord administrateur');
+    body.innerHTML=`<section class="c3k-admin-identity"><div><strong>${esc(profile.username||profile.first_name||'Administrateur')}</strong><small>${esc(session.user.email||profile.email||'')}</small></div><span class="c3k-v8-role">${esc(roleLabel(profile.role))}</span></section><div class="c3k-v8-menu c3k-admin-menu"><button id="c3kV8Tags" type="button"><span>Tags & étiquettes</span><span>🏷️</span></button><button id="c3kV8Achievements" type="button"><span>Accomplissements</span><span>🏅</span></button><button id="c3kV8Broadcasts" type="button"><span>Chaînes de diffusion</span><span>📺</span></button><button id="c3kV8Equipment" type="button"><span>Équipementiers</span><span>👕</span></button><button id="c3kV8Balls" type="button"><span>Base de données · Ballons</span><span>⚽</span></button><button id="c3kV8ForceDataRefresh" type="button"><span>Rafraîchir les données</span><span>↻</span></button>${isSuperAdmin()?'<button id="c3kV8Admin" type="button"><span>Comptes administrateurs</span><span>🛠</span></button>':''}<button id="c3kV8Logout" type="button"><span>Se déconnecter</span><span>↪</span></button></div>`;
+    $('#c3kV8Tags',body)?.addEventListener('click',()=>window.BLEUS3000_TAGS?.open?.());
+    $('#c3kV8Achievements',body)?.addEventListener('click',()=>window.BLEUS3000_ACHIEVEMENTS?.open?.());
+    $('#c3kV8Broadcasts',body)?.addEventListener('click',()=>window.BLEUS3000_BROADCASTS?.open?.());
+    $('#c3kV8Equipment',body)?.addEventListener('click',()=>window.BLEUS3000_EQUIPMENT?.open?.());
+    $('#c3kV8Balls',body)?.addEventListener('click',()=>window.BLEUS3000_BALLS?.open?.());
+    $('#c3kV8ForceDataRefresh',body)?.addEventListener('click',async()=>{const btn=$('#c3kV8ForceDataRefresh',body),api=window.BLEUS3000_DATA_CACHE;if(!isAdmin()||!api?.forceRefresh)return;if(btn){btn.disabled=true;btn.innerHTML='<span>Rafraîchissement…</span><span>↻</span>';}await api.forceRefresh();location.reload();});
+    $('#c3kV8Admin',body)?.addEventListener('click',renderAdmin);
+    $('#c3kV8Logout',body)?.addEventListener('click',()=>client?.auth.signOut());
   }
   function renderAuth(){
-    const body=$('#c3kV8PanelBody'),hasCfg=configured();body.innerHTML=`<div class="c3k-v8-tabs"><button data-auth-tab="login" class="${authMode==='login'?'is-active':''}">Se connecter</button><button data-auth-tab="signup" class="${authMode==='signup'?'is-active':''}">Créer un compte</button></div><div class="c3k-v8-modal-presence"><span class="c3k-v8-dot"></span>${hasCfg?'Nouveau Supabase 3615 Bleus prêt à être utilisé':'Supabase 3615 Bleus non configuré · mode local disponible'}</div><div id="c3kV8AuthArea"></div>`;$$('[data-auth-tab]',body).forEach(b=>b.addEventListener('click',()=>{authMode=b.dataset.authTab;renderAuth();}));renderAuthForm();
+    const body=$('#c3kV8PanelBody');if(!body)return;setPanelTitle('Connexion administrateur');
+    if(!configured()){body.innerHTML='<div class="c3k-v8-status is-error">Supabase n’est pas configuré. La lecture publique reste disponible, mais l’administration nécessite le projet Supabase 3615 Bleus.</div>';return;}
+    body.innerHTML=`<p class="c3k-admin-login-copy">Accès réservé aux comptes ADMIN / SUPERADMIN existants.</p><form class="c3k-v8-form" id="c3kV8LoginForm"><label>E-mail<input type="email" name="email" required autocomplete="username" inputmode="email"></label><label>Mot de passe<input type="password" name="password" required autocomplete="current-password"></label><div class="c3k-v8-actions"><button class="c3k-v8-primary" type="submit">Se connecter</button></div></form><div class="c3k-v8-status" id="c3kV8AuthStatus" hidden></div>`;
+    $('#c3kV8LoginForm',body)?.addEventListener('submit',login);
   }
-  function renderAuthForm(){
-    const area=$('#c3kV8AuthArea');if(!area)return;
-    if(!configured()){
-      area.innerHTML=`<div class="c3k-v8-status">Le projet utilise volontairement un Supabase indépendant. Renseigne le nouveau projet dans <strong>bleus_config.js</strong>. Tu peux déjà tester profils, personnalisation et mur en mode local.</div><div class="c3k-v8-actions"><button class="c3k-v8-primary" id="c3kLocalProfile" type="button">Utiliser un profil local</button></div>`;$('#c3kLocalProfile')?.addEventListener('click',()=>{profile=loadLocalProfile();session=null;updateHeader();dispatchState();renderAccount();});return;
-    }
-    if(authMode==='signup')area.innerHTML=`<form class="c3k-v8-form" id="c3kV8SignupForm"><label>Prénom<input name="first_name" required maxlength="80"></label><label>Pseudo<input name="username" required minlength="2" maxlength="40"></label><label>E-mail<input type="email" name="email" required></label><label>Mot de passe<input type="password" name="password" required minlength="8" autocomplete="new-password"></label><div class="c3k-v8-actions"><button class="c3k-v8-primary" type="submit">Créer mon compte</button></div></form><div class="c3k-v8-status" id="c3kV8AuthStatus" hidden></div>`;else area.innerHTML=`<form class="c3k-v8-form" id="c3kV8LoginForm"><label>E-mail<input type="email" name="email" required></label><label>Mot de passe<input type="password" name="password" required autocomplete="current-password"></label><div class="c3k-v8-actions"><button class="c3k-v8-primary" type="submit">Se connecter</button></div></form><div class="c3k-v8-status" id="c3kV8AuthStatus" hidden></div>`;
-    $('#c3kV8SignupForm')?.addEventListener('submit',signup);$('#c3kV8LoginForm')?.addEventListener('submit',login);
-  }
-  async function signup(e){e.preventDefault();const fd=new FormData(e.currentTarget),st=$('#c3kV8AuthStatus');toast(st,'Création du compte…');const {error}=await client.auth.signUp({email:String(fd.get('email')).trim(),password:String(fd.get('password')),options:{emailRedirectTo:cfg.PRODUCTION_URL||location.href,data:{first_name:String(fd.get('first_name')).trim(),username:String(fd.get('username')).trim()}}});if(error)return toast(st,error.message,'error');toast(st,'Confirme la création en cliquant sur le lien reçu par e-mail.','ok');}
-  async function login(e){e.preventDefault();const fd=new FormData(e.currentTarget),st=$('#c3kV8AuthStatus');toast(st,'Connexion…');const {error}=await client.auth.signInWithPassword({email:String(fd.get('email')).trim(),password:String(fd.get('password'))});if(error)toast(st,error.message,'error');}
-  function renderProfileEditor(){
-    const body=$('#c3kV8PanelBody');body.innerHTML=`<form class="c3k-v8-form" id="c3kV8ProfileForm"><label>Prénom<input name="first_name" maxlength="80" required value="${esc(profile.first_name||'')}"></label><label>Pseudo<input name="username" maxlength="40" required value="${esc(profile.username||'')}"></label><label>E-mail<input value="${esc(profile.email||session?.user?.email||'Profil local')}" disabled></label><div class="c3k-v8-actions"><button class="c3k-v8-secondary" id="c3kV8ProfileBack" type="button">Retour</button><button class="c3k-v8-primary" type="submit">Enregistrer</button></div></form><div class="c3k-v8-status" id="c3kV8ProfileStatus" hidden></div>`;social()?.enhanceProfileEditor?.(body,profile);$('#c3kV8ProfileBack')?.addEventListener('click',renderAccount);$('#c3kV8ProfileForm')?.addEventListener('submit',saveProfile);
-  }
-  async function saveProfile(e){e.preventDefault();const fd=new FormData(e.currentTarget),payload={first_name:String(fd.get('first_name')||'').trim(),username:String(fd.get('username')||'').trim(),status_text:String(fd.get('status_text')||'').trim(),presence_status:String(fd.get('presence_status')||'online')},st=$('#c3kV8ProfileStatus');toast(st,'Enregistrement…');if(client&&session?.user){const {error}=await client.from('profiles').update(payload).eq('id',session.user.id);if(error)return toast(st,error.message,'error');profile={...profile,...payload};}else{profile={...profile,...payload};saveLocalProfile(profile);}updateHeader();dispatchState();toast(st,'Profil enregistré.','ok');setTimeout(renderAccount,400);}
-  function renderPersonalization(){
-    const body=$('#c3kV8PanelBody');if(!body||!profile)return;
-    const label=profile.member_label||{label_text:roleLabel(profile.role),icon_text:'★',color_start:'#E7F0FF',color_end:'#2563EB'};
-    body.innerHTML=`<section class="c3k-personalization"><div class="c3k-personalization-head"><strong>Personnalisation</strong><span>Étiquette personnalisée du profil.</span></div><form class="c3k-v8-form" id="c3kPersonalForm"><fieldset class="c3k-personalization-section"><legend>Étiquette personnalisée</legend><label>Texte<input name="label_text" maxlength="32" value="${esc(label.label_text||'')}"></label><label>Icône<input name="icon_text" maxlength="12" value="${esc(label.icon_text||'★')}"></label><div class="c3k-postit-border-grid"><label>Couleur A<input name="label_c1" type="color" value="${esc(label.color_start||'#E7F0FF')}"></label><label>Couleur B<input name="label_c2" type="color" value="${esc(label.color_end||'#2563EB')}"></label></div></fieldset><div class="c3k-v8-actions"><button class="c3k-v8-secondary" id="personalBack" type="button">Retour</button><button class="c3k-v8-primary" type="submit">Enregistrer</button></div></form><div class="c3k-v8-status" id="personalStatus" hidden></div></section>`;
-    $('#personalBack',body)?.addEventListener('click',renderAccount);
-    $('#c3kPersonalForm',body)?.addEventListener('submit',savePersonalization);
-  }
-  async function savePersonalization(e){
-    e.preventDefault();
-    const f=e.currentTarget,label={user_id:profile.id,label_text:f.label_text.value.trim()||roleLabel(profile.role),icon_text:f.icon_text.value.trim()||'★',appearance:'gradient',color_start:f.label_c1.value,color_end:f.label_c2.value,gradient_angle:135},st=$('#personalStatus');
-    toast(st,'Enregistrement…');
-    try{
-      if(client&&session?.user){const {error}=await client.from('member_role_labels').upsert({...label,user_id:session.user.id,updated_by:session.user.id},{onConflict:'user_id'});if(error)throw error;}
-      profile={...profile,member_label:label};saveLocalProfile(profile);social()?.setMemberLabel?.(profile.id,label);dispatchState();
-      toast(st,'Personnalisation enregistrée.','ok');setTimeout(renderAccount,450);
-    }catch(err){console.warn('3615 Bleus · sauvegarde personnalisation',err);toast(st,err?.message||'Impossible d’enregistrer la personnalisation.','error');}
-  }
-  async function countryColorCatalogue(){
-    const api=window.BLEUS3000_COUNTRY_COLORS;await api?.load?.();
-    const byCode=new Map();
-    const add=(name)=>{const clean=window.BLEUS3000_FLAGS?.countryName?.(name)||String(name||'').trim();const code=window.BLEUS3000_FLAGS?.codeFor?.(clean);if(!clean||!code)return;const key=String(code).toLowerCase();if(!byCode.has(key))byCode.set(key,{code:key,name:clean});};
-    add('France');
-    if(client){try{const {data}=await client.from('opponents').select('name').order('name');(data||[]).forEach(x=>add(x.name));}catch(err){console.warn('Couleurs pays · adversaires',err);}}
-    ['Belgique','Italie','Turquie','Angleterre','Espagne','Allemagne','Portugal','Pays-Bas','Brésil','Argentine','Croatie','Maroc','Suisse','Danemark','Suède','Norvège','Pologne','Autriche'].forEach(add);
-    return [...byCode.values()].sort((a,b)=>a.name.localeCompare(b.name,'fr',{sensitivity:'base'}));
-  }
-  function countryHighlightData(override,primary='#315f9a',secondary=primary){let colors=Array.isArray(override?.highlight_colors)?override.highlight_colors.filter(Boolean).slice(0,5):[];if(!colors.length)colors=[primary,secondary];while(colors.length<5)colors.push(colors[colors.length-1]||primary);const count=Math.max(2,Math.min(5,Number(override?.highlight_colors?.length||2))),type=override?.highlight_gradient_type==='radial'?'radial':'linear',angle=Math.max(0,Math.min(360,Number(override?.gradient_angle??90)||90)),opacity=Math.max(.05,Math.min(.95,Number(override?.highlight_opacity??.28)||.28)),height=Math.max(35,Math.min(120,Number(override?.highlight_height??82)||82));return {colors,count,type,angle,opacity,height};}
-  function countryHighlightStyle(data){const colors=(data.colors||[]).slice(0,data.count||2),stops=colors.map((c,i)=>`${c} ${Math.round(i*100/Math.max(1,colors.length-1))}%`).join(','),gradient=data.type==='radial'?`radial-gradient(ellipse at center,${stops})`:`linear-gradient(${Number(data.angle)||90}deg,${stops})`;return `--b3k-profile-mark-gradient:${gradient};--b3k-profile-mark-opacity:${data.opacity};--b3k-profile-mark-height:${data.height}%`;}
-  function countryColorRowHtml(item){
-    const api=window.BLEUS3000_COUNTRY_COLORS,override=api?.get?.(item.code),primary=override?.primary_color||'#315f9a',secondary=override?.secondary_color||primary,data=countryHighlightData(override,primary,secondary),flag=window.BLEUS3000_FLAGS?.urlForCode?.(item.code)||'';
-    const colors=data.colors.map((c,i)=>`<label data-country-color-slot="${i+1}" ${i>=data.count?'hidden':''}><span>Couleur ${i+1}</span><input type="color" data-country-color="${i+1}" value="${esc(c)}"></label>`).join('');
-    return `<article class="b3k-halo-card" data-country-color-row="${esc(item.code)}" data-country-name="${esc(item.name)}"><header class="b3k-halo-card-head">${flag?`<img src="${esc(flag)}" alt="">`:''}<div><strong>${esc(item.name)}</strong><small>${esc(item.code)} · ${override?'manuel':'automatique'}</small></div></header><div class="b3k-halo-preview"><span data-country-preview style="${countryHighlightStyle(data)}">${esc(item.name)}</span></div><div class="b3k-halo-options"><label><span>Nombre de couleurs</span><select data-country-color-count>${[2,3,4,5].map(n=>`<option value="${n}" ${n===data.count?'selected':''}>${n}</option>`).join('')}</select></label><label><span>Dégradé</span><select data-country-gradient-type><option value="linear" ${data.type==='linear'?'selected':''}>Linéaire</option><option value="radial" ${data.type==='radial'?'selected':''}>Radial</option></select></label><label data-country-angle-wrap ${data.type==='radial'?'hidden':''}><span>Angle</span><input type="range" min="0" max="360" step="5" value="${data.angle}" data-country-angle><output data-country-angle-output>${data.angle}°</output></label><label><span>Intensité</span><input type="range" min="0.05" max="0.95" step="0.05" value="${data.opacity}" data-country-opacity><output data-country-opacity-output>${Math.round(data.opacity*100)}%</output></label><label><span>Hauteur</span><input type="range" min="35" max="120" step="5" value="${data.height}" data-country-height><output data-country-height-output>${data.height}%</output></label></div><div class="b3k-halo-controls">${colors}</div><footer class="b3k-halo-actions"><button class="b3k-halo-save" type="button" data-country-save>Enregistrer</button><button class="b3k-halo-auto" type="button" data-country-auto ${override?'':'disabled'}>Auto</button></footer></article>`;
-  }
-  async function renderCountryColors(){
-    const body=$('#c3kV8PanelBody');if(!body||!isAdmin())return renderAccount();
-    body.innerHTML='<div class="c3k-v8-muted">Chargement des pays…</div>';
-    try{
-      const rows=await countryColorCatalogue();
-      body.innerHTML=`<section class="b3k-halo-settings"><header class="b3k-halo-settings-head"><strong>Surlignage des noms de pays</strong><span>Overlay renforcé et personnalisable : 2 à 5 couleurs, dégradé linéaire ou radial, angle, intensité et hauteur.</span></header><div class="b3k-halo-toolbar"><input id="countryColorSearch" type="search" placeholder="Rechercher un pays…"><button class="c3k-v8-secondary" id="countryColorsBack" type="button">Retour</button></div><div class="b3k-halo-list" id="countryColorsList">${rows.map(countryColorRowHtml).join('')}</div><div class="c3k-v8-status" id="countryColorsStatus" hidden></div></section>`;
-      const list=$('#countryColorsList',body),status=$('#countryColorsStatus',body);
-      $('#countryColorsBack',body)?.addEventListener('click',renderAccount);
-      $('#countryColorSearch',body)?.addEventListener('input',e=>{const q=String(e.currentTarget.value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();$$('[data-country-color-row]',list).forEach(row=>{const label=String(row.dataset.countryName||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();row.hidden=!!q&&!label.includes(q);});});
-      const refreshCountryPreview=row=>{if(!row)return;const count=Math.max(2,Math.min(5,Number($('[data-country-color-count]',row)?.value||2))),colors=[1,2,3,4,5].map(i=>$(`[data-country-color="${i}"]`,row)?.value||'#315f9a'),type=$('[data-country-gradient-type]',row)?.value==='radial'?'radial':'linear',angle=Number($('[data-country-angle]',row)?.value||90),opacity=Number($('[data-country-opacity]',row)?.value||.28),height=Number($('[data-country-height]',row)?.value||82),preview=$('[data-country-preview]',row);$$('[data-country-color-slot]',row).forEach((slot,i)=>slot.hidden=i>=count);const aw=$('[data-country-angle-wrap]',row);if(aw)aw.hidden=type==='radial';const ao=$('[data-country-angle-output]',row);if(ao)ao.textContent=`${angle}°`;const oo=$('[data-country-opacity-output]',row);if(oo)oo.textContent=`${Math.round(opacity*100)}%`;const ho=$('[data-country-height-output]',row);if(ho)ho.textContent=`${height}%`;if(preview)preview.setAttribute('style',countryHighlightStyle({colors,count,type,angle,opacity,height}));};
-      list?.addEventListener('input',e=>{const row=e.target.closest('[data-country-color-row]');if(row)refreshCountryPreview(row);});
-      list?.addEventListener('change',e=>{const row=e.target.closest('[data-country-color-row]');if(row)refreshCountryPreview(row);});
-      list?.addEventListener('click',async e=>{const btn=e.target.closest('[data-country-save],[data-country-auto]');if(!btn)return;const row=btn.closest('[data-country-color-row]'),code=row?.dataset.countryColorRow,name=row?.dataset.countryName;if(!code||!name)return;btn.disabled=true;toast(status,'Enregistrement…');try{if(btn.hasAttribute('data-country-auto'))await window.BLEUS3000_COUNTRY_COLORS?.remove?.(code);else{const count=Math.max(2,Math.min(5,Number($('[data-country-color-count]',row)?.value||2))),colors=[1,2,3,4,5].map(i=>$(`[data-country-color="${i}"]`,row)?.value||'#315f9a').slice(0,count);await window.BLEUS3000_COUNTRY_COLORS?.save?.({country_code:code,country_name:name,primary_color:colors[0],secondary_color:colors[1],highlight_colors:colors,display_mode:'gradient',gradient_angle:Number($('[data-country-angle]',row)?.value||90),highlight_gradient_type:$('[data-country-gradient-type]',row)?.value||'linear',highlight_opacity:Number($('[data-country-opacity]',row)?.value||.28),highlight_height:Number($('[data-country-height]',row)?.value||82)});}toast(status,btn.hasAttribute('data-country-auto')?'Mode automatique restauré.':'Couleurs enregistrées.','ok');await renderCountryColors();}catch(err){console.warn('Couleurs pays',err);toast(status,err?.message||'Impossible d’enregistrer.','error');btn.disabled=false;}});
-    }catch(err){console.warn('Couleurs pays',err);body.innerHTML=`<div class="c3k-v8-status is-error">${esc(err?.message||'Impossible de charger les pays.')}</div><div class="c3k-v8-actions"><button class="c3k-v8-secondary" id="countryColorsBack" type="button">Retour</button></div>`;$('#countryColorsBack',body)?.addEventListener('click',renderAccount);}
-  }
+  async function login(e){e.preventDefault();const fd=new FormData(e.currentTarget),st=$('#c3kV8AuthStatus');toast(st,'Connexion…');const {error}=await client.auth.signInWithPassword({email:String(fd.get('email')).trim(),password:String(fd.get('password'))});if(error)toast(st,'Connexion impossible. Vérifie les identifiants administrateur.','error');}
+  async function renderUnauthorized(){const body=$('#c3kV8PanelBody');setPanelTitle('Accès refusé');body.innerHTML=`<div class="c3k-v8-status is-error">Ce compte n’a pas de droit ADMIN ou SUPERADMIN sur 3615 Bleus.</div><div class="c3k-v8-actions"><button class="c3k-v8-secondary" id="c3kV8UnauthorizedLogout" type="button">Se déconnecter</button></div>`;$('#c3kV8UnauthorizedLogout',body)?.addEventListener('click',()=>client?.auth.signOut());}
   function openAdmin(){openAccount();renderAdmin();}
-  async function renderMatchSheetAdmin(){
-    const body=$('#c3kV8PanelBody');if(!body)return;
-    if(!isAdmin()){renderAccount();return;}
-    const api=window.BLEUS3000_MATCH_SHEET_ADMIN;
-    if(!api?.render){body.innerHTML='<div class="c3k-v8-status is-error">Le module d’administration des feuilles de match est indisponible.</div><div class="c3k-v8-actions"><button class="c3k-v8-secondary" id="matchSheetAdminBack" type="button">Retour</button></div>';$('#matchSheetAdminBack',body)?.addEventListener('click',renderAccount);return;}
-    await api.render(body);
-    $('#matchSheetAdminBack',body)?.addEventListener('click',renderAccount);
+  async function renderAdmin(){
+    const body=$('#c3kV8PanelBody');if(!body||!isSuperAdmin())return renderAccount();setPanelTitle('Comptes administrateurs');
+    body.innerHTML='<div class="c3k-v8-muted">Chargement des comptes existants…</div>';
+    const {data:users,error}=await client.from('profiles').select('id,first_name,username,email,role').in('role',['admin','superadmin']).order('role').order('username');
+    if(error){body.innerHTML=`<div class="c3k-v8-status is-error">${esc(error.message)}</div><div class="c3k-v8-actions"><button class="c3k-v8-secondary" id="adminBack" type="button">Retour</button></div>`;$('#adminBack',body)?.addEventListener('click',renderAccount);return;}
+    body.innerHTML=`<p class="c3k-v8-muted">Les inscriptions publiques sont désactivées. Ce registre affiche uniquement les comptes administrateurs déjà présents.</p><div class="c3k-v8-admin-list">${(users||[]).map(u=>`<div class="c3k-v8-admin-user"><div><strong>${esc(u.username||u.first_name||'Compte')}</strong><small>${esc(u.email||'')}</small></div><span class="c3k-v8-role">${esc(roleLabel(u.role))}</span></div>`).join('')}</div><div class="c3k-v8-actions"><button class="c3k-v8-secondary" id="adminBack" type="button">Retour</button></div>`;
+    $('#adminBack',body)?.addEventListener('click',renderAccount);
   }
-  async function renderAdmin(){const body=$('#c3kV8PanelBody');body.innerHTML='<div class="c3k-v8-muted">Chargement du registre…</div>';let reports=[],users=[];if(client&&session?.user){const [r,u]=await Promise.all([client.from('reports').select('*').order('created_at',{ascending:false}).limit(100),client.from('profiles').select('id,first_name,username,email,role,status_text,presence_status').order('username')]);reports=r.data||[];users=u.data||[];}else{try{reports=JSON.parse(localStorage.getItem(localReportsKey)||'[]');}catch{}users=[profile];}body.innerHTML=`<div class="c3k-v8-tabs"><button class="is-active" data-admin="reports">Signalements (${reports.length})</button><button data-admin="users">Comptes (${users.length})</button></div><div id="adminArea"></div><div class="c3k-v8-actions"><button class="c3k-v8-secondary" id="adminBack" type="button">Retour</button></div>`;const area=$('#adminArea');const drawReports=()=>area.innerHTML=`<div class="c3k-v8-admin-list">${reports.map(r=>`<article class="c3k-v8-admin-item"><div class="c3k-v8-admin-meta"><span>${esc(reportLabel(r.report_type))}</span><span>${new Date(r.created_at||Date.now()).toLocaleString('fr-FR')}</span></div><p>${esc(r.message)}</p></article>`).join('')||'<div class="c3k-v8-muted">Aucun signalement.</div>'}</div>`;const drawUsers=()=>{area.innerHTML=`<div class="c3k-v8-admin-list">${users.map(u=>{const locked=profile?.role!=='superadmin'&&u.role==='superadmin';const opts=['user','admin','superadmin'].filter(r=>profile?.role==='superadmin'||r!=='superadmin').map(r=>`<option value="${r}" ${r===u.role?'selected':''}>${roleLabel(r)}</option>`).join('');return `<div class="c3k-v8-admin-user"><div><strong>${esc(u.username||u.first_name||'Compte')}</strong><small>${esc(u.email||'')}</small></div><select data-role-user="${esc(u.id)}" ${locked?'disabled':''}>${opts}</select></div>`}).join('')}</div>`;area.querySelectorAll('[data-role-user]').forEach(sel=>sel.addEventListener('change',async()=>{if(!client)return;const target=users.find(u=>u.id===sel.dataset.roleUser),previous=target?.role;if(target)target.role=sel.value;const {error}=await client.from('profiles').update({role:sel.value}).eq('id',sel.dataset.roleUser);if(error){if(target)target.role=previous;alert(error.message);drawUsers();}else if(sel.dataset.roleUser===profile.id){profile.role=sel.value;dispatchState();updateHeader();}}));};drawReports();$$('[data-admin]',body).forEach(b=>b.addEventListener('click',()=>{$$('[data-admin]',body).forEach(x=>x.classList.toggle('is-active',x===b));b.dataset.admin==='users'?drawUsers():drawReports();}));$('#adminBack').addEventListener('click',renderAccount);}
-  async function sendReport(){const msg=$('#c3kV8ReportMessage').value.trim(),st=$('#c3kV8ReportStatus');if(!msg)return toast(st,'Écris une courte information.','error');const row={id:crypto.randomUUID?.()||String(Date.now()),user_id:profile?.id||null,report_type:reportType,message:msg,module:'interface',context:{version:'V1.1.89',page:location.pathname},status:'new',created_at:new Date().toISOString()};if(client&&session?.user){const {error}=await client.from('reports').insert(row);if(error)return toast(st,error.message,'error');}else{let rows=[];try{rows=JSON.parse(localStorage.getItem(localReportsKey)||'[]');}catch{}rows.unshift(row);localStorage.setItem(localReportsKey,JSON.stringify(rows));}$('#c3kV8ReportMessage').value='';toast(st,'Signalement enregistré.','ok');setTimeout(()=>$('#c3kV8ReportPop').hidden=true,700);}
-  async function loadProfile(){if(!session?.user){profile=null;dispatchState();updateHeader();return;}const {data}=await client.from('profiles').select('*').eq('id',session.user.id).maybeSingle();profile=data||{id:session.user.id,first_name:session.user.user_metadata?.first_name||'',username:session.user.user_metadata?.username||session.user.email?.split('@')[0],email:session.user.email,role:'user',presence_status:'online'};const {data:l}=await client.from('member_role_labels').select('*').eq('user_id',session.user.id).maybeSingle();profile.member_label=l||null;social()?.setMemberLabel?.(profile.id,profile.member_label);dispatchState();updateHeader();}
-  async function setupPresence(){if(!client)return;try{if(presenceChannel)await client.removeChannel(presenceChannel);}catch{}let guest=localStorage.getItem('bleus3000.presence.guest.v1')||crypto.randomUUID?.()||Math.random().toString(36).slice(2);localStorage.setItem('bleus3000.presence.guest.v1',guest);const key=session?.user?.id||`guest:${guest}`;presenceChannel=client.channel('b3k-online',{config:{presence:{key}}});presenceChannel.on('presence',{event:'sync'},()=>{const state=presenceChannel.presenceState();window.C3K_PRESENCE_STATE=state;const entries=Object.values(state||{}).flatMap(v=>Array.isArray(v)?v:[]);$$('[data-c3k-online-count]').forEach(n=>n.textContent=`${entries.length} présent${entries.length>1?'s':''}`);window.dispatchEvent(new CustomEvent('c3k:presence-state',{detail:{state,count:entries.length}}));});presenceChannel.subscribe(async status=>{if(status==='SUBSCRIBED')await presenceChannel.track({user_id:profile?.id||null,pseudo:profile?.username||null,first_name:profile?.first_name||null,role:profile?.role||'guest',status_text:profile?.status_text||null,presence_status:profile?.presence_status||'online',online_at:new Date().toISOString()});});}
-  async function handleSession(s,event=''){const prevUser=session?.user?.id||null,nextUser=s?.user?.id||null;session=s;
-    // Les rafraîchissements silencieux de jeton surviennent notamment au retour sur un onglet.
-    // Ils ne doivent jamais reconstruire/fermer la vue actuellement ouverte dans le menu Profil.
-    if((event==='TOKEN_REFRESHED'||event==='SIGNED_IN')&&prevUser&&prevUser===nextUser)return;
-    await loadProfile();await setupPresence();
+  async function loadProfile(){
+    if(!session?.user){profile=null;dispatchState();return;}
+    const {data,error}=await client.from('profiles').select('id,first_name,username,email,role').eq('id',session.user.id).maybeSingle();
+    if(error)console.warn('3615 Bleus · profil administrateur',error);
+    profile=data||{id:session.user.id,email:session.user.email,role:'user'};
+    dispatchState();
+  }
+  async function handleSession(s,event=''){
+    const prevUser=session?.user?.id||null,nextUser=s?.user?.id||null;session=s;
+    if(['TOKEN_REFRESHED','SIGNED_IN','INITIAL_SESSION'].includes(event)&&prevUser&&prevUser===nextUser)return;
+    await loadProfile();
     const panel=$('#c3kV8AccountBackdrop');if(panel&&!panel.hidden&&prevUser!==nextUser)renderAccount();
   }
   const isJwtTimeError=e=>/jwt\s+(issued\s+at\s+future|expired)|issued\s+at\s+future/i.test(String(e?.message||e||''));
-  function clearStoredAuth(){
-    try{
-      const ref=new URL(cfg.SUPABASE_URL).hostname.split('.')[0];
-      const exact=`sb-${ref}-auth-token`;
-      localStorage.removeItem(exact);
-      for(let i=localStorage.length-1;i>=0;i--){const k=localStorage.key(i);if(k&&k.startsWith(`sb-${ref}-auth-token`))localStorage.removeItem(k);}
-    }catch{}
-  }
-  async function sanitizeInitialSession(){
-    const {data,error}=await client.auth.getSession();
-    if(error&&!isJwtTimeError(error))console.warn('3615 Bleus · lecture session',error);
-    let s=data?.session||null;
-    if(!s)return null;
-    // getSession lit le cache local sans valider le JWT côté serveur. getUser force cette validation.
-    const check=await client.auth.getUser().catch(e=>({error:e}));
-    if(!check?.error)return s;
-    if(!isJwtTimeError(check.error)){console.warn('3615 Bleus · validation session',check.error);return s;}
-    console.warn('3615 Bleus · JWT temporel invalide, tentative de rafraîchissement automatique.');
-    const refreshed=await client.auth.refreshSession().catch(e=>({data:null,error:e}));
-    if(!refreshed?.error&&refreshed?.data?.session)return refreshed.data.session;
-    console.warn('3615 Bleus · session locale abandonnée après échec du refresh.',refreshed?.error);
-    try{await client.auth.signOut({scope:'local'});}catch{}
-    clearStoredAuth();
-    return null;
-  }
+  function clearStoredAuth(){try{const ref=new URL(cfg.SUPABASE_URL).hostname.split('.')[0],exact=`sb-${ref}-auth-token`;localStorage.removeItem(exact);for(let i=localStorage.length-1;i>=0;i--){const k=localStorage.key(i);if(k&&k.startsWith(`sb-${ref}-auth-token`))localStorage.removeItem(k);}}catch{}}
+  function jwtTemporalState(s){try{const token=String(s?.access_token||''),part=token.split('.')[1];if(!part)return {refresh:false};const b64=part.replace(/-/g,'+').replace(/_/g,'/'),padded=b64+'==='.slice((b64.length+3)%4),payload=JSON.parse(atob(padded)),now=Math.floor(Date.now()/1000),iat=Number(payload.iat||0),exp=Number(payload.exp||0);return {refresh:(iat>now+90)||(exp>0&&exp<=now+90)};}catch{return {refresh:false};}}
+  async function sanitizeInitialSession(){const {data,error}=await client.auth.getSession();if(error&&!isJwtTimeError(error))console.warn('3615 Bleus · lecture session',error);let s=data?.session||null;if(!s)return null;if(!jwtTemporalState(s).refresh)return s;const refreshed=await client.auth.refreshSession().catch(e=>({data:null,error:e}));if(!refreshed?.error&&refreshed?.data?.session)return refreshed.data.session;try{await client.auth.signOut({scope:'local'});}catch{}clearStoredAuth();return null;}
   async function init(){
-    buildUi();profile=loadLocalProfile();updateHeader();dispatchState();
-    window.BLEUS3000_SUPABASE=null;
+    buildUi();profile=null;session=null;dispatchState();window.BLEUS3000_SUPABASE=null;
     if(configured()){
-      client=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-      // Le référentiel public ne doit jamais rester bloqué par la restauration/validation d'une session.
-      // Le client est disponible immédiatement ; l'authentification est assainie ensuite en parallèle logique.
+      client=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true},global:{fetch:window.BLEUS3000_SUPABASE_FETCH||window.fetch.bind(window)}});
       window.BLEUS3000_SUPABASE=client;
       window.dispatchEvent(new CustomEvent('bleus:supabase-ready',{detail:{client,session:null,phase:'client'}}));
       const cleanSession=await sanitizeInitialSession();
-      window.dispatchEvent(new CustomEvent('bleus:supabase-ready',{detail:{client,session:cleanSession,phase:'session'}}));
-      if(cleanSession)await handleSession(cleanSession);
-      else{session=null;profile=null;updateHeader();dispatchState();await setupPresence();}
+      window.dispatchEvent(new CustomEvent('bleus:auth-ready',{detail:{client,session:cleanSession,phase:'session'}}));
+      if(cleanSession)await handleSession(cleanSession);else dispatchState();
       client.auth.onAuthStateChange((event,s)=>setTimeout(()=>handleSession(s,event).catch(err=>console.warn('3615 Bleus · auth state',err)),0));
-    }else{window.BLEUS3000_SUPABASE=null;}
+    }
     window.C3K_UI?.hydrate?.();
   }
   window.C3K_ACCOUNT_PREFS={get:getPrefs,set:setPrefs,getLocal:loadLocalPrefs};

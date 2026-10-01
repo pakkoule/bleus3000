@@ -153,3 +153,29 @@
 /* V1.1.96 — France A est l'unique sélection : masque le badge de section sans toucher au moteur de données. */
 .calendar-global-tag.section,
 .calendar-tag.section{display:none!important}
+
+
+/* V1.3.15 — accueil calendrier resserré + épinglage inline */
+.calendar-home-match-heading{gap:3px!important}
+.calendar-home-match-topline{display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap}
+.calendar-home-match-topline .calendar-match-number{margin:0!important;flex:0 0 auto}
+.calendar-home-pin-btn-inline,.calendar-home-pinned-label{flex:0 0 auto}
+.calendar-home-pin-btn-inline{width:22px;height:22px;font-size:13px;line-height:1;border-radius:7px}
+.calendar-home-pinned-label{margin-right:0!important}
+.calendar-home-match-meta{display:flex;justify-content:flex-end;min-height:0!important}
+.calendar-home-match-footer{align-items:center;gap:8px;flex-wrap:wrap}
+.calendar-home-broadcast{display:flex!important;align-items:center;justify-content:flex-start!important;gap:6px!important;min-width:0;flex:1 1 auto;flex-wrap:wrap!important;overflow:visible!important}
+.calendar-home-broadcast .calendar-tag,.calendar-home-broadcast .calendar-global-tag{min-height:22px!important;padding:3px 7px!important;font-size:7px!important}
+.calendar-home-broadcast .broadcast-calendar-logo{display:inline-flex;align-items:center;justify-content:center;min-width:48px;height:24px;padding:2px 6px;overflow:visible!important}
+.calendar-home-broadcast .broadcast-calendar-logo img{display:block;max-width:58px;max-height:18px;object-fit:contain}
+.calendar-home-broadcast-inline{display:inline-flex;align-items:center;gap:4px;overflow:visible!important}
+.calendar-home-broadcast-inline .calendar-tv,.calendar-home-broadcast-inline .broadcast-chip,.calendar-home-broadcast-inline img{max-height:18px}
+.calendar-home-match-actions{margin-left:auto}
+@media(max-width:640px){
+  .calendar-home-match-footer{align-items:flex-start!important}
+  .calendar-home-broadcast{width:100%;order:1}
+  .calendar-home-match-actions{width:100%;justify-content:flex-end!important;order:2}
+}
+
+/* V1.3.16 — épinglage accueil plus discret */
+.calendar-home-pin-btn-inline{width:17px!important;height:17px!important;min-width:17px!important;min-height:17px!important;border-radius:5px!important;font-size:9px!important;line-height:1!important;padding:0!important}

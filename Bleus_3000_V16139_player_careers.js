@@ -90,7 +90,7 @@
 
   function timelineEvents(data){
     const events=[];
-    data.gatherings.forEach((g,i)=>{const c=g.callup,date=c.announcement_date||c.start_date;if(!date)return;events.push({date,label:i===0||g.first_callup?'Première convocation':'Rassemblement',detail:c.title||'Rassemblement France A',kind:g.first_callup?'first-callup':'callup'});});
+    data.gatherings.forEach((g,i)=>{const c=g.callup,date=c.announcement_date||c.start_date;if(!date)return;events.push({date,label:i===0||g.first_callup?'Première convocation':'Rassemblement',detail:c.title||'Rassemblement',kind:g.first_callup?'first-callup':'callup'});});
     data.appearances.forEach((a,i)=>{const m=a.match,date=m.match_date;if(!date)return;events.push({date,label:i===0?'Première sélection':(i===data.appearances.length-1?'Dernière sélection':'Match'),detail:`${m.opponent?.name||'Adversaire'}${a.goals?` · ⚽ ${a.goals}`:''}${a.captain?' · © Capitaine':''}`,kind:i===0?'first-selection':(i===data.appearances.length-1?'last-selection':'match'),matchId:m.id});});
     return events.sort((a,b)=>new Date(a.date)-new Date(b.date));
   }
@@ -102,12 +102,12 @@
     const tile=$(`[data-player-tile="${CSS.escape(String(playerId))}"]`);if(!tile||!tile.classList.contains('is-open'))return;
     const content=$('.selection-row-detail-content',tile);if(!content)return;
     let range=$('.player-career-range',content);if(!range){range=document.createElement('div');range.className='player-career-range';const tags=$('.selection-tags',content);tags?.insertAdjacentElement('beforebegin',range);}
-    let timeline=$('.player-career-timeline-wrap',content);if(!timeline){timeline=document.createElement('section');timeline.className='player-career-timeline-wrap';timeline.innerHTML='<div class="player-career-timeline-head"><strong>Timeline internationale</strong><small>Convocations · rassemblements · matchs · buts · capitanats</small></div><div class="player-career-timeline-loading">Chargement…</div>';const footer=$('footer',content);footer?footer.insertAdjacentElement('beforebegin',timeline):content.appendChild(timeline);}
+    $('.player-career-timeline-wrap',content)?.remove();
     const data=await loadCareer(playerId);if(!data)return;
     if(!range.dataset.careerReady){range.innerHTML=`<span><small>Première sélection</small><strong>${data.first?fmtDate(data.first.match.match_date):'—'}</strong></span><i>→</i><span><small>Dernière sélection</small><strong>${data.last?fmtDate(data.last.match.match_date):'—'}</strong></span>`;range.dataset.careerReady='1';}
     const tagHost=$('.selection-tags',content);if(tagHost&&!tagHost.dataset.careerCompetitions){tagHost.dataset.careerCompetitions='1';if(data.competitionTags.length){const label=document.createElement('span');label.className='player-competition-label';label.textContent='Compétitions disputées';tagHost.appendChild(label);data.competitionTags.forEach(t=>{const wrap=document.createElement('span');wrap.className='player-competition-tag';wrap.innerHTML=window.BLEUS3000_TAGS?.chipHtml?window.BLEUS3000_TAGS.chipHtml(t,'selection-linked-tag-chip'):`<span class="selection-main-tag">${esc(t.icon_text||'🏆')} ${esc(t.label_text)}</span>`;tagHost.appendChild(wrap);});}}
-    if(!timeline.dataset.careerReady){timeline.innerHTML=`<div class="player-career-timeline-head"><strong>Timeline internationale</strong><small>Convocations · rassemblements · matchs · buts · capitanats</small></div>${timelineHtml(data)}`;timeline.dataset.careerReady='1';$$('[data-career-open-match]',timeline).forEach(b=>b.addEventListener('click',()=>window.BLEUS3000_RELATIONAL_REFS?.openMatch?.(b.dataset.careerOpenMatch)));}
     await renderMatchHistory(playerId);
+    window.BLEUS3000_BLEU_MOYEN?.mountPlayerComparison?.(tile,playerId);
   }
 
   function ensureKitMatchesModal(){
@@ -140,7 +140,7 @@
     c.fillStyle='#a9c2df';c.font='700 18px Poppins,Arial';c.fillText(`Première sélection : ${data?.first?fmtDate(data.first.match.match_date):'—'}`,80,430);c.fillText(`Dernière sélection : ${data?.last?fmtDate(data.last.match.match_date):'—'}`,80,466);
     c.fillText(`Numéros : ${(r?._jerseyNumbers||[]).join(', ')||'—'}`,80,502);c.fillText(`Compétitions : ${data?.competitionTags.map(t=>t.label_text).join(' · ')||'—'}`,80,538);
     c.fillStyle='#2f6dff';c.font='900 20px Poppins,Arial';c.fillText('3615 BLEUS',80,665);
-    const a=document.createElement('a');a.href=canvas.toDataURL('image/png');a.download=`3615_Bleus_${(p.display_name||'joueur').replace(/[^a-z0-9]+/gi,'_')}.png`;document.body.appendChild(a);a.click();a.remove();
+    const filename=`3615_Bleus_${p.display_name||'joueur'}`;const engine=window.BLEUS3000_EXPORT;if(engine?.downloadCanvas)await engine.downloadCanvas(canvas,{filename,format:'png'});else{const a=document.createElement('a');a.href=canvas.toDataURL('image/png');a.download=`${filename.replace(/[^a-z0-9]+/gi,'_')}.png`;document.body.appendChild(a);a.click();a.remove();}
   }
 
   const compareFields=[

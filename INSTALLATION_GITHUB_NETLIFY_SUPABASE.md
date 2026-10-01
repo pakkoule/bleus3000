@@ -1,3 +1,5 @@
+> Note V1.3.13 : les migrations incrémentales ne sont plus livrées dans le ZIP GitHub Ready. La production `bleus3000` est déjà migrée. `SUPABASE_BASELINE.sql` est conservé comme référence historique uniquement.
+
 # 3615 Bleus — GitHub / Netlify / Supabase
 
 ## Mise à jour du site existant
@@ -64,7 +66,7 @@ La production `bleus3000` a déjà reçu `death_date` sur `players` et `personne
 
 ## Mise à niveau V1.2.7
 
-Pour une base existante, exécuter **`MIGRATION_V1.2.7_PHOTO_COPYRIGHT_BALLS.sql`** dans le SQL Editor Supabase avant de déployer le frontend V1.2.7.
+Pour une base existante, exécuter **`migration déjà appliquée directement sur le projet Supabase`** dans le SQL Editor Supabase avant de déployer le frontend V1.2.7.
 
 Cette migration :
 
@@ -77,16 +79,16 @@ Cette migration :
 
 ## Mise à niveau V1.2.6
 
-La V1.2.6 ajoute uniquement des calculs et composants frontend pour les statistiques de XI. **Aucune nouvelle migration SQL n’est nécessaire.** Si la base n’a pas encore reçu la V1.2.5, exécuter d’abord `MIGRATION_V1.2.5_SHEET_RELIABILITY.sql`.
+La V1.2.6 ajoute uniquement des calculs et composants frontend pour les statistiques de XI. **Aucune nouvelle migration SQL n’est nécessaire.** Si la base n’a pas encore reçu la V1.2.5, exécuter d’abord `migration déjà appliquée directement sur le projet Supabase`.
 
 ## Mise à niveau V1.2.5
 
-Pour une base existante, exécuter **`MIGRATION_V1.2.5_SHEET_RELIABILITY.sql`** dans le SQL Editor Supabase avant de déployer le frontend V1.2.5. Cette migration ajoute la ville de feuille, la numérotation canonique, les triggers de revalidation et la validation transactionnelle.
+Pour une base existante, exécuter **`migration déjà appliquée directement sur le projet Supabase`** dans le SQL Editor Supabase avant de déployer le frontend V1.2.5. Cette migration ajoute la ville de feuille, la numérotation canonique, les triggers de revalidation et la validation transactionnelle.
 
 
 ## Mise à niveau V1.2.10
 
-Pour une base existante, exécuter **`MIGRATION_V1.2.10_COLLECTIONS_QUICK_VALIDATION.sql`** dans le SQL Editor Supabase avant de déployer le frontend V1.2.10.
+Pour une base existante, exécuter **`migration déjà appliquée directement sur le projet Supabase`** dans le SQL Editor Supabase avant de déployer le frontend V1.2.10.
 
 Cette migration :
 
@@ -101,9 +103,9 @@ L’import d’un rassemblement vers une feuille de match réutilise les tables 
 
 
 ## V1.2.10.2 — Vidéos de buts
-Sur une base existante, exécuter `MIGRATION_V1.2.10.2_GOAL_VIDEO_UPLOAD.sql` afin de créer le bucket Supabase Storage `goal-videos` et ses politiques RLS.
+Sur une base existante, exécuter `migration déjà appliquée directement sur le projet Supabase` afin de créer le bucket Supabase Storage `goal-videos` et ses politiques RLS.
 
 
 ## Migration V1.2.10.6 — Photo d’équipe
 
-Avant d’utiliser **Médias → Photo d’équipe**, exécuter `MIGRATION_V1.2.10.6_TEAM_PHOTO_MEDIA.sql` sur le projet Supabase. Cette migration étend la contrainte de `match_media_assets.asset_type` avec la valeur `team_photo`.
+Avant d’utiliser **Médias → Photo d’équipe**, exécuter `migration déjà appliquée directement sur le projet Supabase` sur le projet Supabase. Cette migration étend la contrainte de `match_media_assets.asset_type` avec la valeur `team_photo`.

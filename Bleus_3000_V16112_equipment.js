@@ -6,25 +6,36 @@
   const slugify=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,72)||'equipementier';
   const state=()=>window.C3K_ACCOUNT_STATE||{};
   const client=()=>window.BLEUS3000_SUPABASE;
+  const refs=()=>window.BLEUS3000_RELATIONAL_REFS;
   const canEdit=()=>['admin','superadmin'].includes(String(state().role||'').toLowerCase());
-  let rows=[],tags=new Map(),editingId=null,pendingFile=null,pendingPreview='';
+  let rows=[],tags=new Map(),editingId=null,pendingFile=null,pendingPreview='',loaded=false,loading=null;
 
   const publicIconUrl=t=>{const c=client();if(!t?.icon_image_path||!c)return '';try{return c.storage.from('tag-icons').getPublicUrl(t.icon_image_path).data?.publicUrl||'';}catch{return '';}};
   function logoHtml(row,cls='broadcast-logo-preview'){
     const t=tags.get(row?.tag_id),u=publicIconUrl(t);
     return u?`<img class="${cls}" src="${esc(u)}" alt="${esc(row?.name||'Équipementier')}">`:`<span class="broadcast-tag-preview">${esc(t?.icon_text||'👕')} ${esc(row?.name||'Équipementier')}</span>`;
   }
-  async function load({renderPanel=false}={}){
+  async function load({renderPanel=false,force=false}={}){
+    if(loaded&&!force){if(renderPanel)render();return rows;}
+    if(loading){await loading;if(renderPanel)render();return rows;}
     const c=client();if(!c){if(renderPanel)render();return rows;}
-    const [{data:r,error:re},{data:t,error:te}]=await Promise.all([
-      c.from('equipment_manufacturers').select('*').eq('active',true).order('name'),
-      c.from('tags').select('*').eq('is_active',true).eq('reference_scope','equipment')
-    ]);
-    if(re)console.warn('Équipementiers',re);if(te)console.warn('Tags équipementiers',te);
-    rows=r||[];tags=new Map((t||[]).map(x=>[x.id,x]));
-    window.dispatchEvent(new CustomEvent('bleus:equipment-ready',{detail:{manufacturers:rows,tags:[...tags.values()]}}));
-    if(renderPanel)render();
-    return rows;
+    loading=(async()=>{
+      try{await refs()?.load?.();}catch{}
+      const {data:r,error:re}=await c.from('equipment_manufacturers').select('*').eq('active',true).order('name');
+      if(re)console.warn('Équipementiers',re);
+      rows=r||[];
+      const shared=(refs()?.getTags?.()||[]).filter(x=>x.reference_scope==='equipment');
+      if(shared.length)tags=new Map(shared.map(x=>[x.id,x]));
+      else{
+        const {data:t,error:te}=await c.from('tags').select('*').eq('is_active',true).eq('reference_scope','equipment');
+        if(te)console.warn('Tags équipementiers',te);
+        tags=new Map((t||[]).map(x=>[x.id,x]));
+      }
+      loaded=true;
+      window.dispatchEvent(new CustomEvent('bleus:equipment-ready',{detail:{manufacturers:rows,tags:[...tags.values()]}}));
+      return rows;
+    })().finally(()=>loading=null);
+    await loading;if(renderPanel)render();return rows;
   }
   function open(){editingId=null;pendingFile=null;pendingPreview='';const body=$('#c3kV8PanelBody');if(body)body.innerHTML='<div class="c3k-v8-muted">Chargement des équipementiers…</div>';load({renderPanel:true});}
   function rowHtml(r){return `<article class="broadcast-manager-row"><div class="broadcast-manager-logo">${logoHtml(r)}</div><div><strong>${esc(r.name)}</strong><small>${esc((r.aliases||[]).join(' · ')||r.slug)}</small></div>${canEdit()?`<button type="button" data-equipment-edit="${esc(r.id)}">Modifier</button>`:''}</article>`;}
@@ -50,11 +61,11 @@
     const {error:te}=await c.from('tags').update({label_text:name.slice(0,40),aliases:[name,...aliases],icon_image_path:iconPath,reference_scope:'equipment',updated_at:new Date().toISOString()}).eq('id',tag.id);if(te)throw te;
     if(row){const {error}=await c.from('equipment_manufacturers').update({name,slug:slugify(name),aliases,website_url:String(fd.get('website_url')||'').trim()||null,tag_id:tag.id,updated_at:new Date().toISOString()}).eq('id',row.id);if(error)throw error;}
     else{const {data,error}=await c.from('equipment_manufacturers').insert({name,slug:slugify(name),aliases,website_url:String(fd.get('website_url')||'').trim()||null,tag_id:tag.id}).select('*').single();if(error)throw error;row=data;const {error:le}=await c.from('tag_reference_links').insert({tag_id:tag.id,reference_type:'equipment',reference_id:row.id,relation_kind:'membership',created_by:state().profile?.id||null});if(le&&le.code!=='23505')throw le;}
-    editingId=null;pendingFile=null;pendingPreview='';await load({renderPanel:true});window.BLEUS3000_JERSEYS?.invalidate?.();window.dispatchEvent(new CustomEvent('bleus:equipment-changed'));
+    editingId=null;pendingFile=null;pendingPreview='';await load({renderPanel:true,force:true});window.BLEUS3000_JERSEYS?.invalidate?.();window.dispatchEvent(new CustomEvent('bleus:equipment-changed'));
   }catch(err){console.error(err);st.hidden=false;st.className='c3k-v8-status is-error';st.textContent=err.message||String(err);}}
   function getById(id){return rows.find(x=>String(x.id)===String(id))||null;}
   function tagFor(row){return row?tags.get(row.tag_id)||null:null;}
   function renderCompact(id){const row=getById(id);if(!row)return '';const t=tagFor(row),u=publicIconUrl(t);return u?`<span class="equipment-compact equipment-compact--logo-only" title="${esc(row.name)}"><img src="${esc(u)}" alt="${esc(row.name)}"></span>`:`<span class="equipment-compact equipment-compact--logo-only" title="${esc(row.name)}"><span class="equipment-compact-fallback">${esc(t?.icon_text||'👕')}</span></span>`;}
   window.BLEUS3000_EQUIPMENT={open,load,get rows(){return rows;},getById,tagFor,publicIconUrl,renderCompact};
-  window.addEventListener('bleus:supabase-ready',()=>load());
+  // Chargement à la demande depuis le référentiel Maillots ou le gestionnaire Profil.
 })();

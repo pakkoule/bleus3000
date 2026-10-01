@@ -4,7 +4,6 @@
   const $=(s,p=document)=>p.querySelector(s);
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let host=null,open=false,players=[],staff=[],matches=[];
-  const client=()=>window.BLEUS3000_SUPABASE||null;
   const store=()=>window.BLEUS3000_RELATIONAL_REFS;
   const today=()=>new Date();
   const md=d=>{const x=new Date(d);return Number.isNaN(+x)?'':`${x.getMonth()+1}-${x.getDate()}`;};
@@ -13,8 +12,26 @@
   const ageFrom=d=>{const y=year(d);return y?today().getFullYear()-y:null;};
   const yearsSince=d=>{const y=year(d);return y?today().getFullYear()-y:null;};
   function ensure(){
-    const rail=$('#c3kTopLeftRail')||$('#c3kV8AccountShell')?.parentElement;if(!rail)return null;
-    if(!host){host=document.createElement('section');host.id='c3kEphemeride';host.className='c3k-ephemeride';rail.appendChild(host);}
+    /* V1.3.3 hotfix — Éphéméride/Navigation ne dépendent plus du menu Profil supprimé. */
+    let rail=$('#c3kTopLeftRail');
+    if(!rail){
+      const header=$('.top-header'),search=$('#universalSearchShell');
+      rail=document.createElement('div');
+      rail.id='c3kTopLeftRail';
+      rail.className='c3k-header-profile-slot c3k-header-tools-slot';
+      rail.setAttribute('aria-label','Outils 3615 Bleus');
+      if(header)header.appendChild(rail);
+      else if(search?.parentElement)search.insertAdjacentElement('afterend',rail);
+      else document.body.prepend(rail);
+    }
+    if(!host||!host.isConnected){
+      host=document.createElement('section');
+      host.id='c3kEphemeride';
+      host.className='c3k-ephemeride';
+      rail.appendChild(host);
+    }else if(host.parentElement!==rail){
+      rail.appendChild(host);
+    }
     window.BLEUS3000_NAVIGATION?.mount?.(host);
     return host;
   }
@@ -22,7 +39,7 @@
   function matchLabel(m){
     const eff=(k)=>store()?.effective?.(m,k)??m?.[k];
     const opp=String(eff('opponent_name')||m?.opponent?.name||'Adversaire');
-    const sel='France A';
+    const sel='France';
     return m?.home_away==='away'?`${opp} – ${sel}`:`${sel} – ${opp}`;
   }
   function events(){
@@ -41,13 +58,22 @@
     $('[data-ephemeride-toggle]',host)?.addEventListener('click',()=>{open=!open;render();});
     host.querySelectorAll('[data-ephemeride-kind]').forEach(b=>b.addEventListener('click',()=>{const kind=b.dataset.ephemerideKind,id=b.dataset.ephemerideId;if(kind==='player'||kind==='player-death'){window.BLEUS3000_PLAYERS_DB?.openPlayer?.(id);return;}if(kind==='staff-death'){const p=staff.find(x=>String(x.id)===String(id));window.BLEUS3000_APP?.openReferences?.('staff');setTimeout(()=>{const input=$('#referenceSearch');if(input){input.value=p?.display_name||'';input.dispatchEvent(new Event('input',{bubbles:true}));}},100);return;}store()?.openMatch?.(id);}));
   }
-  async function load(){
-    ensure();const c=client();
-    if(c){const [{data:pd,error:pe},{data:sd,error:se}]=await Promise.all([c.from('players').select('id,display_name,birth_date,death_date').limit(5000),c.from('personnel').select('id,display_name,birth_date,death_date,person_type').eq('person_type','selectionneur').limit(5000)]);if(!pe)players=(pd||[]).filter(x=>x.birth_date||x.death_date);if(!se)staff=(sd||[]).filter(x=>x.death_date);}
-    try{matches=await store()?.load?.()||store()?.matches||[];}catch{matches=store()?.matches||[];}
-    render();
+  function syncPlayers(registry=window.BLEUS3000_PLAYER_REGISTRY||[]){
+    players=(registry||[]).map(p=>({id:p.id,display_name:p.display_name||p.name||'Joueur',birth_date:p.birth_date||null,death_date:p.death_date||null})).filter(x=>x.birth_date||x.death_date);
   }
-  function init(){ensure();load().catch(e=>{console.warn('Éphéméride',e);render();});window.addEventListener('bleus:matches-ready',e=>{matches=e.detail?.matches||[];render();});window.addEventListener('bleus:supabase-ready',()=>load().catch(()=>{}));}
+  function syncStaff(){
+    staff=(store()?.people||[]).filter(x=>String(x.person_type||'').toLowerCase()==='selectionneur'&&x.death_date);
+  }
+  async function load(){
+    ensure();syncPlayers();
+    try{matches=await store()?.load?.()||store()?.matches||[];}catch{matches=store()?.matches||[];}
+    syncStaff();render();
+  }
+  function init(){
+    ensure();load().catch(e=>{console.warn('Éphéméride',e);render();});
+    window.addEventListener('bleus:matches-ready',e=>{matches=e.detail?.matches||[];syncStaff();render();});
+    window.addEventListener('bleus:player-registry',e=>{syncPlayers(e.detail?.players||[]);render();});
+  }
   window.BLEUS3000_EPHEMERIDE={refresh:load,render};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
